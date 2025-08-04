@@ -993,14 +993,67 @@ function quickAddDonation() {
     if (!streamer || streamer === '') return showStatus('스트리머를 선택하세요.', 'error');
     if (isNaN(amount) || amount <= 0) return showStatus('금액을 올바르게 입력하세요.', 'error');
     
-    console.log('후원 등록 시도:', { donor, streamer, amount, type: t.value });
+    // 즉시 UI 피드백 - 버튼 비활성화로 중복 클릭 방지
+    const btn = document.getElementById('quick-add-btn');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
     
-    handleNewDonations([{ donor, streamer, type: t.value, amount, time: new Date() }]);
-    a.value = '';
-    d.focus();
-    d.select();
+    // 비동기로 처리하여 UI 블로킹 방지
+    setTimeout(() => {
+        try {
+            console.log('후원 등록 시도:', { donor, streamer, amount, type: t.value });
+            
+            handleNewDonationsFast([{ donor, streamer, type: t.value, amount, time: new Date() }]);
+            a.value = '';
+            d.focus();
+            d.select();
+            
+            showStatus(`${donor}님 → ${streamer} ${amount}만원 등록완료!`, 'success');
+        } finally {
+            // 버튼 상태 복원
+            btn.disabled = false;
+            btn.textContent = '➕ 추가';
+        }
+    }, 0);
+}
+
+// 빠른 후원 처리 (UI 업데이트 최소화)
+function handleNewDonationsFast(newDonations) {
+    if (!newDonations || newDonations.length === 0) return;
+
+    // 데이터만 먼저 업데이트
+    donations.unshift(...newDonations);
+    donations.sort((a, b) => b.time - a.time);
+    newDonations.forEach(d => todayDonors.add(d.donor));
     
-    showStatus(`${donor}님 → ${streamer} ${amount}만원 등록완료!`, 'success');
+    // 서버에 데이터 전송 (실시간 동기화)
+    if (isServerMode && socket && socket.connected) {
+        newDonations.forEach(donation => {
+            socket.emit('add-donation', donation);
+        });
+        console.log('서버에 후원 데이터 전송됨:', newDonations);
+    }
+    
+    // 저장은 비동기로
+    if (autoSaveEnabled) {
+        setTimeout(() => {
+            saveToLocalStorage();
+            showSaveStatus('저장 완료', 'saved');
+        }, 100);
+    }
+    
+    // UI 업데이트는 필수 부분만 - 테이블 맨 위에 행만 추가
+    updateTableRowOnly(newDonations[0]);
+    
+    // 요약 업데이트는 지연 처리
+    setTimeout(() => {
+        updateSummary();
+    }, 200);
+    
+    // 🤖 후원시 챗봇 자동 알림
+    if (document.getElementById('auto-chat-notify').checked) {
+        setTimeout(() => sendDonationNotification(newDonations), 100);
+    }
 }
 
 function handleNewDonations(newDonations) {
@@ -1101,6 +1154,38 @@ function updateSimpleRecentList() {
     }).join('');
     
     listContainer.innerHTML = listHtml;
+}
+
+// 새로운 후원만 테이블 맨 위에 추가 (빠른 처리)
+function updateTableRowOnly(donation) {
+    const tableBody = document.getElementById('data-table-body');
+    if (!tableBody) return;
+    
+    const emoji = emojis[donation.streamer] || '';
+    const timeStr = donation.time ? new Date(donation.time).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) : '';
+    
+    // 새 행을 맨 위에 추가
+    const newRow = document.createElement('tr');
+    newRow.dataset.index = '0';
+    newRow.innerHTML = `
+        <td><input type="checkbox" onchange="toggleRowSelection(0, this.checked)"></td>
+        <td>1</td>
+        <td onclick="makeCellEditable(this, 0)" data-field="donor">${donation.donor}</td>
+        <td onclick="makeCellEditable(this, 0)" data-field="streamer">${emoji} ${donation.streamer}</td>
+        <td onclick="makeCellEditable(this, 0)" data-field="type">${donation.type}</td>
+        <td onclick="makeCellEditable(this, 0)" data-field="amount">${formatAmount(donation.amount)}</td>
+        <td>${timeStr}</td>
+    `;
+    
+    // 기존 행들의 인덱스와 번호 업데이트
+    const existingRows = tableBody.querySelectorAll('tr');
+    existingRows.forEach((row, i) => {
+        row.dataset.index = i + 1;
+        const numberCell = row.cells[1];
+        if (numberCell) numberCell.textContent = i + 2;
+    });
+    
+    tableBody.insertBefore(newRow, tableBody.firstChild);
 }
 
 function updateTable() {
