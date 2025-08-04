@@ -5,30 +5,190 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>후원 관리 시스템</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-.container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-.section { margin-bottom: 30px; padding: 20px; border: 2px solid #007bff; border-radius: 8px; background: #f8f9ff; }
-.section h2 { margin: 0 0 20px 0; color: #007bff; }
-.form-row { display: grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap: 15px; align-items: center; margin-bottom: 15px; }
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
-.form-input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; }
-.form-input:focus { border-color: #007bff; outline: none; }
-.btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
-.btn:hover { background: #0056b3; }
-.btn-success { background: #28a745; }
-.btn-success:hover { background: #1e7e34; }
-.streamer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-.streamer-item { margin-bottom: 10px; }
-.streamer-item label { display: block; margin-bottom: 5px; font-weight: bold; color: #17a2b8; font-size: 13px; }
-.status { padding: 10px; border-radius: 5px; margin: 10px 0; font-weight: bold; }
-.status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-.table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-.table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-.table th { background: #f8f9fa; font-weight: bold; }
-.editable { cursor: pointer; background: #f8f9fa; }
-.editable:hover { background: #e9ecef; }
+body { 
+    font-family: Arial, sans-serif; 
+    margin: 0; 
+    padding: 20px; 
+    background: #f0f2f5; 
+}
+
+.container { 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    background: white; 
+    padding: 30px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+}
+
+h1 { 
+    text-align: center; 
+    color: #1877f2; 
+    margin-bottom: 40px; 
+    font-size: 32px; 
+}
+
+.section { 
+    margin-bottom: 40px; 
+    padding: 25px; 
+    border: 3px solid #1877f2; 
+    border-radius: 12px; 
+    background: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%); 
+}
+
+.section h2 { 
+    margin: 0 0 25px 0; 
+    color: #1877f2; 
+    font-size: 24px; 
+    text-align: center; 
+}
+
+.quick-form { 
+    display: grid; 
+    grid-template-columns: 2fr 2fr 1fr 1fr auto; 
+    gap: 15px; 
+    align-items: end; 
+}
+
+.form-group { 
+    margin-bottom: 20px; 
+}
+
+.form-group label { 
+    display: block; 
+    margin-bottom: 8px; 
+    font-weight: bold; 
+    color: #333; 
+    font-size: 16px; 
+}
+
+.form-input { 
+    width: 100%; 
+    padding: 12px; 
+    border: 2px solid #ddd; 
+    border-radius: 8px; 
+    font-size: 16px; 
+    box-sizing: border-box; 
+}
+
+.form-input:focus { 
+    border-color: #1877f2; 
+    outline: none; 
+    box-shadow: 0 0 8px rgba(24,119,242,0.3); 
+}
+
+.btn { 
+    padding: 12px 25px; 
+    background: #1877f2; 
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-size: 16px; 
+    font-weight: bold; 
+    transition: background 0.3s; 
+}
+
+.btn:hover { 
+    background: #166fe5; 
+}
+
+.btn-success { 
+    background: #28a745; 
+}
+
+.btn-success:hover { 
+    background: #218838; 
+}
+
+.btn-danger { 
+    background: #dc3545; 
+}
+
+.btn-danger:hover { 
+    background: #c82333; 
+}
+
+.streamer-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+    gap: 20px; 
+}
+
+.streamer-item label { 
+    display: block; 
+    margin-bottom: 8px; 
+    font-weight: bold; 
+    color: #1877f2; 
+    font-size: 16px; 
+}
+
+.radio-group { 
+    display: flex; 
+    gap: 30px; 
+    align-items: center; 
+}
+
+.radio-group label { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    font-size: 16px; 
+    cursor: pointer; 
+}
+
+.status { 
+    padding: 15px; 
+    border-radius: 8px; 
+    margin: 20px 0; 
+    font-weight: bold; 
+    font-size: 16px; 
+    text-align: center; 
+}
+
+.status-success { 
+    background: #d4edda; 
+    color: #155724; 
+    border: 2px solid #c3e6cb; 
+}
+
+.status-error { 
+    background: #f8d7da; 
+    color: #721c24; 
+    border: 2px solid #f5c6cb; 
+}
+
+.table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-top: 20px; 
+    font-size: 16px; 
+}
+
+.table th, .table td { 
+    border: 2px solid #ddd; 
+    padding: 12px; 
+    text-align: center; 
+}
+
+.table th { 
+    background: #1877f2; 
+    color: white; 
+    font-weight: bold; 
+}
+
+.table tr:nth-child(even) { 
+    background: #f8f9fa; 
+}
+
+.editable { 
+    cursor: pointer; 
+    transition: background 0.2s; 
+}
+
+.editable:hover { 
+    background: #e3f2fd !important; 
+}
 </style>
 </head>
 <body>
@@ -39,7 +199,7 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
     <!-- 빠른 후원 등록 -->
     <div class="section">
         <h2>⚡ 빠른 후원 등록</h2>
-        <div class="form-row">
+        <div class="quick-form">
             <div>
                 <label>후원자명</label>
                 <input type="text" id="quick-donor" class="form-input" placeholder="후원자명 입력">
@@ -86,7 +246,7 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
         </div>
         <div class="form-group">
             <label>후원 타입</label>
-            <div style="display: flex; gap: 20px;">
+            <div class="radio-group">
                 <label><input type="radio" name="batch-type" value="계좌" checked> 💳 계좌</label>
                 <label><input type="radio" name="batch-type" value="투네"> 🎯 투네</label>
                 <label><input type="radio" name="batch-type" value="슈퍼챗"> 💬 슈퍼챗</label>
@@ -137,7 +297,7 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
                 </div>
             </div>
         </div>
-        <button onclick="batchAdd()" class="btn btn-success" style="width: 100%; padding: 15px; font-size: 16px;">✨ 일괄 등록</button>
+        <button onclick="batchAdd()" class="btn btn-success" style="width: 100%; padding: 20px; font-size: 18px;">✨ 일괄 등록</button>
     </div>
 
     <!-- 상태 메시지 -->
@@ -146,7 +306,10 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
     <!-- 후원 내역 테이블 -->
     <div class="section">
         <h2>📋 후원 내역</h2>
-        <button onclick="loadData()" class="btn" style="margin-bottom: 15px;">🔄 새로고침</button>
+        <div style="margin-bottom: 20px;">
+            <button onclick="loadData()" class="btn">🔄 새로고침</button>
+            <button onclick="clearAll()" class="btn btn-danger" style="margin-left: 10px;">🗑️ 전체삭제</button>
+        </div>
         <table class="table">
             <thead>
                 <tr>
@@ -161,7 +324,7 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
             </thead>
             <tbody id="donation-table">
                 <tr>
-                    <td colspan="7">후원 내역이 없습니다.</td>
+                    <td colspan="7" style="padding: 40px; color: #666; font-size: 18px;">후원 내역이 없습니다.</td>
                 </tr>
             </tbody>
         </table>
@@ -170,15 +333,19 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
 
 <script>
 // 전역 변수
-let donations = [];
-let socket = null;
+let donations = JSON.parse(localStorage.getItem('donations') || '[]');
 
 // 상태 메시지 표시
 function showStatus(message, type = 'info') {
     const statusEl = document.getElementById('status-message');
     statusEl.className = `status status-${type}`;
     statusEl.textContent = message;
-    setTimeout(() => statusEl.textContent = '', 3000);
+    setTimeout(() => statusEl.textContent = '', 4000);
+}
+
+// 로컬 저장
+function saveDonations() {
+    localStorage.setItem('donations', JSON.stringify(donations));
 }
 
 // 숫자만 입력 허용
@@ -215,6 +382,7 @@ function quickAdd() {
     };
 
     donations.unshift(donation);
+    saveDonations();
     document.getElementById('quick-donor').value = '';
     document.getElementById('quick-amount').value = '';
     updateTable();
@@ -255,6 +423,7 @@ function batchAdd() {
     }
 
     donations.unshift(...newDonations);
+    saveDonations();
     document.getElementById('batch-donor').value = '';
     streamerInputs.forEach(input => input.value = '');
     updateTable();
@@ -266,27 +435,37 @@ function updateTable() {
     const tbody = document.getElementById('donation-table');
     
     if (donations.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">후원 내역이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="padding: 40px; color: #666; font-size: 18px;">후원 내역이 없습니다.</td></tr>';
         return;
     }
 
     tbody.innerHTML = donations.map((d, index) => `
         <tr>
             <td>${index + 1}</td>
-            <td class="editable" onclick="editCell(this, ${index}, 'donor')">${d.donor}</td>
-            <td class="editable" onclick="editCell(this, ${index}, 'streamer')">${d.streamer}</td>
-            <td class="editable" onclick="editCell(this, ${index}, 'type')">${d.type}</td>
-            <td class="editable" onclick="editCell(this, ${index}, 'amount')">${d.amount}</td>
-            <td>${d.time.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})}</td>
-            <td><button onclick="deleteDonation(${index})" class="btn" style="background: #dc3545; padding: 5px 10px;">삭제</button></td>
+            <td class="editable" onclick="editCell(${index}, 'donor')">${d.donor}</td>
+            <td class="editable" onclick="editCell(${index}, 'streamer')">${d.streamer}</td>
+            <td class="editable" onclick="editCell(${index}, 'type')">${d.type}</td>
+            <td class="editable" onclick="editCell(${index}, 'amount')">${d.amount}</td>
+            <td>${new Date(d.time).toLocaleString('ko-KR')}</td>
+            <td><button onclick="deleteDonation(${index})" class="btn btn-danger" style="padding: 8px 12px;">삭제</button></td>
         </tr>
     `).join('');
 }
 
 // 셀 편집
-function editCell(cell, index, field) {
+function editCell(index, field) {
     const currentValue = donations[index][field];
-    const newValue = prompt(`${field} 수정:`, currentValue);
+    let newValue;
+    
+    if (field === 'streamer') {
+        const streamers = ['엄삼용', '손덕배', '연기', '주옥', '불곰', '이효팔', '동동', '남붕', '옥긔', '국고'];
+        newValue = prompt(`스트리머 선택:\n${streamers.join(', ')}`, currentValue);
+    } else if (field === 'type') {
+        const types = ['계좌', '투네', '슈퍼챗'];
+        newValue = prompt(`타입 선택:\n${types.join(', ')}`, currentValue);
+    } else {
+        newValue = prompt(`${field} 수정:`, currentValue);
+    }
     
     if (newValue !== null && newValue.trim() !== '') {
         if (field === 'amount') {
@@ -299,6 +478,7 @@ function editCell(cell, index, field) {
         } else {
             donations[index][field] = newValue.trim();
         }
+        saveDonations();
         updateTable();
         showStatus('수정이 완료되었습니다.', 'success');
     }
@@ -308,26 +488,41 @@ function editCell(cell, index, field) {
 function deleteDonation(index) {
     if (confirm('이 후원을 삭제하시겠습니까?')) {
         donations.splice(index, 1);
+        saveDonations();
         updateTable();
         showStatus('후원이 삭제되었습니다.', 'success');
     }
 }
 
+// 전체 삭제
+function clearAll() {
+    if (confirm('모든 후원 내역을 삭제하시겠습니까?')) {
+        donations = [];
+        saveDonations();
+        updateTable();
+        showStatus('모든 후원 내역이 삭제되었습니다.', 'success');
+    }
+}
+
 // 데이터 로드
 function loadData() {
+    donations = JSON.parse(localStorage.getItem('donations') || '[]');
     updateTable();
     showStatus('데이터를 새로고침했습니다.', 'success');
 }
 
-// 숫자 입력 필드에 이벤트 리스너 추가
+// 초기화
 document.addEventListener('DOMContentLoaded', function() {
+    updateTable();
+    
+    // 숫자 입력 필드 설정
     const numericInputs = document.querySelectorAll('input[inputmode="numeric"]');
     numericInputs.forEach(input => {
         input.addEventListener('keypress', onlyNumbers);
     });
+    
+    console.log('후원 관리 시스템이 시작되었습니다.');
 });
-
-console.log('새로운 후원 관리 시스템이 시작되었습니다.');
 </script>
 
 </body>
