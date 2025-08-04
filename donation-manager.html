@@ -989,21 +989,34 @@ async function loadData(isSilent = false) {
 function addDonation() {
     const donor = document.getElementById('donor-input').value.trim();
     if (!donor) return showStatus('후원자명을 입력하세요', 'error');
-    const inputs = document.querySelectorAll('#streamer-inputs input[type="number"]');
+    
+    // type="text"로 바뀐 입력 필드들을 data-streamer 속성으로 찾기
+    const inputs = document.querySelectorAll('#streamer-inputs input[data-streamer]');
     const newDons = [];
+    
     inputs.forEach(input => {
-        const amount = parseFloat(input.value);
+        const value = input.value.trim();
+        const amount = parseFloat(value);
         if (!isNaN(amount) && amount > 0) {
             const streamerName = input.dataset.streamer;
-            newDons.push({ donor, streamer: streamerName, type: document.querySelector('input[name="paytype"]:checked').value, amount, time: new Date() });
+            const paytype = document.querySelector('input[name="paytype"]:checked').value;
+            newDons.push({ 
+                donor, 
+                streamer: streamerName, 
+                type: paytype, 
+                amount, 
+                time: new Date() 
+            });
         }
     });
+    
     if (newDons.length > 0) {
         document.getElementById('donor-input').value = '';
         inputs.forEach(input => input.value = '');
         handleNewDonations(newDons);
+        showStatus(`${newDons.length}개 후원이 등록되었습니다!`, 'success');
     } else {
-        showStatus('금액을 입력하세요', 'error');
+        showStatus('최소 하나의 스트리머에게 금액을 입력하세요', 'error');
     }
 }
 
