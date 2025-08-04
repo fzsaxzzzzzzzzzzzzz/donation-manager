@@ -58,6 +58,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .user-info { background-color: #e7f3ff; padding: 8px 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; text-align: center; }
 .admin { background-color: #fde9e9; color: #a52828; font-weight: 600; }
 .autocomplete-container { position: relative; flex: 2; }
+.editable-cell:hover { background: #e3f2fd !important; border: 1px solid #2196f3; transition: all 0.2s ease; }
 .donor-autocomplete { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #dddfe2; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 1001; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
 .donor-autocomplete .autocomplete-item { padding: 8px 12px; cursor: pointer; font-size: 14px; }
 .donor-autocomplete .autocomplete-item:hover, .donor-autocomplete .autocomplete-item.selected { background-color: #1877f2; color: white; }
@@ -179,7 +180,68 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 
 <div class="form-group">
     <label class="form-label">스트리머별 금액(만)</label>
-    <div class="streamer-grid" id="streamer-inputs"></div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;" id="streamer-inputs">
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🫅엄삼용</label>
+            <input type="number" data-streamer="엄삼용" placeholder="금액 입력" min="0" step="0.1" 
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🌺손덕배</label>
+            <input type="number" data-streamer="손덕배" placeholder="금액 입력" min="0" step="0.1"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🐧연기</label>
+            <input type="number" data-streamer="연기" placeholder="금액 입력" min="0" step="0.1"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">👺주옥</label>
+            <input type="number" data-streamer="주옥" placeholder="금액 입력" min="0" step="0.1"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🎬불곰</label>
+            <input type="number" data-streamer="불곰" placeholder="금액 입력" min="0" step="0.1"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🏝이효팔</label>
+            <input type="number" data-streamer="이효팔" placeholder="금액 입력" min="0" step="0.1"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">😎동동</label>
+            <input type="number" data-streamer="동동" placeholder="금액 입력" min="0" step="0.1"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🤠남붕</label>
+            <input type="number" data-streamer="남붕" placeholder="금액 입력" min="0" step="0.1"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🦆옥긔</label>
+            <input type="number" data-streamer="옥긔" placeholder="금액 입력" min="0" step="0.1"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🏦국고</label>
+            <input type="number" data-streamer="국고" placeholder="금액 입력" min="0" step="0.1"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
+                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        </div>
+    </div>
 </div>
 
 <button onclick="addDonation()" class="btn btn-primary" id="add-btn" style="width:100%; padding: 12px; font-size: 16px;">✨ 일괄 등록</button>
@@ -1346,10 +1408,10 @@ function updateTable() {
     <tr data-index="${i}">
         <td><input type="checkbox" onchange="toggleRowSelection(${i}, this.checked)"></td>
         <td>${donations.length - i}</td>
-        <td data-field="donor" onclick="makeCellEditable(this, ${i})" style="cursor: pointer; padding: 8px;" title="클릭하여 수정">${d.donor}</td>
-        <td data-field="streamer" onclick="makeCellEditable(this, ${i})" style="cursor: pointer; padding: 8px;" title="클릭하여 수정">${emojis[d.streamer] || ''}${d.streamer}</td>
-        <td data-field="type" onclick="makeCellEditable(this, ${i})" style="cursor: pointer; padding: 8px;" title="클릭하여 수정">${d.type}</td>
-        <td data-field="amount" onclick="makeCellEditable(this, ${i})" style="cursor: pointer; padding: 8px;" title="클릭하여 수정">${formatAmount(d.amount)}</td>
+        <td data-field="donor" data-index="${i}" class="editable-cell" style="cursor: pointer; padding: 8px; background: #f8f9fa;" title="클릭하여 수정">${d.donor}</td>
+        <td data-field="streamer" data-index="${i}" class="editable-cell" style="cursor: pointer; padding: 8px; background: #f8f9fa;" title="클릭하여 수정">${emojis[d.streamer] || ''}${d.streamer}</td>
+        <td data-field="type" data-index="${i}" class="editable-cell" style="cursor: pointer; padding: 8px; background: #f8f9fa;" title="클릭하여 수정">${d.type}</td>
+        <td data-field="amount" data-index="${i}" class="editable-cell" style="cursor: pointer; padding: 8px; background: #f8f9fa;" title="클릭하여 수정">${formatAmount(d.amount)}</td>
         <td data-field="time">${d.time ? new Date(d.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</td>
     </tr>`).join('') || `<tr><td colspan="7">데이터 없음</td></tr>`;
 }
@@ -1818,7 +1880,28 @@ function formatAmount(num) { const number = parseFloat(num); if (isNaN(number)) 
 function initEventListeners() {
     document.getElementById('auto-save-toggle').addEventListener('change', e => autoSaveEnabled = e.target.checked);
     document.getElementById('select-all').addEventListener('change', e => { document.querySelectorAll('#data-table-body input[type="checkbox"]').forEach(cb => { cb.checked = e.target.checked; toggleRowSelection(parseInt(cb.closest('tr').dataset.index, 10), e.target.checked); }); });
-    document.addEventListener('click', (e) => { if (!e.target.closest('.autocomplete-container')) { document.querySelectorAll('.donor-autocomplete').forEach(list => list.style.display = 'none'); } if (currentlyEditing && !currentlyEditing.cell.contains(e.target)) { cancelCurrentEdit(); } });
+    
+    // 이벤트 위임을 사용한 테이블 편집 기능
+    document.addEventListener('click', (e) => {
+        // 자동완성 숨김 처리
+        if (!e.target.closest('.autocomplete-container')) { 
+            document.querySelectorAll('.donor-autocomplete').forEach(list => list.style.display = 'none'); 
+        }
+        
+        // 편집 가능한 셀 클릭 처리
+        if (e.target.classList.contains('editable-cell')) {
+            const cell = e.target;
+            const index = parseInt(cell.dataset.index);
+            makeCellEditable(cell, index);
+            return;
+        }
+        
+        // 다른 곳 클릭시 편집 종료
+        if (currentlyEditing && !currentlyEditing.cell.contains(e.target)) { 
+            cancelCurrentEdit(); 
+        }
+    });
+    
     setupDonorAutocomplete('donor-input', 'donor-autocomplete');
     setupDonorAutocomplete('quick-donor', 'quick-donor-autocomplete');
     setupDonorAutocomplete('admin-donor', 'admin-donor-autocomplete');
