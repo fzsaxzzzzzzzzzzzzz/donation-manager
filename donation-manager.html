@@ -539,23 +539,43 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <label><input type="checkbox" id="auto-chat-notify" checked> 🤖 후원시 챗봇알림</label>
 <span id="chatbot-permission-status" style="font-size: 12px; color: #666; margin-left: 10px;"></span>
 </div>
-<div id="quick-add-form" style="display: flex; gap: 5px; margin-bottom: 15px; align-items: center;">
-<div class="autocomplete-container"><input type="text" id="quick-donor" placeholder="후원자" class="form-input" autocomplete="off" tabindex="1" onkeypress="if(event.key==='Enter') quickAddDonation()"><div id="quick-donor-autocomplete" class="donor-autocomplete"></div></div>
-<select id="quick-streamer" class="form-select" style="flex: 2;" tabindex="2">
-<option value="엄삼용" selected>🫅엄삼용</option>
-<option value="손덕배">🌺손덕배</option>
-<option value="연기">🐧연기</option>
-<option value="주옥">👺주옥</option>
-<option value="불곰">🎬불곰</option>
-<option value="이효팔">🏝이효팔</option>
-<option value="동동">😎동동</option>
-<option value="남붕">🤠남붕</option>
-<option value="옥긔">🦆옥긔</option>
-<option value="국고">🏦국고</option>
+<div id="quick-add-form" style="margin-bottom: 20px; padding: 15px; border: 2px solid #007bff; border-radius: 8px; background: #f8f9ff;">
+<h4 style="margin: 0 0 15px 0; color: #007bff;">💰 후원 등록</h4>
+<div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap: 10px; align-items: center;">
+<div class="autocomplete-container" style="position: relative;">
+<input type="text" id="quick-donor" placeholder="후원자명" class="form-input" 
+       style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 4px; font-size: 14px;" 
+       autocomplete="off" tabindex="1">
+<div id="quick-donor-autocomplete" class="donor-autocomplete"></div>
+</div>
+
+<select id="quick-streamer" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 4px; font-size: 14px; cursor: pointer;" tabindex="2">
+<option value="엄삼용" selected>🫅 엄삼용</option>
+<option value="손덕배">🌺 손덕배</option>
+<option value="연기">🐧 연기</option>
+<option value="주옥">👺 주옥</option>
+<option value="불곰">🎬 불곰</option>
+<option value="이효팔">🏝 이효팔</option>
+<option value="동동">😎 동동</option>
+<option value="남붕">🤠 남붕</option>
+<option value="옥긔">🦆 옥긔</option>
+<option value="국고">🏦 국고</option>
 </select>
-<input type="number" id="quick-amount" placeholder="금액(만)" class="form-input" style="flex: 1;" step="0.1" tabindex="3" onkeypress="if(event.key==='Enter') quickAddDonation()">
-<select id="quick-type" class="form-select" style="flex: 1;" tabindex="4"><option value="계좌">계좌</option><option value="투네">투네</option><option value="슈퍼챗">슈퍼챗</option></select>
-<button onclick="quickAddDonation()" id="quick-add-btn" class="btn btn-primary" tabindex="5">추가</button>
+
+<input type="number" id="quick-amount" placeholder="금액(만)" 
+       style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 4px; font-size: 14px;" 
+       step="0.1" min="0" tabindex="3">
+
+<select id="quick-type" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 4px; font-size: 14px; cursor: pointer;" tabindex="4">
+<option value="계좌">💳 계좌</option>
+<option value="투네">🎯 투네</option>
+<option value="슈퍼챗">💬 슈퍼챗</option>
+</select>
+
+<button onclick="quickAddDonation()" id="quick-add-btn" 
+        style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; white-space: nowrap;" 
+        tabindex="5">➕ 추가</button>
+</div>
 </div>
 <div id="status-container"></div>
 <div class="table-container" style="max-height: calc(100vh - 280px); overflow-y: auto;">
@@ -1536,7 +1556,34 @@ function initEventListeners() {
     document.addEventListener('click', (e) => { if (!e.target.closest('.autocomplete-container')) { document.querySelectorAll('.donor-autocomplete').forEach(list => list.style.display = 'none'); } if (currentlyEditing && !currentlyEditing.cell.contains(e.target)) { cancelCurrentEdit(); } });
     setupDonorAutocomplete('donor-input', 'donor-autocomplete');
     setupDonorAutocomplete('quick-donor', 'quick-donor-autocomplete');
-    document.getElementById('quick-add-form').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('quick-add-btn').click(); } });
+    // Enter 키 처리 - 각 입력 필드에서 Enter 누르면 다음 필드로 이동 또는 추가
+    document.getElementById('quick-donor').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('quick-streamer').focus();
+        }
+    });
+    
+    document.getElementById('quick-streamer').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('quick-amount').focus();
+        }
+    });
+    
+    document.getElementById('quick-amount').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('quick-type').focus();
+        }
+    });
+    
+    document.getElementById('quick-type').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            quickAddDonation();
+        }
+    });
 }
 
 function showStatus(msg, type = 'info', duration = 3000) { const c = document.getElementById('status-container'); if (!c) return; c.innerHTML = `<div class="status status-${type}">${msg}</div>`; if (duration > 0) setTimeout(() => c.innerHTML = '', duration); }
