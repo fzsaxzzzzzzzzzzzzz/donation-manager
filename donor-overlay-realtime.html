@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>후원자별 총액 - 실시간 오버레이</title>
+<style>
+/* CSS variables for compatibility */
+:root {
+    --font-size: 16px;
+    --stroke-width: 2px;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    color: white;
+    overflow: hidden;
+}
+
+.overlay-container {
+    background: transparent;
+    max-width: 600px;
+    transition: all 0.3s ease-in-out;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.donor-content {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 
+        2px 2px 0 #000000,
+        -2px -2px 0 #000000,
+        2px -2px 0 #000000,
+        -2px 2px 0 #000000,
+        2px 0px 0 #000000,
+        -2px 0px 0 #000000,
+        0px 2px 0 #000000,
+        0px -2px 0 #000000,
+        1px 1px 0 #000000,
+        -1px -1px 0 #000000,
+        1px -1px 0 #000000,
+        -1px 1px 0 #000000;
+    line-height: 1.4;
+    white-space: pre-line;
+    transition: all 0.2s ease-in-out;
+}
+
+.no-data {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 
+        2px 2px 0 #000000,
+        -2px -2px 0 #000000,
+        2px -2px 0 #000000,
+        -2px 2px 0 #000000,
+        2px 0px 0 #000000,
+        -2px 0px 0 #000000,
+        0px 2px 0 #000000,
+        0px -2px 0 #000000,
+        1px 1px 0 #000000,
+        -1px -1px 0 #000000,
+        1px -1px 0 #000000,
+        -1px 1px 0 #000000;
+    text-align: center;
+    padding: 40px 20px;
+    transition: all 0.2s ease-in-out;
+}
+
+/* 크로마키 지원을 위한 투명 모드 */
+.transparent-mode {
+    background: #00FF00; /* 크로마키 그린 */
+}
+
+.transparent-mode .overlay-container {
+    background: rgba(0,0,0,0.9);
+    border: 2px solid rgba(255,255,255,0.8);
+}
+
+/* 연결 상태 표시 */
+.connection-status {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 9999;
+}
+
+.connected {
+    background: rgba(0, 255, 0, 0.8);
+    color: white;
+}
+
+.disconnected {
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+}
+
+.connecting {
+    background: rgba(255, 255, 0, 0.8);
+    color: black;
+}
+</style>
+</head>
+<body>
+
+<div class="connection-status connecting" id="connection-status">연결 중...</div>
+
+<div class="overlay-container" id="overlay-container">
+    <div class="donor-content" id="donor-content">
+        <div class="no-data">서버 연결 중...</div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+<script>
+// Socket.io 연결
+const socket = io();
+
+let donationData = [];
+let serverSettings = {};
+let isTransparentMode = false;
+let currentDonorText = '';
+
+// 연결 상태 관리
+const connectionStatus = document.getElementById('connection-status');
+
+socket.on('connect', () => {
+    console.log('서버에 연결됨');
+    connectionStatus.textContent = '🟢 연결됨';
+    connectionStatus.className = 'connection-status connected';
+    setTimeout(() => {
+        connectionStatus.style.display = 'none';
+    }, 3000);
+});
+
+socket.on('disconnect', () => {
+    console.log('서버 연결 끊어짐');
+    connectionStatus.textContent = '🔴 연결 끊어짐';
+    connectionStatus.className = 'connection-status disconnected';
+    connectionStatus.style.display = 'block';
+});
+
+socket.on('connect_error', () => {
+    console.log('서버 연결 실패');
+    connectionStatus.textContent = '⚠️ 연결 실패';
+    connectionStatus.className = 'connection-status disconnected';
+});
+
+// 실시간 데이터 수신
+socket.on('data-updated', (data) => {
+    console.log('데이터 업데이트 수신:', data);
+    donationData = data.donations || [];
+    serverSettings = data.settings || {};
+    updateDisplay();
+    applySettings();
+});
+
+socket.on('donation-added', (donation) => {
+    console.log('새 후원 추가:', donation);
+    // 데이터는 data-updated 이벤트로 갱신됨
+});
+
+socket.on('settings-updated', (settings) => {
+    console.log('설정 업데이트:', settings);
+    serverSettings = settings;
+    applySettings();
+});
+
+function updateDisplay() {
+    const donorContentEl = document.getElementById('donor-content');
+    
+    if (!donationData || donationData.length === 0) {
+        const noDataText = '📋 후원 내역이 없습니다<br>메인 페이지에서 후원을 등록하세요';
+        if (currentDonorText !== noDataText) {
+            donorContentEl.style.opacity = '0.8';
+            setTimeout(() => {
+                donorContentEl.innerHTML = `<div class="no-data">${noDataText}</div>`;
+                applySettings(); // Apply settings to newly created element
+                donorContentEl.style.opacity = '1';
+                currentDonorText = noDataText;
+            }, 50);
+        }
+        return;
+    }
+
+    // 후원자별 계좌 후원 총액 계산 (투네 제외)
+    const donorTotals = {};
+
+    donationData.forEach(d => {
+        if (d.type === '계좌') { // 계좌 후원만 계산
+            // 스트리머별 조정은 제외, 후원자별 조정은 포함
+            if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
+                return; // 스트리머별 조정 제외
+            }
+            
+            // 후원자명에서 (조정+금액) 부분 제거
+            let cleanDonorName = d.donor;
+            if (cleanDonorName.includes('(조정')) {
+                cleanDonorName = cleanDonorName.replace(/\\(조정[^)]*\\)/g, '');
+            }
+            
+            const amount = parseFloat(d.amount) || 0;
+            donorTotals[cleanDonorName] = (donorTotals[cleanDonorName] || 0) + amount;
+        }
+    });
+
+    // 그룹화 설정 (서버 설정 또는 기본값 2)
+    const groupThreshold = parseInt(serverSettings.groupThreshold) || 2;
+    const amountGroups = {};
+    
+    for (const donor in donorTotals) {
+        const amount = donorTotals[donor];
+        if (amount > 0) {
+            if (!amountGroups[amount]) { amountGroups[amount] = []; }
+            amountGroups[amount].push(donor);
+        }
+    }
+
+    // 정산요약과 동일한 형식으로 생성
+    const sortedGroups = Object.entries(amountGroups).sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
+    
+    if (sortedGroups.length === 0) {
+        const noAccountText = '💳 계좌 후원 내역이 없습니다';
+        if (currentDonorText !== noAccountText) {
+            donorContentEl.style.opacity = '0.8';
+            setTimeout(() => {
+                donorContentEl.innerHTML = `<div class="no-data">${noAccountText}</div>`;
+                applySettings(); // Apply settings to newly created element
+                donorContentEl.style.opacity = '1';
+                currentDonorText = noAccountText;
+            }, 50);
+        }
+        return;
+    }
+    
+    const donorText = "사랑해욘♡<br>" + sortedGroups.map(([amount, donors]) => {
+        const amountStr = `${formatAmount(parseFloat(amount))}만`;
+        if (donors.length >= groupThreshold && groupThreshold > 1) {
+            return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
+        } else {
+            return donors.map(d => `${d}님 ${amountStr}`).join('<br>');
+        }
+    }).join('<br>');
+
+    // 내용이 바뀔 때만 부드럽게 업데이트
+    if (currentDonorText !== donorText) {
+        // 부드러운 업데이트를 위한 페이드 효과
+        donorContentEl.style.opacity = '0.8';
+        
+        setTimeout(() => {
+            donorContentEl.innerHTML = `<div>${donorText}</div>`;
+            applySettings(); // Reapply settings after content change
+            donorContentEl.style.opacity = '1';
+            currentDonorText = donorText;
+        }, 50);
+    }
+}
+
+function formatAmount(num) {
+    const number = parseFloat(num);
+    if (isNaN(number)) return '0';
+    return parseFloat(number.toFixed(1)).toString();
+}
+
+function applySettings() {
+    const fontSize = serverSettings.overlayFontSize || '16';
+    const strokeWidth = serverSettings.overlayStrokeWidth || '2';
+    const textAlign = serverSettings.overlayTextAlign || 'left';
+    
+    // Apply font size directly to elements for OBS compatibility
+    const donorContent = document.querySelector('.donor-content');
+    const noData = document.querySelector('.no-data');
+    
+    // Apply settings to the container for all content
+    const overlayContainer = document.getElementById('overlay-container');
+    if (overlayContainer) {
+        overlayContainer.style.textAlign = textAlign;
+        
+        // 정렬에 따라 컨테이너 위치 조정
+        if (textAlign === 'right') {
+            overlayContainer.style.marginLeft = 'auto';
+            overlayContainer.style.marginRight = '0';
+        } else if (textAlign === 'center') {
+            overlayContainer.style.marginLeft = 'auto';
+            overlayContainer.style.marginRight = 'auto';
+        } else {
+            overlayContainer.style.marginLeft = '0';
+            overlayContainer.style.marginRight = 'auto';
+        }
+    }
+    
+    if (donorContent) {
+        donorContent.style.fontSize = fontSize + 'px';
+        updateTextShadow(donorContent, strokeWidth);
+    }
+    if (noData) {
+        noData.style.fontSize = fontSize + 'px';
+        updateTextShadow(noData, strokeWidth);
+    }
+}
+
+function updateTextShadow(element, strokeWidth) {
+    const sw = strokeWidth + 'px';
+    // 더 완전한 외곽선을 위한 12방향 그림자
+    const textShadow = `
+        ${sw} ${sw} 0 #000000,
+        -${sw} -${sw} 0 #000000,
+        ${sw} -${sw} 0 #000000,
+        -${sw} ${sw} 0 #000000,
+        ${sw} 0px 0 #000000,
+        -${sw} 0px 0 #000000,
+        0px ${sw} 0 #000000,
+        0px -${sw} 0 #000000,
+        ${Math.round(parseFloat(strokeWidth) * 0.7)}px ${Math.round(parseFloat(strokeWidth) * 0.7)}px 0 #000000,
+        -${Math.round(parseFloat(strokeWidth) * 0.7)}px -${Math.round(parseFloat(strokeWidth) * 0.7)}px 0 #000000,
+        ${Math.round(parseFloat(strokeWidth) * 0.7)}px -${Math.round(parseFloat(strokeWidth) * 0.7)}px 0 #000000,
+        -${Math.round(parseFloat(strokeWidth) * 0.7)}px ${Math.round(parseFloat(strokeWidth) * 0.7)}px 0 #000000`;
+    element.style.textShadow = textShadow;
+}
+
+function toggleTransparent() {
+    isTransparentMode = !isTransparentMode;
+    document.body.classList.toggle('transparent-mode', isTransparentMode);
+    
+    if (isTransparentMode) {
+        document.body.style.background = '#00FF00'; // 크로마키 그린
+    } else {
+        document.body.style.background = 'transparent';
+    }
+}
+
+// 키보드 단축키
+document.addEventListener('keydown', (e) => {
+    switch(e.key) {
+        case 'F5':
+        case 'r':
+        case 'R':
+            e.preventDefault();
+            // 서버에서 최신 데이터 요청
+            socket.emit('request-data');
+            break;
+        case 't':
+        case 'T':
+            toggleTransparent();
+            break;
+    }
+});
+
+// 초기화
+console.log('실시간 후원자 오버레이 시작됨');
+</script>
+</body>
+</html>
