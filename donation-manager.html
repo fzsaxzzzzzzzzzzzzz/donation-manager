@@ -1346,10 +1346,10 @@ function updateTable() {
     <tr data-index="${i}">
         <td><input type="checkbox" onchange="toggleRowSelection(${i}, this.checked)"></td>
         <td>${donations.length - i}</td>
-        <td data-field="donor" ondblclick="makeCellEditable(this, ${i})">${d.donor}</td>
-        <td data-field="streamer" ondblclick="makeCellEditable(this, ${i})">${emojis[d.streamer] || ''}${d.streamer}</td>
-        <td data-field="type" ondblclick="makeCellEditable(this, ${i})">${d.type}</td>
-        <td data-field="amount" ondblclick="makeCellEditable(this, ${i})">${formatAmount(d.amount)}</td>
+        <td data-field="donor" onclick="makeCellEditable(this, ${i})" style="cursor: pointer; padding: 8px;" title="클릭하여 수정">${d.donor}</td>
+        <td data-field="streamer" onclick="makeCellEditable(this, ${i})" style="cursor: pointer; padding: 8px;" title="클릭하여 수정">${emojis[d.streamer] || ''}${d.streamer}</td>
+        <td data-field="type" onclick="makeCellEditable(this, ${i})" style="cursor: pointer; padding: 8px;" title="클릭하여 수정">${d.type}</td>
+        <td data-field="amount" onclick="makeCellEditable(this, ${i})" style="cursor: pointer; padding: 8px;" title="클릭하여 수정">${formatAmount(d.amount)}</td>
         <td data-field="time">${d.time ? new Date(d.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</td>
     </tr>`).join('') || `<tr><td colspan="7">데이터 없음</td></tr>`;
 }
@@ -1468,9 +1468,43 @@ function updateSummary() {
 
 function updateStreamerInputs() {
     const container = document.getElementById('streamer-inputs');
-    if(container) container.innerHTML = (streamers || []).map((s) => {
-      return `<div><label>${emojis[s] || ''}${s}</label><input type="number" min="0" step="0.1" data-streamer="${s}" placeholder="0" class="form-input"></div>`;
+    if (!container) return;
+    
+    // 완전히 새로운 스트리머 입력 필드 생성
+    container.innerHTML = (streamers || []).map((s, index) => {
+        return `
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">
+                ${emojis[s] || ''}${s}
+            </label>
+            <input type="number" 
+                   id="streamer-input-${s.replace(/\s+/g, '-')}" 
+                   data-streamer="${s}" 
+                   placeholder="금액 입력" 
+                   min="0" 
+                   step="0.1"
+                   tabindex="${100 + index}"
+                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; cursor: text;"
+                   onfocus="this.style.borderColor='#007bff'; this.style.boxShadow='0 0 5px rgba(0,123,255,0.3)'"
+                   onblur="this.style.borderColor='#17a2b8'; this.style.boxShadow='none'"
+                   onkeypress="if(event.key==='Enter') focusNextStreamerInput(this)">
+        </div>`;
     }).join('');
+}
+
+// 다음 스트리머 입력 필드로 포커스 이동
+function focusNextStreamerInput(currentInput) {
+    const allInputs = document.querySelectorAll('#streamer-inputs input[type="number"]');
+    const currentIndex = Array.from(allInputs).indexOf(currentInput);
+    
+    if (currentIndex >= 0 && currentIndex < allInputs.length - 1) {
+        // 다음 입력 필드로 이동
+        allInputs[currentIndex + 1].focus();
+    } else {
+        // 마지막 입력 필드에서 Enter 누르면 등록 버튼으로 이동
+        const addBtn = document.getElementById('add-btn');
+        if (addBtn) addBtn.focus();
+    }
 }
 
 function updateStreamerList() {
@@ -1859,6 +1893,11 @@ function makeCellEditable(cell, index) {
     
     const field = cell.dataset.field;
     const donation = donations[index];
+    if (!donation) {
+        console.error('후원 데이터를 찾을 수 없습니다:', index);
+        return;
+    }
+    
     const originalValue = donation[field];
     currentlyEditing = { cell, index, field, originalContent: cell.innerHTML };
     
