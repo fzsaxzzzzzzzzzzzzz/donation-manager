@@ -987,19 +987,27 @@ async function loadData(isSilent = false) {
 }
 
 function addDonation() {
+    console.log('addDonation 함수 시작');
+    
     const donor = document.getElementById('donor-input').value.trim();
+    console.log('후원자명:', donor);
     if (!donor) return showStatus('후원자명을 입력하세요', 'error');
     
     // type="text"로 바뀐 입력 필드들을 data-streamer 속성으로 찾기
     const inputs = document.querySelectorAll('#streamer-inputs input[data-streamer]');
+    console.log('찾은 입력 필드 수:', inputs.length);
+    
     const newDons = [];
     
-    inputs.forEach(input => {
+    inputs.forEach((input, index) => {
         const value = input.value.trim();
         const amount = parseFloat(value);
+        const streamerName = input.dataset.streamer;
+        console.log(`${index}: ${streamerName} = "${value}" (${amount})`);
+        
         if (!isNaN(amount) && amount > 0) {
-            const streamerName = input.dataset.streamer;
             const paytype = document.querySelector('input[name="paytype"]:checked').value;
+            console.log('후원 타입:', paytype);
             newDons.push({ 
                 donor, 
                 streamer: streamerName, 
@@ -1009,6 +1017,9 @@ function addDonation() {
             });
         }
     });
+    
+    console.log('생성된 후원 수:', newDons.length);
+    console.log('후원 데이터:', newDons);
     
     if (newDons.length > 0) {
         document.getElementById('donor-input').value = '';
