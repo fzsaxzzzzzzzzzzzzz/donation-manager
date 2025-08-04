@@ -540,7 +540,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <span id="chatbot-permission-status" style="font-size: 12px; color: #666; margin-left: 10px;"></span>
 </div>
 <div id="quick-add-form" style="display: flex; gap: 5px; margin-bottom: 15px; align-items: center;">
-<div class="autocomplete-container"><input type="text" id="quick-donor" placeholder="후원자" class="form-input" autocomplete="off" onkeypress="if(event.key==='Enter') quickAddDonation()"><div id="quick-donor-autocomplete" class="donor-autocomplete"></div></div>
+<div class="autocomplete-container"><input type="text" id="quick-donor" placeholder="후원자" class="form-input" autocomplete="off" tabindex="1" onkeypress="if(event.key==='Enter') quickAddDonation()"><div id="quick-donor-autocomplete" class="donor-autocomplete"></div></div>
 <select id="quick-streamer" class="form-select" style="flex: 2;" tabindex="2">
 <option value="엄삼용" selected>🫅엄삼용</option>
 <option value="손덕배">🌺손덕배</option>
@@ -553,9 +553,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <option value="옥긔">🦆옥긔</option>
 <option value="국고">🏦국고</option>
 </select>
-<input type="number" id="quick-amount" placeholder="금액(만)" class="form-input" style="flex: 1;" step="0.1" onkeypress="if(event.key==='Enter') quickAddDonation()">
-<select id="quick-type" class="form-select" style="flex: 1;"><option value="계좌">계좌</option><option value="투네">투네</option><option value="슈퍼챗">슈퍼챗</option></select>
-<button onclick="quickAddDonation()" id="quick-add-btn" class="btn btn-primary">추가</button>
+<input type="number" id="quick-amount" placeholder="금액(만)" class="form-input" style="flex: 1;" step="0.1" tabindex="3" onkeypress="if(event.key==='Enter') quickAddDonation()">
+<select id="quick-type" class="form-select" style="flex: 1;" tabindex="4"><option value="계좌">계좌</option><option value="투네">투네</option><option value="슈퍼챗">슈퍼챗</option></select>
+<button onclick="quickAddDonation()" id="quick-add-btn" class="btn btn-primary" tabindex="5">추가</button>
 </div>
 <div id="status-container"></div>
 <div class="table-container" style="max-height: calc(100vh - 280px); overflow-y: auto;">
