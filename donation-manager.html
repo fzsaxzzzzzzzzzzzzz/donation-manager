@@ -1584,29 +1584,10 @@ function updateSummary() {
 }
 
 function updateStreamerInputs() {
-    const container = document.getElementById('streamer-inputs');
-    if (!container) return;
-    
-    // 완전히 새로운 스트리머 입력 필드 생성
-    container.innerHTML = (streamers || []).map((s, index) => {
-        return `
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">
-                ${emojis[s] || ''}${s}
-            </label>
-            <input type="number" 
-                   id="streamer-input-${s.replace(/\s+/g, '-')}" 
-                   data-streamer="${s}" 
-                   placeholder="금액 입력" 
-                   min="0" 
-                   step="0.1"
-                   tabindex="${100 + index}"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; cursor: text;"
-                   onfocus="this.style.borderColor='#007bff'; this.style.boxShadow='0 0 5px rgba(0,123,255,0.3)'"
-                   onblur="this.style.borderColor='#17a2b8'; this.style.boxShadow='none'"
-                   onkeypress="if(event.key==='Enter') focusNextStreamerInput(this)">
-        </div>`;
-    }).join('');
+    // 일괄 등록의 스트리머 입력 필드는 이제 정적 HTML이므로 업데이트하지 않음
+    // 이 함수는 다른 기능에서 호출될 수 있으므로 빈 함수로 유지
+    console.log('updateStreamerInputs 호출됨 - 정적 HTML 사용으로 인해 무시됨');
+    return;
 }
 
 // 다음 스트리머 입력 필드로 포커스 이동
