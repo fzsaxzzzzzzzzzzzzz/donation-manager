@@ -180,67 +180,98 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 
 <div class="form-group">
     <label class="form-label">스트리머별 금액(만)</label>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;" id="streamer-inputs">
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🫅엄삼용</label>
-            <input type="number" data-streamer="엄삼용" placeholder="금액 입력" min="0" step="0.1" 
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">🫅엄삼용</label>
+            <input type="text" inputmode="numeric" data-streamer="엄삼용" placeholder="0" 
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🌺손덕배</label>
-            <input type="number" data-streamer="손덕배" placeholder="금액 입력" min="0" step="0.1"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">🌺손덕배</label>
+            <input type="text" inputmode="numeric" data-streamer="손덕배" placeholder="0"
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🐧연기</label>
-            <input type="number" data-streamer="연기" placeholder="금액 입력" min="0" step="0.1"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">🐧연기</label>
+            <input type="text" inputmode="numeric" data-streamer="연기" placeholder="0"
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">👺주옥</label>
-            <input type="number" data-streamer="주옥" placeholder="금액 입력" min="0" step="0.1"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">👺주옥</label>
+            <input type="text" inputmode="numeric" data-streamer="주옥" placeholder="0"
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🎬불곰</label>
-            <input type="number" data-streamer="불곰" placeholder="금액 입력" min="0" step="0.1"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">🎬불곰</label>
+            <input type="text" inputmode="numeric" data-streamer="불곰" placeholder="0"
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🏝이효팔</label>
-            <input type="number" data-streamer="이효팔" placeholder="금액 입력" min="0" step="0.1"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">🏝이효팔</label>
+            <input type="text" inputmode="numeric" data-streamer="이효팔" placeholder="0"
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">😎동동</label>
-            <input type="number" data-streamer="동동" placeholder="금액 입력" min="0" step="0.1"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">😎동동</label>
+            <input type="text" inputmode="numeric" data-streamer="동동" placeholder="0"
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🤠남붕</label>
-            <input type="number" data-streamer="남붕" placeholder="금액 입력" min="0" step="0.1"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">🤠남붕</label>
+            <input type="text" inputmode="numeric" data-streamer="남붕" placeholder="0"
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🦆옥긔</label>
-            <input type="number" data-streamer="옥긔" placeholder="금액 입력" min="0" step="0.1"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">🦆옥긔</label>
+            <input type="text" inputmode="numeric" data-streamer="옥긔" placeholder="0"
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
-        <div>
-            <label style="display: block; margin-bottom: 6px; font-weight: bold; color: #17a2b8; font-size: 14px;">🏦국고</label>
-            <input type="number" data-streamer="국고" placeholder="금액 입력" min="0" step="0.1"
-                   style="width: 100%; padding: 10px; border: 2px solid #17a2b8; border-radius: 6px; font-size: 14px; background: white;"
-                   onfocus="this.style.borderColor='#007bff';" onblur="this.style.borderColor='#17a2b8';">
+        
+        <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #17a2b8; font-size: 13px;">🏦국고</label>
+            <input type="text" inputmode="numeric" data-streamer="국고" placeholder="0"
+                   style="width: 100%; height: 35px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;"
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                   onfocus="this.style.borderColor='#007bff'; this.style.outline='none';" 
+                   onblur="this.style.borderColor='#ccc';">
         </div>
+        
     </div>
 </div>
 
