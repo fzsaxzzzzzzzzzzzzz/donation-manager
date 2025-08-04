@@ -93,13 +93,97 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 <div id="main-content">
 <div class="tab-content active" id="donation-tab">
+<!-- 빠른 후원 등록 섹션 -->
+<div style="margin-bottom: 30px; padding: 20px; border: 3px solid #28a745; border-radius: 12px; background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);">
+<h3 style="margin: 0 0 20px 0; color: #28a745; text-align: center; font-size: 20px;">⚡ 빠른 후원 등록</h3>
+<div style="display: grid; grid-template-columns: 2fr 2fr 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 15px;">
+    <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #28a745;">후원자명</label>
+        <div class="autocomplete-container" style="position: relative;">
+            <input type="text" id="admin-donor" placeholder="후원자명 입력" 
+                   style="width: 100%; padding: 12px; border: 2px solid #28a745; border-radius: 8px; font-size: 16px;" 
+                   autocomplete="off" tabindex="1">
+            <div id="admin-donor-autocomplete" class="donor-autocomplete"></div>
+        </div>
+    </div>
+    
+    <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #28a745;">스트리머</label>
+        <select id="admin-streamer" style="width: 100%; padding: 12px; border: 2px solid #28a745; border-radius: 8px; font-size: 16px; cursor: pointer;" tabindex="2">
+            <option value="엄삼용" selected>🫅 엄삼용</option>
+            <option value="손덕배">🌺 손덕배</option>
+            <option value="연기">🐧 연기</option>
+            <option value="주옥">👺 주옥</option>
+            <option value="불곰">🎬 불곰</option>
+            <option value="이효팔">🏝 이효팔</option>
+            <option value="동동">😎 동동</option>
+            <option value="남붕">🤠 남붕</option>
+            <option value="옥긔">🦆 옥긔</option>
+            <option value="국고">🏦 국고</option>
+        </select>
+    </div>
+    
+    <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #28a745;">금액(만)</label>
+        <input type="number" id="admin-amount" placeholder="0" 
+               style="width: 100%; padding: 12px; border: 2px solid #28a745; border-radius: 8px; font-size: 16px;" 
+               step="0.1" min="0" tabindex="3">
+    </div>
+    
+    <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #28a745;">타입</label>
+        <select id="admin-type" style="width: 100%; padding: 12px; border: 2px solid #28a745; border-radius: 8px; font-size: 16px; cursor: pointer;" tabindex="4">
+            <option value="계좌">💳 계좌</option>
+            <option value="투네">🎯 투네</option>
+            <option value="슈퍼챗">💬 슈퍼챗</option>
+        </select>
+    </div>
+    
+    <div>
+        <button onclick="adminQuickAdd()" id="admin-add-btn" 
+                style="padding: 12px 20px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; white-space: nowrap;" 
+                tabindex="5">🚀 등록</button>
+    </div>
+</div>
+
+<div style="text-align: center; margin-top: 15px;">
+    <div style="font-size: 14px; color: #666; margin-bottom: 10px;">💡 Enter 키로 빠른 등록: 후원자 → 스트리머 → 금액 → 타입 → 등록</div>
+    <div id="admin-status" style="min-height: 20px; font-weight: bold;"></div>
+</div>
+</div>
+
+<!-- 일괄 후원 등록 섹션 -->
+<div style="margin-bottom: 20px; padding: 20px; border: 2px solid #17a2b8; border-radius: 12px; background: #f0f9ff;">
+<h3 style="margin: 0 0 15px 0; color: #17a2b8; text-align: center;">📊 일괄 후원 등록</h3>
+
 <div id="password-section" style="display: none; margin-bottom:15px;">
 <div style="display: flex; gap: 5px;"><input type="password" id="password-input" placeholder="4자리 비밀번호" maxlength="4" class="form-input"><button onclick="verifyPassword()" class="btn btn-primary">확인</button></div>
 </div>
-<div class="form-group"><label class="form-label">후원자명</label><div class="autocomplete-container" style="flex:auto;"><input type="text" id="donor-input" class="form-input" autocomplete="off"><div id="donor-autocomplete" class="donor-autocomplete"></div></div></div>
-<div class="form-group"><label class="form-label">후원 타입</label><div style="display: flex; gap: 15px;"><label><input type="radio" name="paytype" value="계좌" checked> 계좌</label><label><input type="radio" name="paytype" value="투네"> 투네</label><label><input type="radio" name="paytype" value="슈퍼챗"> 슈퍼챗</label></div></div>
-<div class="form-group"><label class="form-label">스트리머별 금액(만)</label><div class="streamer-grid" id="streamer-inputs"></div></div>
-<button onclick="addDonation()" class="btn btn-primary" id="add-btn" style="width:100%;">✨ 등록</button>
+
+<div class="form-group">
+    <label class="form-label">후원자명</label>
+    <div class="autocomplete-container" style="flex:auto;">
+        <input type="text" id="donor-input" class="form-input" autocomplete="off">
+        <div id="donor-autocomplete" class="donor-autocomplete"></div>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="form-label">후원 타입</label>
+    <div style="display: flex; gap: 15px;">
+        <label><input type="radio" name="paytype" value="계좌" checked> 💳 계좌</label>
+        <label><input type="radio" name="paytype" value="투네"> 🎯 투네</label>
+        <label><input type="radio" name="paytype" value="슈퍼챗"> 💬 슈퍼챗</label>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="form-label">스트리머별 금액(만)</label>
+    <div class="streamer-grid" id="streamer-inputs"></div>
+</div>
+
+<button onclick="addDonation()" class="btn btn-primary" id="add-btn" style="width:100%; padding: 12px; font-size: 16px;">✨ 일괄 등록</button>
+</div>
 </div>
 <div class="tab-content" id="streamer-tab">
 <div style="display: flex; gap: 10px; margin-bottom: 15px;"><input type="text" id="new-streamer-name" placeholder="이름" class="form-input"><input type="text" id="new-streamer-emoji" placeholder="이모지" class="form-input" style="flex: 0 0 80px;"><button onclick="addStreamer()" class="btn btn-success" id="add-streamer-btn">추가</button></div>
@@ -982,6 +1066,68 @@ function getDefaultStreamer() {
     return visibleStreamers[0];
 }
 
+// 관리자 빠른 등록 함수
+function adminQuickAdd() {
+    const d = document.getElementById('admin-donor');
+    const s = document.getElementById('admin-streamer');
+    const a = document.getElementById('admin-amount');
+    const t = document.getElementById('admin-type');
+    const statusEl = document.getElementById('admin-status');
+    
+    const donor = d.value.trim();
+    const streamer = s.value;
+    const amount = parseFloat(a.value);
+    
+    // 입력값 검증
+    if (!donor) {
+        statusEl.innerHTML = '<span style="color: #dc3545;">❌ 후원자명을 입력하세요</span>';
+        d.focus();
+        return;
+    }
+    if (!streamer || streamer === '') {
+        statusEl.innerHTML = '<span style="color: #dc3545;">❌ 스트리머를 선택하세요</span>';
+        s.focus();
+        return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+        statusEl.innerHTML = '<span style="color: #dc3545;">❌ 금액을 올바르게 입력하세요</span>';
+        a.focus();
+        return;
+    }
+    
+    // 즉시 UI 피드백
+    const btn = document.getElementById('admin-add-btn');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
+    statusEl.innerHTML = '<span style="color: #ffc107;">⏳ 등록 처리 중...</span>';
+    
+    // 비동기로 처리
+    setTimeout(() => {
+        try {
+            console.log('관리자 후원 등록:', { donor, streamer, amount, type: t.value });
+            
+            handleNewDonationsFast([{ donor, streamer, type: t.value, amount, time: new Date() }]);
+            
+            // 폼 리셋
+            a.value = '';
+            d.focus();
+            d.select();
+            
+            statusEl.innerHTML = `<span style="color: #28a745;">✅ ${donor}님 → ${streamer} ${amount}만원 등록완료!</span>`;
+            
+            // 3초 후 상태 메시지 초기화
+            setTimeout(() => {
+                statusEl.innerHTML = '';
+            }, 3000);
+            
+        } finally {
+            // 버튼 상태 복원
+            btn.disabled = false;
+            btn.textContent = '🚀 등록';
+        }
+    }, 0);
+}
+
 function quickAddDonation() {
     const d = document.getElementById('quick-donor'), s = document.getElementById('quick-streamer'), a = document.getElementById('quick-amount'), t = document.getElementById('quick-type');
     const donor = d.value.trim();
@@ -1641,7 +1787,9 @@ function initEventListeners() {
     document.addEventListener('click', (e) => { if (!e.target.closest('.autocomplete-container')) { document.querySelectorAll('.donor-autocomplete').forEach(list => list.style.display = 'none'); } if (currentlyEditing && !currentlyEditing.cell.contains(e.target)) { cancelCurrentEdit(); } });
     setupDonorAutocomplete('donor-input', 'donor-autocomplete');
     setupDonorAutocomplete('quick-donor', 'quick-donor-autocomplete');
-    // Enter 키 처리 - 각 입력 필드에서 Enter 누르면 다음 필드로 이동 또는 추가
+    setupDonorAutocomplete('admin-donor', 'admin-donor-autocomplete');
+    
+    // 기존 빠른 등록 Enter 키 처리
     document.getElementById('quick-donor').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -1667,6 +1815,35 @@ function initEventListeners() {
         if (e.key === 'Enter') {
             e.preventDefault();
             quickAddDonation();
+        }
+    });
+    
+    // 관리자 빠른 등록 Enter 키 처리
+    document.getElementById('admin-donor').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('admin-streamer').focus();
+        }
+    });
+    
+    document.getElementById('admin-streamer').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('admin-amount').focus();
+        }
+    });
+    
+    document.getElementById('admin-amount').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('admin-type').focus();
+        }
+    });
+    
+    document.getElementById('admin-type').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            adminQuickAdd();
         }
     });
 }
