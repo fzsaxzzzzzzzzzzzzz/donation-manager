@@ -9,8 +9,9 @@
 body { 
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
     background: transparent; 
-    color: white;
+    color: var(--table-text-color, white);
     overflow: hidden;
+    font-size: var(--table-font-size, 14px);
 }
 
 .overlay-container {
@@ -73,7 +74,7 @@ body {
     text-align: center;
     font-weight: bold;
     border-bottom: 2px solid #FFD700;
-    font-size: 14px;
+    font-size: var(--table-font-size, 14px);
     white-space: nowrap;
 }
 
@@ -81,7 +82,8 @@ body {
     padding: 10px 8px;
     text-align: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 14px;
+    font-size: var(--table-font-size, 14px);
+    color: var(--table-text-color, white);
     transition: all 0.2s ease;
     white-space: nowrap;
 }
@@ -98,6 +100,7 @@ body {
 .rank-cell {
     font-weight: bold;
     color: #FFD700;
+    font-size: var(--table-font-size, 14px);
     width: 8%;
     min-width: 50px;
     white-space: nowrap;
@@ -111,10 +114,13 @@ body {
     text-align: left;
     width: 30%;
     min-width: 120px;
+    color: var(--table-text-color, white);
+    font-size: var(--table-font-size, 14px);
 }
 
 .account-cell {
     color: #4CAF50;
+    font-size: var(--table-font-size, 14px);
     font-weight: 500;
     width: 20%;
     min-width: 90px;
@@ -123,6 +129,7 @@ body {
 
 .toonation-cell {
     color: #2196F3;
+    font-size: var(--table-font-size, 14px);
     font-weight: 500;
     width: 20%;
     min-width: 90px;
@@ -131,33 +138,23 @@ body {
 
 .total-cell {
     color: #FF6B6B;
+    font-size: var(--table-font-size, 14px);
     font-weight: bold;
     width: 22%;
     min-width: 100px;
     font-family: 'Consolas', 'Monaco', monospace;
 }
 
-/* 순위별 특별 스타일링 */
-.streamer-table tbody tr:first-child .rank-cell {
-    background: linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,215,0,0.1));
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(255,215,0,0.5);
-    border-radius: 4px;
+/* 숫자 크기 설정을 위한 클래스 */
+.number-data {
+    font-size: var(--table-number-size, 16px);
 }
 
-.streamer-table tbody tr:nth-child(2) .rank-cell {
-    background: linear-gradient(135deg, rgba(192,192,192,0.3), rgba(192,192,192,0.1));
-    color: #c0c0c0;
-    text-shadow: 0 0 10px rgba(192,192,192,0.5);
-    border-radius: 4px;
+.total-summary {
+    font-size: var(--table-number-size, 16px);
 }
 
-.streamer-table tbody tr:nth-child(3) .rank-cell {
-    background: linear-gradient(135deg, rgba(205,127,50,0.3), rgba(205,127,50,0.1));
-    color: #cd7f32;
-    text-shadow: 0 0 10px rgba(205,127,50,0.5);
-    border-radius: 4px;
-}
+/* 순위별 특별 스타일링 제거됨 */
 
 .total-row td {
     background: rgba(255, 215, 0, 0.1) !important;
@@ -169,14 +166,14 @@ body {
 
 .no-data {
     text-align: center;
-    color: #888;
-    font-size: 16px;
+    color: var(--table-text-color, #888);
+    font-size: var(--table-font-size, 16px);
     padding: 40px 20px;
 }
 
 .info-text {
-    font-size: 11px;
-    color: rgba(255,255,255,0.7);
+    font-size: calc(var(--table-font-size, 14px) * 0.8);
+    color: var(--table-text-color, rgba(255,255,255,0.7));
     margin-bottom: 10px;
     text-shadow: 1px 1px 0 #000000;
     text-align: center;
@@ -428,9 +425,9 @@ function updateTable() {
         row.innerHTML = `
             <td class="rank-cell">${rankName}</td>
             <td class="name-cell">${emojis[data.name] || ''} ${data.name}</td>
-            <td class="account-cell">${data.account.toLocaleString('ko-KR')}</td>
-            <td class="toonation-cell">${data.toonation.toLocaleString('ko-KR')}</td>
-            <td class="total-cell">${data.total.toLocaleString('ko-KR')}</td>
+            <td class="account-cell number-data">${data.account.toLocaleString('ko-KR')}</td>
+            <td class="toonation-cell number-data">${data.toonation.toLocaleString('ko-KR')}</td>
+            <td class="total-cell number-data">${data.total.toLocaleString('ko-KR')}</td>
         `;
         
         fragment.appendChild(row);
@@ -446,9 +443,9 @@ function updateTable() {
         totalRow.className = 'total-row';
         totalRow.innerHTML = `
             <td colspan="2"><strong>🏆 총 합계</strong></td>
-            <td class="account-cell"><strong>${totalAccount.toLocaleString('ko-KR')}</strong></td>
-            <td class="toonation-cell"><strong>${totalToonation.toLocaleString('ko-KR')}</strong></td>
-            <td class="total-cell"><strong>${grandTotal.toLocaleString('ko-KR')}</strong></td>
+            <td class="account-cell number-data"><strong>${totalAccount.toLocaleString('ko-KR')}</strong></td>
+            <td class="toonation-cell number-data"><strong>${totalToonation.toLocaleString('ko-KR')}</strong></td>
+            <td class="total-cell number-data"><strong>${grandTotal.toLocaleString('ko-KR')}</strong></td>
         `;
         fragment.appendChild(totalRow);
         
@@ -468,6 +465,7 @@ function updateTable() {
     // 한 번에 DOM 업데이트
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
+    
 }
 
 // 테이블 오버레이 설정 적용
@@ -502,7 +500,21 @@ function applyTableSettings() {
     
     overlayContainer.style.background = backgroundColor;
     overlayContainer.style.opacity = opacity;
+    
+    // 숫자 크기 설정 적용
+    const savedNumberSize = localStorage.getItem('table-number-size') || '16';
+    document.documentElement.style.setProperty('--table-number-size', savedNumberSize + 'px');
+    
+    // 전체 글자 크기 설정 적용
+    const savedFontSize = localStorage.getItem('table-font-size') || '14';
+    document.documentElement.style.setProperty('--table-font-size', savedFontSize + 'px');
+    
+    // 글자 색상 설정 적용
+    const savedTextColor = localStorage.getItem('table-text-color') || 'white';
+    document.documentElement.style.setProperty('--table-text-color', savedTextColor);
+    
 }
+
 
 function toggleTransparent() {
     isTransparentMode = !isTransparentMode;
