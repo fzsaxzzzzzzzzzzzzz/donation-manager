@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OBS 테스트</title>
+<style>
+body {
+    margin: 0;
+    padding: 20px;
+    background: transparent;
+    font-family: Arial, sans-serif;
+    color: white;
+    font-size: 24px;
+}
+
+.test-box {
+    background: rgba(255, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.test-text {
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+#time {
+    background: rgba(0, 255, 0, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+</style>
+</head>
+<body>
+
+<div class="test-box">
+    <div class="test-text">OBS 테스트 - 이 글이 보이면 성공!</div>
+</div>
+
+<div id="time" class="test-text">로딩 중...</div>
+
+<div class="test-box">
+    <div class="test-text">3초마다 시간이 업데이트됩니다</div>
+</div>
+
+<script>
+console.log('OBS Test page loaded');
+
+function updateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('ko-KR');
+    document.getElementById('time').textContent = `현재 시간: ${timeString}`;
+    console.log('Time updated:', timeString);
+}
+
+// 즉시 실행
+updateTime();
+
+// 3초마다 업데이트
+setInterval(updateTime, 3000);
+
+// 페이지 로드 완료 시 콘솔 메시지
+window.addEventListener('load', () => {
+    console.log('OBS Test page fully loaded');
+});
+</script>
+
+</body>
+</html>

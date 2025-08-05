@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>후원자별 총액 - 방송용 오버레이</title>
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    color: white;
+    overflow: hidden;
+}
+
+.overlay-container {
+    background: transparent;
+    max-width: none;
+    width: 100%;
+    transition: all 0.3s ease-in-out;
+}
+
+.donor-content {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 
+        2px 2px 0 #000000,
+        -2px -2px 0 #000000,
+        2px -2px 0 #000000,
+        -2px 2px 0 #000000,
+        2px 0px 0 #000000,
+        -2px 0px 0 #000000,
+        0px 2px 0 #000000,
+        0px -2px 0 #000000;
+    line-height: 1.4;
+    white-space: pre-line;
+    padding: 0;
+    transition: all 0.2s ease-in-out;
+}
+
+.no-data {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 
+        2px 2px 0 #000000,
+        -2px -2px 0 #000000,
+        2px -2px 0 #000000,
+        -2px 2px 0 #000000,
+        2px 0px 0 #000000,
+        -2px 0px 0 #000000,
+        0px 2px 0 #000000,
+        0px -2px 0 #000000;
+    text-align: center;
+    padding: 20px 0;
+    transition: all 0.2s ease-in-out;
+}
+
+/* 크로마키 지원을 위한 투명 모드 */
+.transparent-mode {
+    background: #00FF00;
+}
+
+.transparent-mode .overlay-container {
+    background: rgba(0,0,0,0.9);
+    border: 2px solid rgba(255,255,255,0.8);
+}
+</style>
+</head>
+<body>
+
+<div class="overlay-container" id="overlay-container">
+    <div class="donor-content" id="donor-content">
+        <div class="no-data">데이터를 불러오는 중...</div>
+    </div>
+</div>
+
+<script>
+let donations = [];
+let isTransparentMode = false;
+let currentDonorText = '';
+
+// 정산요약과 동일한 금액 포맷팅
+function formatAmount(num) {
+    const number = parseFloat(num);
+    if (isNaN(number)) return '0';
+    return parseFloat(number.toFixed(1)).toString();
+}
+
+// 메인 후원 관리 페이지에서 데이터 가져오기
+function loadDonationData() {
+    try {
+        const savedDonations = localStorage.getItem('donation_data');
+        
+        if (savedDonations) {
+            donations = JSON.parse(savedDonations).map(d => ({
+                ...d,
+                time: new Date(d.time),
+                amount: parseFloat(d.amount) || 0
+            }));
+        } else {
+            donations = [];
+        }
+
+        updateDisplay();
+    } catch (error) {
+        console.error('데이터 로드 실패:', error);
+        document.getElementById('donor-content').innerHTML = 
+            '<div class="no-data" style="white-space: pre-line;">❌ 데이터 로드 실패\n메인 페이지에서 후원 데이터를 먼저 등록하세요</div>';
+        applySettings();
+    }
+}
+
+// 정산요약과 동일한 후원자별 총액 계산 로직 (실시간 설정 반영)
+function updateDisplay() {
+    const donorContentEl = document.getElementById('donor-content');
+    
+    if (!donations || donations.length === 0) {
+        const noDataText = '📋 후원 내역이 없습니다\n메인 페이지에서 후원을 등록하세요';
+        if (currentDonorText !== noDataText) {
+            donorContentEl.style.opacity = '0.8';
+            setTimeout(() => {
+                donorContentEl.innerHTML = `<div class="no-data" style="white-space: pre-line;">${noDataText}</div>`;
+                applySettings();
+                donorContentEl.style.opacity = '1';
+                currentDonorText = noDataText;
+            }, 50);
+        }
+        return;
+    }
+
+    // 후원자별 계좌 후원 총액 계산 (정산요약과 동일)
+    let donorAccountTotals = {};
+
+    donations.forEach(d => {
+        if (d.type === '계좌') {
+            // 스트리머별 조정은 제외, 후원자별 조정은 포함
+            if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
+                return;
+            }
+            
+            // 후원자명에서 (조정+금액) 부분 제거
+            let cleanDonorName = d.donor;
+            if (cleanDonorName.includes('(조정')) {
+                cleanDonorName = cleanDonorName.replace(/\(조정[^)]*\)/g, '');
+            }
+            
+            const amount = parseFloat(d.amount) || 0;
+            donorAccountTotals[cleanDonorName] = (donorAccountTotals[cleanDonorName] || 0) + amount;
+        }
+    });
+
+    // 그룹화 임계값 실시간 로드 (정산요약과 동일)
+    const groupThreshold = parseInt(localStorage.getItem('group-threshold') || '1', 10);
+    const amountGroups = {};
+    
+    for (const donor in donorAccountTotals) {
+        const amount = donorAccountTotals[donor];
+        if (amount > 0) {
+            if (!amountGroups[amount]) { amountGroups[amount] = []; }
+            amountGroups[amount].push(donor);
+        }
+    }
+
+    const sortedGroups = Object.entries(amountGroups).sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
+    
+    if (sortedGroups.length === 0) {
+        const noAccountText = '💳 계좌 후원 내역이 없습니다';
+        if (currentDonorText !== noAccountText) {
+            donorContentEl.style.opacity = '0.8';
+            setTimeout(() => {
+                donorContentEl.innerHTML = `<div class="no-data" style="white-space: pre-line;">${noAccountText}</div>`;
+                applySettings();
+                donorContentEl.style.opacity = '1';
+                currentDonorText = noAccountText;
+            }, 50);
+        }
+        return;
+    }
+    
+    // 정산요약과 동일한 형식으로 텍스트 생성 (실시간 그룹화 적용)
+    const donorText = "사랑해요♡\n" + sortedGroups.map(([amount, donors]) => {
+        const amountStr = `${formatAmount(parseFloat(amount))}만`;
+        if (donors.length >= groupThreshold && groupThreshold > 1) {
+            return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
+        } else {
+            return donors.map(d => `${d}님 ${amountStr}`).join('\n');
+        }
+    }).join('\n');
+
+    // 내용이 바뀔 때만 부드럽게 업데이트
+    if (currentDonorText !== donorText) {
+        donorContentEl.style.opacity = '0.8';
+        setTimeout(() => {
+            donorContentEl.innerHTML = `<div style="white-space: pre-line;">${donorText}</div>`;
+            applySettings();
+            donorContentEl.style.opacity = '1';
+            currentDonorText = donorText;
+        }, 50);
+    }
+}
+
+// 오버레이 설정 적용
+function applySettings() {
+    const savedFontSize = localStorage.getItem('overlay-font-size') || '16';
+    const savedStrokeWidth = localStorage.getItem('overlay-stroke-width') || '2';
+    const savedTextAlign = localStorage.getItem('overlay-text-align') || 'left';
+    
+    const overlayContainer = document.getElementById('overlay-container');
+    const allTextElements = document.querySelectorAll('.donor-content, .no-data');
+    
+    if (overlayContainer) {
+        overlayContainer.style.textAlign = savedTextAlign;
+    }
+    
+    allTextElements.forEach(element => {
+        element.style.fontSize = savedFontSize + 'px';
+        updateTextShadow(element, savedStrokeWidth);
+    });
+}
+
+function updateTextShadow(element, strokeWidth) {
+    const sw = parseFloat(strokeWidth);
+    
+    if (sw === 0) {
+        element.style.textShadow = 'none';
+        return;
+    }
+    
+    // 더 부드러운 외각선을 위해 다중 그림자 사용
+    let shadows = [];
+    
+    // 메인 외각선 (8방향)
+    for (let i = 0; i < 8; i++) {
+        const angle = (i * Math.PI) / 4;
+        const x = Math.cos(angle) * sw;
+        const y = Math.sin(angle) * sw;
+        shadows.push(`${x.toFixed(2)}px ${y.toFixed(2)}px 0 #000000`);
+    }
+    
+    // 부드러움을 위한 추가 중간 그림자 (큰 외각선일 때)
+    if (sw > 3) {
+        for (let i = 0; i < 8; i++) {
+            const angle = (i * Math.PI) / 4 + Math.PI / 8; // 중간각도
+            const x = Math.cos(angle) * sw * 0.7;
+            const y = Math.sin(angle) * sw * 0.7;
+            shadows.push(`${x.toFixed(2)}px ${y.toFixed(2)}px 0 #000000`);
+        }
+    }
+    
+    // 블러 효과 추가 (더 부드러운 느낌)
+    if (sw > 1) {
+        shadows.push(`0 0 ${(sw * 0.5).toFixed(1)}px rgba(0,0,0,0.8)`);
+    }
+    
+    element.style.textShadow = shadows.join(', ');
+}
+
+function toggleTransparent() {
+    isTransparentMode = !isTransparentMode;
+    document.body.classList.toggle('transparent-mode', isTransparentMode);
+    
+    if (isTransparentMode) {
+        document.body.style.background = '#00FF00';
+    } else {
+        document.body.style.background = 'transparent';
+    }
+}
+
+// 키보드 단축키
+document.addEventListener('keydown', (e) => {
+    switch(e.key) {
+        case 'F5':
+        case 'r':
+        case 'R':
+            e.preventDefault();
+            loadDonationData();
+            break;
+        case 't':
+        case 'T':
+            toggleTransparent();
+            break;
+    }
+});
+
+// 설정 변경 감지 (실시간 적용)
+setInterval(() => {
+    applySettings();
+}, 500);
+
+// 자동 새로고침 (3초마다)
+setInterval(() => {
+    try {
+        loadDonationData();
+    } catch (error) {
+        console.error('Auto-refresh failed:', error);
+    }
+}, 3000);
+
+// 초기 로드
+try {
+    console.log('Donor overlay initializing...');
+    applySettings();
+    loadDonationData();
+    console.log('Donor overlay initialized successfully');
+} catch (error) {
+    console.error('Donor overlay initialization failed:', error);
+    document.getElementById('donor-content').innerHTML = 
+        '<div class="no-data" style="white-space: pre-line;">❌ 초기화 실패\nOBS에서 콘솔을 확인하세요</div>';
+}
+</script>
+</body>
+</html>
