@@ -196,7 +196,8 @@ function updateDisplay() {
     if (currentDonorText !== donorText) {
         donorContentEl.style.opacity = '0.8';
         setTimeout(() => {
-            donorContentEl.innerHTML = `<div style="white-space: pre-line;">${donorText}</div>`;
+            const savedTextAlign = localStorage.getItem('overlay-text-align') || 'left';
+            donorContentEl.innerHTML = `<div style="white-space: pre-line; text-align: ${savedTextAlign};">${donorText}</div>`;
             applySettings();
             donorContentEl.style.opacity = '1';
             currentDonorText = donorText;

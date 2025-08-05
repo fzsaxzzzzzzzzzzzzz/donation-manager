@@ -348,8 +348,9 @@ function loadData() {
         updateTable();
     } catch (error) {
         console.error('데이터 로드 실패:', error);
+        const savedTextAlign = localStorage.getItem('overlay-text-align') || 'center';
         document.getElementById('streamer-tbody').innerHTML = 
-            '<tr><td colspan="5" class="no-data">❌ 데이터 로드 실패<br>메인 페이지에서 후원 데이터를 먼저 등록하세요</td></tr>';
+            `<tr><td colspan="5" class="no-data" style="text-align: ${savedTextAlign};">❌ 데이터 로드 실패<br>메인 페이지에서 후원 데이터를 먼저 등록하세요</td></tr>`;
         applyTableSettings();
     }
 }
