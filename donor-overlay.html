@@ -122,7 +122,8 @@ function updateDisplay() {
         if (currentDonorText !== noDataText) {
             donorContentEl.style.opacity = '0.8';
             setTimeout(() => {
-                donorContentEl.innerHTML = `<div class="no-data" style="white-space: pre-line;">${noDataText}</div>`;
+                const savedTextAlign = localStorage.getItem('overlay-text-align') || 'left';
+                donorContentEl.innerHTML = `<div class="no-data" style="white-space: pre-line; text-align: ${savedTextAlign};">${noDataText}</div>`;
                 applySettings();
                 donorContentEl.style.opacity = '1';
                 currentDonorText = noDataText;
@@ -171,7 +172,8 @@ function updateDisplay() {
         if (currentDonorText !== noAccountText) {
             donorContentEl.style.opacity = '0.8';
             setTimeout(() => {
-                donorContentEl.innerHTML = `<div class="no-data" style="white-space: pre-line;">${noAccountText}</div>`;
+                const savedTextAlign = localStorage.getItem('overlay-text-align') || 'left';
+                donorContentEl.innerHTML = `<div class="no-data" style="white-space: pre-line; text-align: ${savedTextAlign};">${noAccountText}</div>`;
                 applySettings();
                 donorContentEl.style.opacity = '1';
                 currentDonorText = noAccountText;

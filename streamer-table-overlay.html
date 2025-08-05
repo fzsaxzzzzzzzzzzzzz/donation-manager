@@ -409,7 +409,8 @@ function updateTable() {
     }
     
     if (sortedStreamers.length === 0) {
-        const noDataHTML = '<tr><td colspan="5" class="no-data">사랑해요♡</td></tr>';
+        const savedTextAlign = localStorage.getItem('overlay-text-align') || 'center';
+        const noDataHTML = `<tr><td colspan="5" class="no-data" style="text-align: ${savedTextAlign};">사랑해요♡</td></tr>`;
         if (tbody.innerHTML !== noDataHTML) {
             tbody.innerHTML = noDataHTML;
         }
