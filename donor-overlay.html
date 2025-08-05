@@ -118,7 +118,7 @@ function updateDisplay() {
     const donorContentEl = document.getElementById('donor-content');
     
     if (!donations || donations.length === 0) {
-        const noDataText = '📋 후원 내역이 없습니다\n메인 페이지에서 후원을 등록하세요';
+        const noDataText = '사랑해요♡';
         if (currentDonorText !== noDataText) {
             donorContentEl.style.opacity = '0.8';
             setTimeout(() => {
@@ -167,7 +167,7 @@ function updateDisplay() {
     const sortedGroups = Object.entries(amountGroups).sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
     
     if (sortedGroups.length === 0) {
-        const noAccountText = '💳 계좌 후원 내역이 없습니다';
+        const noAccountText = '사랑해요♡';
         if (currentDonorText !== noAccountText) {
             donorContentEl.style.opacity = '0.8';
             setTimeout(() => {
