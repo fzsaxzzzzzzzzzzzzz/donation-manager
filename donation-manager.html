@@ -641,8 +641,17 @@ async function initializeApp() {
         // 조정 모드 기본값 설정 (스트리머별 조정)
         setTimeout(() => switchSimpleMode('streamer'), 100);
         
-        document.getElementById('app-container').classList.add('loaded');
-        loader.style.display = 'none';
+        // 앱 컨테이너 로딩 완료 처리
+        const appContainer = document.getElementById('app-container');
+        if (appContainer) {
+            appContainer.classList.add('loaded');
+        } else {
+            console.error('app-container 요소를 찾을 수 없습니다');
+        }
+        
+        if (loader) {
+            loader.style.display = 'none';
+        }
         
         console.log("Application loaded successfully.");
         
@@ -1868,13 +1877,19 @@ async function initGoogleAPI() {
             updateGoogleAuthStatus();
         }, 100);
         
-        // Google Sign-In 초기화 (기존 코드)
-        google.accounts.id.initialize({
-            client_id: GOOGLE_CONFIG.CLIENT_ID,
-            callback: handleGoogleSignIn,
-            auto_select: false,
-            cancel_on_tap_outside: false
-        });
+        // Google Sign-In 초기화 (기존 코드) - 안전하게 처리
+        try {
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                    callback: handleGoogleSignIn,
+                    auto_select: false,
+                    cancel_on_tap_outside: false
+                });
+            }
+        } catch (signInError) {
+            console.error('Google Sign-In 초기화 실패:', signInError);
+        }
         
     } catch (error) {
         console.error('Google API 초기화 실패:', error);
@@ -1972,7 +1987,9 @@ function updateGoogleUI() {
         
         // 자동 백업 버튼 상태 업데이트
         autoBackupBtn.textContent = autoBackupEnabled ? '⏰ 자동백업 ON' : '⏰ 자동백업 OFF';
-        autoBackupBtn.className = autoBackupEnabled ? 'btn btn-success' : 'btn btn-warning';
+        if (autoBackupBtn) {
+            autoBackupBtn.className = autoBackupEnabled ? 'btn btn-success' : 'btn btn-warning';
+        }
     } else {
         signinBtn.style.display = 'inline-block';
         signoutBtn.style.display = 'none';
@@ -2105,9 +2122,15 @@ function enableAutoBackup() {
 
 function updateGoogleDriveStatus(message, type = 'info') {
     const statusEl = document.getElementById('google-drive-status');
-    if (statusEl) {
+    if (!statusEl) {
+        console.warn('google-drive-status 요소를 찾을 수 없습니다.');
+        return;
+    }
+    try {
         statusEl.className = `status status-${type}`;
         statusEl.textContent = message;
+    } catch (error) {
+        console.error('Google Drive 상태 업데이트 실패:', error);
     }
 }
 
@@ -2437,14 +2460,23 @@ function clearMessage() {
 // --- 권한 관리 함수 ---
 function updateChatbotPermissionUI() {
     const statusEl = document.getElementById('chatbot-permission-status');
-    const hasPermission = user.isAdmin || currentPassword;
+    if (!statusEl) {
+        console.warn('chatbot-permission-status 요소를 찾을 수 없습니다.');
+        return;
+    }
     
-    if (hasPermission) {
-        statusEl.innerHTML = '✅ <span style="color: #42b72a;">권한있음</span>';
-        statusEl.title = '챗봇 자동 알림을 사용할 수 있습니다';
-    } else {
-        statusEl.innerHTML = '🔒 <span style="color: #fa383e;">권한필요</span>';
-        statusEl.title = '챗봇 자동 알림을 사용하려면 비밀번호를 입력하세요';
+    try {
+        const hasPermission = user.isAdmin || currentPassword;
+        
+        if (hasPermission) {
+            statusEl.innerHTML = '✅ <span style="color: #42b72a;">권한있음</span>';
+            statusEl.title = '챗봇 자동 알림을 사용할 수 있습니다';
+        } else {
+            statusEl.innerHTML = '🔒 <span style="color: #fa383e;">권한필요</span>';
+            statusEl.title = '챗봇 자동 알림을 사용하려면 비밀번호를 입력하세요';
+        }
+    } catch (error) {
+        console.error('챗봇 권한 UI 업데이트 실패:', error);
     }
 }
 
