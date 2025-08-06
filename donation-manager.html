@@ -1313,7 +1313,25 @@ function initEventListeners() {
 }
 
 function showStatus(msg, type = 'info', duration = 3000) { const c = document.getElementById('status-container'); if (!c) return; c.innerHTML = `<div class="status status-${type}">${msg}</div>`; if (duration > 0) setTimeout(() => c.innerHTML = '', duration); }
-function showSaveStatus(msg, type = 'saving') { const el = document.getElementById('save-status'); el.textContent = msg; el.className = `save-status ${type}`; el.style.display = 'block'; if (type === 'saved' || type === 'error') setTimeout(() => el.style.display = 'none', 3000); }
+function showSaveStatus(msg, type = 'saving') { 
+    const el = document.getElementById('save-status'); 
+    if (!el) {
+        console.warn('save-status 요소를 찾을 수 없습니다.');
+        return;
+    }
+    try {
+        el.textContent = msg; 
+        el.className = `save-status ${type}`; 
+        el.style.display = 'block'; 
+        if (type === 'saved' || type === 'error') {
+            setTimeout(() => {
+                if (el) el.style.display = 'none';
+            }, 3000); 
+        }
+    } catch (error) {
+        console.error('Save status 업데이트 실패:', error);
+    }
+}
 function cancelCurrentEdit() { if (currentlyEditing) { currentlyEditing.cell.innerHTML = currentlyEditing.originalContent; currentlyEditing = null; } }
 
 function makeCellEditable(cell, index) {
@@ -1836,12 +1854,19 @@ async function initGoogleAPI() {
         // 인증 상태 변경 리스너
         authInstance.isSignedIn.listen((signedIn) => {
             isOAuthSignedIn = signedIn;
-            updateGoogleAuthStatus();
+            // DOM 요소가 준비될 때까지 약간 지연
+            setTimeout(() => {
+                updateGoogleAuthStatus();
+            }, 50);
             console.log('OAuth 인증 상태 변경:', signedIn ? '로그인됨' : '로그아웃됨');
         });
         
         console.log('Google OAuth API 초기화 완료');
-        updateGoogleAuthStatus();
+        
+        // DOM이 완전히 로드된 후에 상태 업데이트
+        setTimeout(() => {
+            updateGoogleAuthStatus();
+        }, 100);
         
         // Google Sign-In 초기화 (기존 코드)
         google.accounts.id.initialize({
@@ -1853,7 +1878,20 @@ async function initGoogleAPI() {
         
     } catch (error) {
         console.error('Google API 초기화 실패:', error);
-        updateGoogleDriveStatus('Google API 초기화에 실패했습니다', 'error');
+        try {
+            updateGoogleDriveStatus('Google API 초기화에 실패했습니다', 'error');
+        } catch (statusError) {
+            console.error('상태 업데이트도 실패:', statusError);
+        }
+        
+        // OAuth 상태도 안전하게 처리
+        setTimeout(() => {
+            try {
+                updateGoogleAuthStatus();
+            } catch (authStatusError) {
+                console.error('OAuth 상태 업데이트 실패:', authStatusError);
+            }
+        }, 200);
     }
 }
 
@@ -2832,14 +2870,21 @@ async function signOutGoogleOAuth() {
 // Google OAuth 상태 업데이트
 function updateGoogleAuthStatus() {
     const statusElement = document.getElementById('google-auth-status');
-    if (!statusElement) return;
+    if (!statusElement) {
+        console.log('google-auth-status 요소를 찾을 수 없습니다. 챗봇 탭이 로드되지 않았을 수 있습니다.');
+        return;
+    }
     
-    if (isOAuthSignedIn) {
-        statusElement.className = 'status status-success';
-        statusElement.innerHTML = '✅ <strong>Google OAuth 로그인됨</strong>: YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogleOAuth()" class="btn btn-secondary" style="margin-left:10px;">로그아웃</button>';
-    } else {
-        statusElement.className = 'status status-warning';
-        statusElement.innerHTML = '🔐 <strong>Google OAuth 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. <button onclick="signInGoogleOAuth()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
+    try {
+        if (isOAuthSignedIn) {
+            statusElement.className = 'status status-success';
+            statusElement.innerHTML = '✅ <strong>Google OAuth 로그인됨</strong>: YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogleOAuth()" class="btn btn-secondary" style="margin-left:10px;">로그아웃</button>';
+        } else {
+            statusElement.className = 'status status-warning';
+            statusElement.innerHTML = '🔐 <strong>Google OAuth 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. <button onclick="signInGoogleOAuth()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
+        }
+    } catch (error) {
+        console.error('Google Auth 상태 업데이트 실패:', error);
     }
 }
 
