@@ -624,44 +624,131 @@ const STORAGE_KEYS = {
 // --- 앱 시작 ---
 document.addEventListener('DOMContentLoaded', initializeApp);
 
+// 안전한 DOM 조작 헬퍼 함수들
+function safeGetElement(id) {
+    try {
+        return document.getElementById(id);
+    } catch (error) {
+        console.error(`요소 ${id} 접근 실패:`, error);
+        return null;
+    }
+}
+
+function safeSetProperty(element, property, value) {
+    try {
+        if (element && element[property] !== undefined) {
+            element[property] = value;
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error(`속성 ${property} 설정 실패:`, error);
+        return false;
+    }
+}
+
+function safeAddClass(element, className) {
+    try {
+        if (element && element.classList) {
+            element.classList.add(className);
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error(`클래스 ${className} 추가 실패:`, error);
+        return false;
+    }
+}
+
 // --- 핵심 로직 (초기화 및 동기화 제어) ---
 async function initializeApp() {
-    const loader = document.getElementById('app-loader');
+    const loader = safeGetElement('app-loader');
+    
     try {
-        console.log("Initializing...");
-        initEventListeners();
-        loadFromLocalStorage();
-        loadYouTubeSettings();
-        loadOverlaySettings();
-        await updateUserInfo();
-        updateAllUI();
-        updateAdminElements();
-        updateTabVisibility();
+        console.log("안전한 초기화 시작...");
         
-        // 조정 모드 기본값 설정 (스트리머별 조정)
-        setTimeout(() => switchSimpleMode('streamer'), 100);
+        // 각 초기화 단계를 안전하게 실행
+        try { initEventListeners(); } catch (e) { console.error('이벤트 리스너 초기화 실패:', e); }
+        try { loadFromLocalStorage(); } catch (e) { console.error('로컬 스토리지 로드 실패:', e); }
+        try { loadYouTubeSettings(); } catch (e) { console.error('YouTube 설정 로드 실패:', e); }
+        try { loadOverlaySettings(); } catch (e) { console.error('오버레이 설정 로드 실패:', e); }
         
-        // 앱 컨테이너 로딩 완료 처리
-        const appContainer = document.getElementById('app-container');
-        if (appContainer) {
-            appContainer.classList.add('loaded');
-        } else {
-            console.error('app-container 요소를 찾을 수 없습니다');
+        try { 
+            await updateUserInfo(); 
+        } catch (e) { 
+            console.error('사용자 정보 업데이트 실패:', e); 
         }
         
-        if (loader) {
-            loader.style.display = 'none';
-        }
+        try { updateAllUI(); } catch (e) { console.error('UI 업데이트 실패:', e); }
+        try { updateAdminElements(); } catch (e) { console.error('관리자 요소 업데이트 실패:', e); }
+        try { updateTabVisibility(); } catch (e) { console.error('탭 가시성 업데이트 실패:', e); }
+        
+        // 조정 모드 기본값 설정 (안전하게)
+        setTimeout(() => {
+            try {
+                switchSimpleMode('streamer');
+            } catch (e) {
+                console.error('조정 모드 설정 실패:', e);
+            }
+        }, 100);
+        
+        // 앱 컨테이너 로딩 완료 처리 (완전히 안전하게)
+        setTimeout(() => {
+            const appContainer = safeGetElement('app-container');
+            if (appContainer) {
+                safeAddClass(appContainer, 'loaded');
+                console.log('앱 컨테이너 로딩 완료');
+            } else {
+                console.warn('app-container 요소를 찾을 수 없습니다 - 강제로 표시합니다');
+                // 대체 방법: CSS를 직접 수정
+                const style = document.createElement('style');
+                style.textContent = '.container { display: grid !important; }';
+                document.head.appendChild(style);
+            }
+            
+            if (loader) {
+                safeSetProperty(loader.style, 'display', 'none');
+            }
+        }, 200);
         
         console.log("Application loaded successfully.");
         
-        // Google API 초기화
-        initGoogleAPI();
+        // Google API 초기화 (안전하게)
+        setTimeout(() => {
+            try {
+                initGoogleAPI();
+            } catch (e) {
+                console.error('Google API 초기화 실패:', e);
+            }
+        }, 300);
         
     } catch (error) {
-        loader.querySelector('.spinner').style.display = 'none';
-        loader.querySelector('p').textContent = `앱 로딩 실패: ${error.message}`;
-        console.error("Initialization failed:", error.stack || error);
+        console.error("Critical initialization error:", error);
+        
+        // 오류 발생 시 안전 모드 활성화
+        try {
+            if (loader) {
+                const spinner = loader.querySelector('.spinner');
+                const message = loader.querySelector('p');
+                
+                if (spinner) spinner.style.display = 'none';
+                if (message) message.textContent = `앱 로딩 실패: ${error.message} - 안전 모드로 계속...`;
+            }
+            
+            // 강제로 앱 표시
+            setTimeout(() => {
+                const style = document.createElement('style');
+                style.textContent = `
+                    #app-loader { display: none !important; }
+                    .container { display: grid !important; }
+                `;
+                document.head.appendChild(style);
+                console.log('안전 모드로 앱을 강제 표시했습니다');
+            }, 1000);
+            
+        } catch (fallbackError) {
+            console.error("Even fallback failed:", fallbackError);
+        }
     }
 }
 
