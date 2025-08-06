@@ -1926,6 +1926,59 @@ let authInstance = null;
 let apiLoadAttempts = 0;
 const MAX_LOAD_ATTEMPTS = 5;
 
+// 안전한 오류 메시지 추출
+function getErrorMessage(error) {
+    if (!error) return 'Unknown error (null/undefined)';
+    if (typeof error === 'string') return error;
+    if (error.message) return error.message;
+    if (error.error) return error.error;
+    if (error.details) return error.details;
+    return `Unknown error type: ${typeof error}`;
+}
+
+// 안전 모드 활성화
+async function enableSafeMode(errorReason = 'Unknown') {
+    console.log('🛡️ 안전 모드 활성화:', errorReason);
+    
+    try {
+        // 상태 업데이트
+        updateGoogleDriveStatus(`API 초기화 실패 - 안전 모드 (${errorReason})`, 'warning');
+        
+        // 사용자에게 친화적인 메시지
+        setTimeout(() => {
+            const statusElement = safeGetElement('google-auth-status');
+            if (statusElement) {
+                statusElement.className = 'status status-info';
+                statusElement.innerHTML = `
+                    ⚠️ <strong>Google API 연결 문제</strong><br>
+                    네트워크나 일시적 서버 문제일 수 있습니다.<br>
+                    <button onclick="retryGoogleAPI()" class="btn btn-primary" style="margin-top:10px;">🔄 다시 시도</button>
+                    <br><small style="color:#666;">또는 아래 API 키 방식을 사용하세요</small>
+                `;
+            }
+        }, 500);
+        
+        console.log('✅ 안전 모드 설정 완료 - API 키 방식을 사용할 수 있습니다');
+        
+    } catch (error) {
+        console.error('안전 모드 설정 실패:', error);
+    }
+}
+
+// 수동 재시도 함수
+function retryGoogleAPI() {
+    console.log('🔄 사용자가 수동으로 재시도를 요청했습니다');
+    apiLoadAttempts = 0; // 재시도 카운터 리셋
+    
+    const statusElement = safeGetElement('google-auth-status');
+    if (statusElement) {
+        statusElement.className = 'status status-info';
+        statusElement.innerHTML = '🔄 <strong>Google API 재연결 시도 중...</strong>';
+    }
+    
+    setTimeout(initGoogleAPI, 1000);
+}
+
 async function waitForGapi() {
     return new Promise((resolve, reject) => {
         let attempts = 0;
@@ -1949,16 +2002,26 @@ async function initGoogleAPI() {
         apiLoadAttempts++;
         console.log(`Google API 초기화 시작... (시도 ${apiLoadAttempts}/${MAX_LOAD_ATTEMPTS})`);
         
-        // Google API 로딩 대기
+        // Google API 로딩 대기 및 환경 검사
+        console.log('현재 환경 체크:', {
+            gapi: typeof gapi,
+            google: typeof google,
+            location: window.location.href,
+            userAgent: navigator.userAgent.substring(0, 100)
+        });
+        
         try {
             await waitForGapi();
         } catch (error) {
+            const errorMsg = getErrorMessage(error);
+            console.error('gapi 로딩 실패:', errorMsg);
+            
             if (apiLoadAttempts < MAX_LOAD_ATTEMPTS) {
-                console.warn(`gapi 로딩 실패, ${3}초 후 재시도... (${apiLoadAttempts}/${MAX_LOAD_ATTEMPTS})`);
+                console.warn(`gapi 로딩 실패, ${3}초 후 재시도... (${apiLoadAttempts}/${MAX_LOAD_ATTEMPTS}) - ${errorMsg}`);
                 setTimeout(initGoogleAPI, 3000);
                 return;
             } else {
-                throw new Error('Google API 스크립트 로딩 실패 - 네트워크 연결을 확인하세요');
+                throw new Error(`Google API 스크립트 로딩 실패: ${errorMsg}. 네트워크 연결이나 브라우저 설정을 확인하세요.`);
             }
         }
         
@@ -2070,19 +2133,22 @@ async function initGoogleAPI() {
         }
         
     } catch (error) {
-        console.error(`Google API 초기화 실패 (시도 ${apiLoadAttempts}/${MAX_LOAD_ATTEMPTS}):`, error);
+        // 오류 정보 안전하게 추출
+        const errorMessage = getErrorMessage(error);
+        console.error(`Google API 초기화 실패 (시도 ${apiLoadAttempts}/${MAX_LOAD_ATTEMPTS}):`, errorMessage, error);
         
         if (apiLoadAttempts < MAX_LOAD_ATTEMPTS) {
-            console.log(`${5}초 후 재시도합니다...`);
+            console.log(`${5}초 후 재시도합니다... (오류: ${errorMessage})`);
             setTimeout(initGoogleAPI, 5000);
             return;
         }
         
-        // 최종 실패 시 상태 업데이트
+        // 최종 실패 시 - 완전히 안전한 모드로 전환
+        console.log('🔄 최종 실패 - 안전 모드 활성화');
         try {
-            updateGoogleDriveStatus(`Google API 초기화에 실패했습니다 (${error.message})`, 'error');
-        } catch (statusError) {
-            console.error('상태 업데이트도 실패:', statusError);
+            await enableSafeMode(errorMessage);
+        } catch (safeModeError) {
+            console.error('안전 모드 활성화도 실패:', safeModeError);
         }
         
         // OAuth 상태도 안전하게 처리
