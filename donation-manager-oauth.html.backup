@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>방송 후원 정산 챗봇</title>
+
+<!-- Google Drive API -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+
+<style>
+/* 기존 CSS는 동일하므로 생략... */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; color: #333; margin: 0; padding: 0; overflow-x: hidden; }
+/* ... 기존 CSS ... */
+</style>
+</head>
+<body>
+<!-- 기존 HTML 구조는 동일... -->
+
+<script>
+// OAuth 인증 방식으로 YouTube API 사용하도록 수정된 핵심 함수들
+
+// Google API 설정 (YouTube API 추가)
+const GOOGLE_CONFIG = {
+    CLIENT_ID: '493287022430-f3flnq1h5qnc68856hap4jcmmqe2rtpu.apps.googleusercontent.com',
+    DISCOVERY_DOCS: [
+        'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+        'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'  // YouTube API 추가
+    ],
+    SCOPES: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl'
+};
+
+let isSignedIn = false;
+let authInstance = null;
+
+// Google API 초기화 (YouTube API 포함)
+async function initGoogleAPI() {
+    try {
+        await new Promise((resolve) => {
+            gapi.load('api:auth2', resolve);
+        });
+        
+        await gapi.api.init({
+            discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS,
+            clientId: GOOGLE_CONFIG.CLIENT_ID,
+            scope: GOOGLE_CONFIG.SCOPES
+        });
+        
+        authInstance = gapi.auth2.getAuthInstance();
+        isSignedIn = authInstance.isSignedIn.get();
+        
+        console.log('Google API (Drive + YouTube) 초기화 완료');
+        updateGoogleStatus();
+        
+    } catch (error) {
+        console.error('Google API 초기화 실패:', error);
+    }
+}
+
+// OAuth 테스트 함수 (API 키 대신)
+async function testYouTubeOAuth() {
+    try {
+        if (!isSignedIn) {
+            showStatus('Google 로그인이 필요합니다', 'error');
+            return;
+        }
+        
+        showStatus('YouTube API 테스트 중...', 'info');
+        
+        // OAuth 토큰으로 YouTube API 호출
+        const response = await gapi.client.youtube.search.list({
+            part: 'snippet',
+            q: 'test',
+            maxResults: 1
+        });
+        
+        if (response.status === 200) {
+            showStatus('✅ YouTube API 연결 성공!', 'success');
+        } else {
+            throw new Error('YouTube API 호출 실패');
+        }
+        
+    } catch (error) {
+        console.error('YouTube API 테스트 실패:', error);
+        showStatus(`❌ YouTube API 테스트 실패: ${error.message}`, 'error');
+    }
+}
+
+// OAuth 방식으로 라이브 채팅 연결
+async function connectToLiveChatOAuth() {
+    if (!isSignedIn) {
+        showStatus('Google 로그인이 필요합니다', 'error');
+        return;
+    }
+    
+    const videoId = document.getElementById('youtube-video-id').value.trim();
+    if (!videoId) {
+        showStatus('YouTube 영상 ID를 입력하세요', 'error');
+        return;
+    }
+    
+    try {
+        showStatus('라이브 채팅 연결 중...', 'info');
+        
+        // OAuth 토큰으로 영상 정보 가져오기
+        const response = await gapi.client.youtube.videos.list({
+            part: 'liveStreamingDetails',
+            id: videoId
+        });
+        
+        const videoData = response.result;
+        
+        if (!videoData.items || videoData.items.length === 0) {
+            throw new Error('영상을 찾을 수 없습니다. 영상 ID를 확인하세요.');
+        }
+        
+        const liveDetails = videoData.items[0].liveStreamingDetails;
+        if (!liveDetails || !liveDetails.activeLiveChatId) {
+            throw new Error('현재 라이브 방송이 아니거나 채팅이 비활성화되어 있습니다.');
+        }
+        
+        liveChatId = liveDetails.activeLiveChatId;
+        localStorage.setItem('youtube_video_id', videoId);
+        
+        showStatus('✅ 라이브 채팅에 연결되었습니다!', 'success');
+        updateChatbotStatus();
+        
+    } catch (error) {
+        console.error('라이브 채팅 연결 실패:', error);
+        showStatus(`라이브 채팅 연결 실패: ${error.message}`, 'error');
+    }
+}
+
+// OAuth 방식으로 YouTube 채팅에 메시지 전송
+async function sendToYouTubeOAuth() {
+    if (!isSignedIn) {
+        showStatus('Google 로그인이 필요합니다', 'error');
+        return;
+    }
+    
+    if (!liveChatId) {
+        showStatus('먼저 라이브 채팅에 연결하세요', 'error');
+        return;
+    }
+    
+    try {
+        const message = document.getElementById('live-summary').textContent;
+        if (!message.trim()) {
+            showStatus('전송할 메시지가 없습니다', 'warning');
+            return;
+        }
+        
+        showStatus('YouTube 채팅에 전송 중...', 'info');
+        
+        // OAuth 토큰으로 채팅 메시지 전송
+        const response = await gapi.client.youtube.liveChatMessages.insert({
+            part: 'snippet',
+            resource: {
+                snippet: {
+                    liveChatId: liveChatId,
+                    type: 'textMessageEvent',
+                    textMessageDetails: {
+                        messageText: message
+                    }
+                }
+            }
+        });
+        
+        if (response.status === 200) {
+            showStatus('✅ YouTube 채팅에 전송되었습니다!', 'success');
+        } else {
+            throw new Error('메시지 전송 실패');
+        }
+        
+    } catch (error) {
+        console.error('YouTube 전송 실패:', error);
+        showStatus(`YouTube 전송 실패: ${error.message}`, 'error');
+    }
+}
+
+// Google 로그인 상태 업데이트
+function updateGoogleStatus() {
+    const statusElement = document.getElementById('chatbot-status');
+    if (isSignedIn) {
+        statusElement.className = 'status status-success';
+        statusElement.innerHTML = '✅ <strong>Google 로그인됨</strong>: YouTube API를 사용할 수 있습니다!';
+    } else {
+        statusElement.className = 'status status-warning';
+        statusElement.innerHTML = '🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요.';
+    }
+}
+
+// 페이지 로드 시 초기화
+window.addEventListener('load', async () => {
+    await initGoogleAPI();
+});
+
+// 기존 함수들을 OAuth 버전으로 교체
+window.testApiKey = testYouTubeOAuth;
+window.connectToLiveChat = connectToLiveChatOAuth;
+window.sendToYouTube = sendToYouTubeOAuth;
+
+</script>
+</body>
+</html>
