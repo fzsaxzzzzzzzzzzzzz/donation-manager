@@ -259,6 +259,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div class="tab-content" id="chatbot-tab">
 <div id="chatbot-status" class="status status-warning" style="margin-bottom: 15px;">🤖 <strong>챗봇 설정</strong>: API 키를 입력하면 자동 전송이 가능합니다!</div>
 
+<!-- OAuth 버전 안내 -->
+<div class="status status-info" style="margin-bottom: 15px;">
+🔐 <strong>추천:</strong> API 키 문제가 있으면 OAuth 버전을 사용하세요!
+<button onclick="window.open('donation-manager-oauth.html', '_blank')" class="btn btn-primary" style="margin-left: 10px; font-size: 12px; padding: 4px 8px;">🚀 OAuth 버전 열기</button>
+</div>
+
 <!-- API 설정 섹션 -->
 <div class="form-group" style="border: 1px solid #ddd; padding: 15px; border-radius: 6px; background: #f9f9f9;">
 <h4 style="margin: 0 0 15px 0;">🔑 YouTube API 설정</h4>
@@ -578,7 +584,10 @@ let youtubeApiKey = '';
 let liveChatId = '';
 
 // 백업 API 키들 (할당량 초과시 자동 전환)
-let backupApiKeys = [];
+let backupApiKeys = [
+    'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4', // 사용자 제공 키
+    'AIzaSyCTTBeP7zWHyuP5FuuQlOOity-2_hPjHmM'  // 기본 백업 키
+];
 let currentKeyIndex = 0;
 
 // Google Drive API 관련 변수
@@ -2020,34 +2029,65 @@ function updateGoogleDriveStatus(message, type = 'info') {
     }
 }
 
-async function sendMessageToYouTube(message) {
+async function sendMessageToYouTube(message, retryCount = 0) {
     if (!liveChatId || !youtubeApiKey) {
         throw new Error('YouTube 연결이 설정되지 않았습니다.');
     }
     
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet&key=${youtubeApiKey}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${youtubeApiKey}`
-        },
-        body: JSON.stringify({
-            snippet: {
-                liveChatId: liveChatId,
-                type: 'textMessageEvent',
-                textMessageDetails: {
-                    messageText: message
+    try {
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet&key=${youtubeApiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${youtubeApiKey}`
+            },
+            body: JSON.stringify({
+                snippet: {
+                    liveChatId: liveChatId,
+                    type: 'textMessageEvent',
+                    textMessageDetails: {
+                        messageText: message
+                    }
                 }
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            const errorMessage = error.error?.message || '메시지 전송 실패';
+            
+            // API 키 관련 에러시 백업 키로 자동 전환
+            if ((errorMessage.includes('quota') || errorMessage.includes('invalid') || errorMessage.includes('blocked')) 
+                && retryCount < backupApiKeys.length - 1) {
+                
+                console.log(`API 키 에러로 백업 키로 전환: ${errorMessage}`);
+                currentKeyIndex = (currentKeyIndex + 1) % backupApiKeys.length;
+                youtubeApiKey = backupApiKeys[currentKeyIndex];
+                
+                showStatus(`⚠️ API 키 자동 전환됨 (${currentKeyIndex + 1}/${backupApiKeys.length})`, 'warning');
+                
+                // 백업 키로 재시도
+                return await sendMessageToYouTube(message, retryCount + 1);
             }
-        })
-    });
-    
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error?.message || '메시지 전송 실패');
+            
+            throw new Error(errorMessage);
+        }
+        
+        return response.json();
+        
+    } catch (networkError) {
+        if (retryCount < backupApiKeys.length - 1) {
+            console.log(`네트워크 에러로 백업 키로 전환: ${networkError.message}`);
+            currentKeyIndex = (currentKeyIndex + 1) % backupApiKeys.length;
+            youtubeApiKey = backupApiKeys[currentKeyIndex];
+            
+            showStatus(`⚠️ 네트워크 에러로 API 키 전환됨`, 'warning');
+            
+            return await sendMessageToYouTube(message, retryCount + 1);
+        }
+        
+        throw networkError;
     }
-    
-    return response.json();
 }
 
 // --- YouTube API 관련 함수 ---
@@ -2101,10 +2141,27 @@ async function testApiKey() {
             showStatus('✅ API 키가 유효합니다!', 'success');
         } else {
             const error = await response.json();
-            throw new Error(error.error?.message || 'API 키가 유효하지 않습니다');
+            console.log('YouTube API 에러 상세:', error);
+            
+            let errorMessage = error.error?.message || 'API 키 에러';
+            let suggestion = '';
+            
+            // 구체적인 에러 처리와 해결책 제공
+            if (errorMessage.includes('API key not valid') || errorMessage.includes('invalid')) {
+                suggestion = '\n\n💡 해결방법:\n1. Google Cloud Console에서 새 API 키 생성\n2. YouTube Data API v3 활성화 확인\n3. OAuth 방식 사용 (더 안전함)';
+            } else if (errorMessage.includes('quota') || errorMessage.includes('exceeded')) {
+                suggestion = '\n\n💡 해결방법:\n1. 내일 다시 시도 (할당량 리셋)\n2. 새 Google Cloud 프로젝트 생성\n3. OAuth 방식 사용';
+            } else if (errorMessage.includes('blocked') || errorMessage.includes('restricted')) {
+                suggestion = '\n\n💡 해결방법:\n1. OAuth 방식 사용 (donation-manager-oauth.html)\n2. 새 IP/도메인에서 접근\n3. Google Cloud 프로젝트 설정 확인';
+            } else if (errorMessage.includes('forbidden') || errorMessage.includes('403')) {
+                suggestion = '\n\n💡 해결방법:\n1. API 키에 YouTube 권한 추가\n2. 프로젝트에서 YouTube Data API v3 활성화\n3. OAuth 방식 사용';
+            }
+            
+            showStatus(`❌ ${errorMessage}${suggestion}`, 'error');
         }
     } catch (error) {
-        showStatus(`❌ API 키 테스트 실패: ${error.message}`, 'error');
+        console.error('API 테스트 에러:', error);
+        showStatus(`❌ 네트워크 에러: ${error.message}\n\n💡 OAuth 버전(donation-manager-oauth.html)을 사용해보세요!`, 'error');
     }
 }
 
