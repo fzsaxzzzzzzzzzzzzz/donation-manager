@@ -1922,67 +1922,129 @@ const GOOGLE_CONFIG = {
 let isOAuthSignedIn = false;
 let authInstance = null;
 
+// API 로딩 상태 추적
+let apiLoadAttempts = 0;
+const MAX_LOAD_ATTEMPTS = 5;
+
+async function waitForGapi() {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const checkGapi = () => {
+            attempts++;
+            if (typeof gapi !== 'undefined') {
+                console.log(`gapi 로드 확인 완료 (시도 ${attempts}회)`);
+                resolve();
+            } else if (attempts >= 20) { // 10초 대기
+                reject(new Error('gapi 로딩 시간 초과'));
+            } else {
+                setTimeout(checkGapi, 500);
+            }
+        };
+        checkGapi();
+    });
+}
+
 async function initGoogleAPI() {
     try {
-        console.log('Google API 초기화 시작...');
+        apiLoadAttempts++;
+        console.log(`Google API 초기화 시작... (시도 ${apiLoadAttempts}/${MAX_LOAD_ATTEMPTS})`);
         
-        // Google API가 로드될 때까지 대기
-        if (typeof gapi === 'undefined') {
-            console.warn('Google API(gapi)가 로드되지 않았습니다. 3초 후 재시도...');
-            setTimeout(initGoogleAPI, 3000);
-            return;
+        // Google API 로딩 대기
+        try {
+            await waitForGapi();
+        } catch (error) {
+            if (apiLoadAttempts < MAX_LOAD_ATTEMPTS) {
+                console.warn(`gapi 로딩 실패, ${3}초 후 재시도... (${apiLoadAttempts}/${MAX_LOAD_ATTEMPTS})`);
+                setTimeout(initGoogleAPI, 3000);
+                return;
+            } else {
+                throw new Error('Google API 스크립트 로딩 실패 - 네트워크 연결을 확인하세요');
+            }
         }
         
-        // 기존 Drive API 초기화
-        await new Promise((resolve, reject) => {
-            gapi.load('client', async () => {
-                try {
-                    await gapi.client.init({
-                        apiKey: GOOGLE_CONFIG.API_KEY,
-                        discoveryDocs: [GOOGLE_CONFIG.DISCOVERY_DOCS[0]]
-                    });
-                    console.log('Google Drive API 초기화 완료');
-                    resolve();
-                } catch (error) {
-                    console.error('Drive API 초기화 실패:', error);
-                    reject(error);
-                }
+        // Drive API 초기화 (간소화)
+        try {
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => reject(new Error('Drive API 초기화 시간 초과')), 10000);
+                
+                gapi.load('client', async () => {
+                    try {
+                        clearTimeout(timeout);
+                        await gapi.client.init({
+                            apiKey: GOOGLE_CONFIG.API_KEY,
+                            discoveryDocs: [GOOGLE_CONFIG.DISCOVERY_DOCS[0]]
+                        });
+                        console.log('✅ Google Drive API 초기화 완료');
+                        resolve();
+                    } catch (error) {
+                        clearTimeout(timeout);
+                        console.error('Drive API 초기화 실패:', error);
+                        resolve(); // Drive API 실패해도 계속 진행
+                    }
+                });
             });
-        });
+        } catch (error) {
+            console.warn('Drive API 초기화 실패, OAuth만 진행:', error);
+        }
         
-        // OAuth 초기화 (YouTube API용)
-        await new Promise((resolve, reject) => {
-            gapi.load('client:auth2', async () => {
-                try {
-                    await gapi.client.init({
-                        apiKey: GOOGLE_CONFIG.API_KEY,
-                        clientId: GOOGLE_CONFIG.CLIENT_ID,
-                        discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS,
-                        scope: GOOGLE_CONFIG.SCOPES
-                    });
-                    console.log('Google OAuth API 초기화 완료');
-                    resolve();
-                } catch (error) {
-                    console.error('OAuth API 초기화 실패:', error);
-                    reject(error);
-                }
+        // OAuth 초기화 (YouTube API용) - 더 안전하게
+        try {
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => reject(new Error('OAuth 초기화 시간 초과')), 15000);
+                
+                gapi.load('client:auth2', async () => {
+                    try {
+                        clearTimeout(timeout);
+                        
+                        // 단계별 초기화
+                        await gapi.client.init({
+                            apiKey: GOOGLE_CONFIG.API_KEY,
+                            clientId: GOOGLE_CONFIG.CLIENT_ID,
+                            discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS,
+                            scope: GOOGLE_CONFIG.SCOPES
+                        });
+                        
+                        console.log('✅ Google OAuth API 초기화 완료');
+                        resolve();
+                    } catch (error) {
+                        clearTimeout(timeout);
+                        console.error('OAuth API 초기화 실패:', error);
+                        reject(error);
+                    }
+                });
             });
-        });
+        } catch (error) {
+            console.error('OAuth 초기화 실패:', error);
+            // OAuth 실패 시 대체 방법 시도
+            console.log('대체 초기화 방법 시도 중...');
+            await fallbackOAuthInit();
+        }
         
-        authInstance = gapi.auth2.getAuthInstance();
-        isOAuthSignedIn = authInstance.isSignedIn.get();
+        // authInstance 설정 (안전하게)
+        try {
+            authInstance = gapi.auth2.getAuthInstance();
+            if (authInstance) {
+                isOAuthSignedIn = authInstance.isSignedIn.get();
+                
+                // 인증 상태 변경 리스너
+                authInstance.isSignedIn.listen((signedIn) => {
+                    isOAuthSignedIn = signedIn;
+                    setTimeout(() => {
+                        updateGoogleAuthStatus();
+                    }, 50);
+                    console.log('OAuth 인증 상태 변경:', signedIn ? '로그인됨' : '로그아웃됨');
+                });
+                
+                console.log('✅ OAuth 인스턴스 설정 완료');
+            } else {
+                console.warn('OAuth 인스턴스를 가져올 수 없습니다');
+            }
+        } catch (error) {
+            console.error('OAuth 인스턴스 설정 실패:', error);
+        }
         
-        // 인증 상태 변경 리스너
-        authInstance.isSignedIn.listen((signedIn) => {
-            isOAuthSignedIn = signedIn;
-            // DOM 요소가 준비될 때까지 약간 지연
-            setTimeout(() => {
-                updateGoogleAuthStatus();
-            }, 50);
-            console.log('OAuth 인증 상태 변경:', signedIn ? '로그인됨' : '로그아웃됨');
-        });
-        
-        console.log('Google OAuth API 초기화 완료');
+        console.log('🎉 Google API 초기화 성공!');
+        apiLoadAttempts = 0; // 성공 시 재시도 카운터 리셋
         
         // DOM이 완전히 로드된 후에 상태 업데이트
         setTimeout(() => {
@@ -2008,9 +2070,17 @@ async function initGoogleAPI() {
         }
         
     } catch (error) {
-        console.error('Google API 초기화 실패:', error);
+        console.error(`Google API 초기화 실패 (시도 ${apiLoadAttempts}/${MAX_LOAD_ATTEMPTS}):`, error);
+        
+        if (apiLoadAttempts < MAX_LOAD_ATTEMPTS) {
+            console.log(`${5}초 후 재시도합니다...`);
+            setTimeout(initGoogleAPI, 5000);
+            return;
+        }
+        
+        // 최종 실패 시 상태 업데이트
         try {
-            updateGoogleDriveStatus('Google API 초기화에 실패했습니다', 'error');
+            updateGoogleDriveStatus(`Google API 초기화에 실패했습니다 (${error.message})`, 'error');
         } catch (statusError) {
             console.error('상태 업데이트도 실패:', statusError);
         }
@@ -2023,6 +2093,36 @@ async function initGoogleAPI() {
                 console.error('OAuth 상태 업데이트 실패:', authStatusError);
             }
         }, 200);
+        
+        // 사용자에게 대안 제시
+        console.log('💡 대안: API 키 방식을 사용해보세요');
+    }
+}
+
+// 대체 OAuth 초기화 방법
+async function fallbackOAuthInit() {
+    try {
+        console.log('대체 OAuth 초기화 시도...');
+        
+        // 기본적인 클라이언트만 초기화
+        await gapi.client.init({
+            apiKey: GOOGLE_CONFIG.API_KEY
+        });
+        
+        // YouTube API만 로드
+        await gapi.client.load('youtube', 'v3');
+        
+        console.log('✅ 대체 방법으로 기본 API 초기화 완료');
+        
+        // 기본 OAuth 없이도 API 키 방식은 사용 가능하다고 알림
+        setTimeout(() => {
+            updateGoogleAuthStatus();
+            console.log('💡 OAuth는 실패했지만 API 키 방식은 사용 가능합니다');
+        }, 100);
+        
+    } catch (error) {
+        console.error('대체 초기화도 실패:', error);
+        throw error;
     }
 }
 
