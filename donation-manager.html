@@ -1774,10 +1774,10 @@ function getDonationsForStreamer(streamerName) {
 
 // --- Google Drive 백업 기능 ---
 const GOOGLE_CONFIG = {
-    CLIENT_ID: '493287022430-f3flnq1h5qnc68856hap4jcmmqe2rtpu.apps.googleusercontent.com', // 실제 클라이언트 ID로 교체 필요
-    API_KEY: 'your-api-key', // 실제 API 키로 교체 필요
+    CLIENT_ID: '493287022430-f3flnq1h5qnc68856hap4jcmmqe2rtpu.apps.googleusercontent.com', // OAuth 2.0 클라이언트 ID
+    API_KEY: 'AIzaSyCTTBeP7zWHyuP5FuuQlOOity-2_hPjHmM', // YouTube Data API v3 키
     DISCOVERY_DOC: 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
-    SCOPES: 'https://www.googleapis.com/auth/drive.file'
+    SCOPES: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl'
 };
 
 async function initGoogleAPI() {
