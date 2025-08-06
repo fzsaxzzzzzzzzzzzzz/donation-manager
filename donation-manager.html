@@ -257,17 +257,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <input type="file" id="import-file" accept=".json" style="display: none;" onchange="handleFileImport(event)">
 </div>
 <div class="tab-content" id="chatbot-tab">
-<div id="chatbot-status" class="status status-warning" style="margin-bottom: 15px;">🤖 <strong>챗봇 설정</strong>: API 키를 입력하면 자동 전송이 가능합니다!</div>
-
-<!-- OAuth 버전 안내 -->
-<div class="status status-info" style="margin-bottom: 15px;">
-🔐 <strong>추천:</strong> API 키 문제가 있으면 OAuth 버전을 사용하세요!
-<button onclick="window.open('donation-manager-oauth.html', '_blank')" class="btn btn-primary" style="margin-left: 10px; font-size: 12px; padding: 4px 8px;">🚀 OAuth 버전 열기</button>
+<div id="google-auth-status" class="status status-warning">
+🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요.
 </div>
 
-<!-- API 설정 섹션 -->
-<div class="form-group" style="border: 1px solid #ddd; padding: 15px; border-radius: 6px; background: #f9f9f9;">
-<h4 style="margin: 0 0 15px 0;">🔑 YouTube API 설정</h4>
+<div style="margin-bottom: 20px;">
+<h4 style="margin-bottom: 10px;">🔧 YouTube API 테스트</h4>
+<button onclick="testYouTubeOAuth()" class="btn btn-primary">API 연결 테스트</button>
+</div>
+
+<div style="margin-bottom: 20px;">
+<h4 style="margin-bottom: 10px;">📺 라이브 채팅 연결</h4>
+<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+<input type="text" id="youtube-video-id" placeholder="YouTube 영상 ID" class="form-input">
+<button onclick="connectToLiveChatOAuth()" class="btn btn-success">연결</button>
+</div>
+<p style="font-size: 12px; color: #666; margin: 0;">
+💡 YouTube 라이브 방송 URL에서 watch?v= 뒤의 ID를 입력하세요
+</p>
+</div>
+
+<!-- API 설정 섹션 (기존 API 키 방식 유지) -->
+<div class="form-group" style="border: 1px solid #ddd; padding: 15px; border-radius: 6px; background: #f9f9f9; margin-top: 20px;">
+<h4 style="margin: 0 0 15px 0;">🔑 YouTube API 키 방식 (대안)</h4>
 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
 <input type="password" id="youtube-api-key" placeholder="YouTube API 키 입력" class="form-input" style="flex: 2;">
 <button onclick="testApiKey()" class="btn btn-secondary">🧪 테스트</button>
@@ -1785,21 +1797,53 @@ function getDonationsForStreamer(streamerName) {
 const GOOGLE_CONFIG = {
     CLIENT_ID: '493287022430-f3flnq1h5qnc68856hap4jcmmqe2rtpu.apps.googleusercontent.com', // OAuth 2.0 클라이언트 ID
     API_KEY: 'AIzaSyCTTBeP7zWHyuP5FuuQlOOity-2_hPjHmM', // YouTube Data API v3 키
-    DISCOVERY_DOC: 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+    DISCOVERY_DOCS: [
+        'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+        'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'
+    ],
     SCOPES: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl'
 };
 
+// OAuth 관련 변수
+let isOAuthSignedIn = false;
+let authInstance = null;
+
 async function initGoogleAPI() {
     try {
+        // 기존 Drive API 초기화
         await gapi.load('api', async () => {
             await gapi.api.init({
                 apiKey: GOOGLE_CONFIG.API_KEY,
-                discoveryDocs: [GOOGLE_CONFIG.DISCOVERY_DOC]
+                discoveryDocs: [GOOGLE_CONFIG.DISCOVERY_DOCS[0]]
             });
             console.log('Google Drive API 초기화 완료');
         });
         
-        // Google Sign-In 초기화
+        // OAuth 초기화 (YouTube API용)
+        await new Promise((resolve) => {
+            gapi.load('client:auth2', resolve);
+        });
+        
+        await gapi.client.init({
+            discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS,
+            clientId: GOOGLE_CONFIG.CLIENT_ID,
+            scope: GOOGLE_CONFIG.SCOPES
+        });
+        
+        authInstance = gapi.auth2.getAuthInstance();
+        isOAuthSignedIn = authInstance.isSignedIn.get();
+        
+        // 인증 상태 변경 리스너
+        authInstance.isSignedIn.listen((signedIn) => {
+            isOAuthSignedIn = signedIn;
+            updateGoogleAuthStatus();
+            console.log('OAuth 인증 상태 변경:', signedIn ? '로그인됨' : '로그아웃됨');
+        });
+        
+        console.log('Google OAuth API 초기화 완료');
+        updateGoogleAuthStatus();
+        
+        // Google Sign-In 초기화 (기존 코드)
         google.accounts.id.initialize({
             client_id: GOOGLE_CONFIG.CLIENT_ID,
             callback: handleGoogleSignIn,
@@ -2748,6 +2792,200 @@ function setRankPreset(preset) {
     };
     
     showStatus(`${presetNames[preset]} 프리셋이 적용되었습니다. 저장 버튼을 눌러주세요.`, 'info');
+}
+
+// --- OAuth 관련 함수들 ---
+// Google OAuth 로그인/로그아웃
+async function signInGoogleOAuth() {
+    try {
+        if (!authInstance) {
+            showStatus('Google API가 초기화되지 않았습니다', 'error');
+            return;
+        }
+        
+        showStatus('Google 로그인 중...', 'info');
+        await authInstance.signIn();
+        showStatus('✅ Google OAuth 로그인 성공!', 'success');
+        
+    } catch (error) {
+        console.error('Google OAuth 로그인 실패:', error);
+        showStatus(`Google OAuth 로그인 실패: ${error.error || error.message}`, 'error');
+    }
+}
+
+async function signOutGoogleOAuth() {
+    try {
+        if (!authInstance) {
+            showStatus('Google API가 초기화되지 않았습니다', 'error');
+            return;
+        }
+        
+        await authInstance.signOut();
+        showStatus('Google OAuth 로그아웃되었습니다', 'info');
+        
+    } catch (error) {
+        console.error('Google OAuth 로그아웃 실패:', error);
+        showStatus(`Google OAuth 로그아웃 실패: ${error.message}`, 'error');
+    }
+}
+
+// Google OAuth 상태 업데이트
+function updateGoogleAuthStatus() {
+    const statusElement = document.getElementById('google-auth-status');
+    if (!statusElement) return;
+    
+    if (isOAuthSignedIn) {
+        statusElement.className = 'status status-success';
+        statusElement.innerHTML = '✅ <strong>Google OAuth 로그인됨</strong>: YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogleOAuth()" class="btn btn-secondary" style="margin-left:10px;">로그아웃</button>';
+    } else {
+        statusElement.className = 'status status-warning';
+        statusElement.innerHTML = '🔐 <strong>Google OAuth 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. <button onclick="signInGoogleOAuth()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
+    }
+}
+
+// OAuth 방식 YouTube API 테스트
+async function testYouTubeOAuth() {
+    try {
+        if (!isOAuthSignedIn) {
+            showStatus('먼저 Google OAuth 로그인이 필요합니다', 'error');
+            return;
+        }
+        
+        showStatus('YouTube API 테스트 중...', 'info');
+        
+        const response = await gapi.client.youtube.search.list({
+            part: 'snippet',
+            q: 'test',
+            maxResults: 1
+        });
+        
+        if (response.status === 200) {
+            showStatus('✅ YouTube API OAuth 연결 성공!', 'success');
+        } else {
+            throw new Error('YouTube API 호출 실패');
+        }
+        
+    } catch (error) {
+        console.error('YouTube API OAuth 테스트 실패:', error);
+        showStatus(`❌ YouTube API OAuth 테스트 실패: ${error.message}`, 'error');
+    }
+}
+
+// OAuth 방식으로 라이브 채팅 연결
+async function connectToLiveChatOAuth() {
+    if (!isOAuthSignedIn) {
+        showStatus('먼저 Google OAuth 로그인이 필요합니다', 'error');
+        return;
+    }
+    
+    const videoId = document.getElementById('youtube-video-id').value.trim();
+    if (!videoId) {
+        showStatus('YouTube 영상 ID를 입력하세요', 'error');
+        return;
+    }
+    
+    try {
+        showStatus('라이브 채팅 연결 중...', 'info');
+        
+        const response = await gapi.client.youtube.videos.list({
+            part: 'liveStreamingDetails',
+            id: videoId
+        });
+        
+        const videoData = response.result;
+        
+        if (!videoData.items || videoData.items.length === 0) {
+            throw new Error('영상을 찾을 수 없습니다. 영상 ID를 확인하세요.');
+        }
+        
+        const liveDetails = videoData.items[0].liveStreamingDetails;
+        if (!liveDetails || !liveDetails.activeLiveChatId) {
+            throw new Error('현재 라이브 방송이 아니거나 채팅이 비활성화되어 있습니다.');
+        }
+        
+        liveChatId = liveDetails.activeLiveChatId;
+        localStorage.setItem('youtube_video_id', videoId);
+        
+        showStatus('✅ OAuth 방식으로 라이브 채팅에 연결되었습니다!', 'success');
+        updateChatbotPermissionUI();
+        
+    } catch (error) {
+        console.error('OAuth 라이브 채팅 연결 실패:', error);
+        let errorMessage = error.message;
+        
+        if (error.result && error.result.error) {
+            const apiError = error.result.error;
+            if (apiError.code === 403) {
+                errorMessage = 'YouTube API 권한이 부족합니다. 다시 로그인해보세요.';
+            } else if (apiError.code === 404) {
+                errorMessage = '영상을 찾을 수 없습니다. 영상 ID를 확인하세요.';
+            } else {
+                errorMessage = `YouTube API 오류 (${apiError.code}): ${apiError.message}`;
+            }
+        }
+        
+        showStatus(`OAuth 라이브 채팅 연결 실패: ${errorMessage}`, 'error');
+    }
+}
+
+// OAuth 방식으로 YouTube 채팅에 메시지 전송
+async function sendToYouTubeOAuth(message) {
+    if (!isOAuthSignedIn) {
+        showStatus('먼저 Google OAuth 로그인이 필요합니다', 'error');
+        return false;
+    }
+    
+    if (!liveChatId) {
+        showStatus('먼저 라이브 채팅에 연결하세요', 'error');
+        return false;
+    }
+    
+    try {
+        if (!message.trim()) {
+            showStatus('전송할 메시지가 없습니다', 'warning');
+            return false;
+        }
+        
+        showStatus('YouTube 채팅에 전송 중...', 'info');
+        
+        const response = await gapi.client.youtube.liveChatMessages.insert({
+            part: 'snippet',
+            resource: {
+                snippet: {
+                    liveChatId: liveChatId,
+                    type: 'textMessageEvent',
+                    textMessageDetails: {
+                        messageText: message
+                    }
+                }
+            }
+        });
+        
+        if (response.status === 200) {
+            showStatus('✅ OAuth 방식으로 YouTube 채팅에 전송되었습니다!', 'success');
+            return true;
+        } else {
+            throw new Error('메시지 전송 실패');
+        }
+        
+    } catch (error) {
+        console.error('OAuth YouTube 전송 실패:', error);
+        let errorMessage = error.message;
+        
+        if (error.result && error.result.error) {
+            const apiError = error.result.error;
+            if (apiError.code === 403) {
+                errorMessage = 'YouTube 채팅 권한이 부족합니다. 채널 소유자인지 확인하세요.';
+            } else if (apiError.code === 400) {
+                errorMessage = '잘못된 요청입니다. 채팅 ID를 다시 확인하세요.';
+            } else {
+                errorMessage = `YouTube API 오류 (${apiError.code}): ${apiError.message}`;
+            }
+        }
+        
+        showStatus(`OAuth YouTube 전송 실패: ${errorMessage}`, 'error');
+        return false;
+    }
 }
 </script>
 </body>
