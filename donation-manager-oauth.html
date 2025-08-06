@@ -39,10 +39,10 @@ let authInstance = null;
 async function initGoogleAPI() {
     try {
         await new Promise((resolve) => {
-            gapi.load('api:auth2', resolve);
+            gapi.load('client:auth2', resolve);
         });
         
-        await gapi.api.init({
+        await gapi.client.init({
             discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS,
             clientId: GOOGLE_CONFIG.CLIENT_ID,
             scope: GOOGLE_CONFIG.SCOPES
@@ -51,11 +51,19 @@ async function initGoogleAPI() {
         authInstance = gapi.auth2.getAuthInstance();
         isSignedIn = authInstance.isSignedIn.get();
         
+        // 인증 상태 변경 리스너 추가
+        authInstance.isSignedIn.listen((signedIn) => {
+            isSignedIn = signedIn;
+            updateGoogleStatus();
+            console.log('인증 상태 변경:', signedIn ? '로그인됨' : '로그아웃됨');
+        });
+        
         console.log('Google API (Drive + YouTube) 초기화 완료');
         updateGoogleStatus();
         
     } catch (error) {
         console.error('Google API 초기화 실패:', error);
+        showStatus(`Google API 초기화 실패: ${error.message}`, 'error');
     }
 }
 
@@ -121,15 +129,31 @@ async function connectToLiveChatOAuth() {
             throw new Error('현재 라이브 방송이 아니거나 채팅이 비활성화되어 있습니다.');
         }
         
-        liveChatId = liveDetails.activeLiveChatId;
+        window.liveChatId = liveDetails.activeLiveChatId;
         localStorage.setItem('youtube_video_id', videoId);
         
         showStatus('✅ 라이브 채팅에 연결되었습니다!', 'success');
-        updateChatbotStatus();
+        if (typeof updateChatbotStatus === 'function') {
+            updateChatbotStatus();
+        }
         
     } catch (error) {
         console.error('라이브 채팅 연결 실패:', error);
-        showStatus(`라이브 채팅 연결 실패: ${error.message}`, 'error');
+        let errorMessage = error.message;
+        
+        // 일반적인 오류 처리
+        if (error.result && error.result.error) {
+            const apiError = error.result.error;
+            if (apiError.code === 403) {
+                errorMessage = 'YouTube API 권한이 부족합니다. 다시 로그인해보세요.';
+            } else if (apiError.code === 404) {
+                errorMessage = '영상을 찾을 수 없습니다. 영상 ID를 확인하세요.';
+            } else {
+                errorMessage = `YouTube API 오류 (${apiError.code}): ${apiError.message}`;
+            }
+        }
+        
+        showStatus(`라이브 채팅 연결 실패: ${errorMessage}`, 'error');
     }
 }
 
@@ -140,7 +164,7 @@ async function sendToYouTubeOAuth() {
         return;
     }
     
-    if (!liveChatId) {
+    if (!window.liveChatId) {
         showStatus('먼저 라이브 채팅에 연결하세요', 'error');
         return;
     }
@@ -159,7 +183,7 @@ async function sendToYouTubeOAuth() {
             part: 'snippet',
             resource: {
                 snippet: {
-                    liveChatId: liveChatId,
+                    liveChatId: window.liveChatId,
                     type: 'textMessageEvent',
                     textMessageDetails: {
                         messageText: message
@@ -176,7 +200,55 @@ async function sendToYouTubeOAuth() {
         
     } catch (error) {
         console.error('YouTube 전송 실패:', error);
-        showStatus(`YouTube 전송 실패: ${error.message}`, 'error');
+        let errorMessage = error.message;
+        
+        // 일반적인 오류 처리
+        if (error.result && error.result.error) {
+            const apiError = error.result.error;
+            if (apiError.code === 403) {
+                errorMessage = 'YouTube 채팅 권한이 부족합니다. 채널 소유자인지 확인하세요.';
+            } else if (apiError.code === 400) {
+                errorMessage = '잘못된 요청입니다. 채팅 ID를 다시 확인하세요.';
+            } else {
+                errorMessage = `YouTube API 오류 (${apiError.code}): ${apiError.message}`;
+            }
+        }
+        
+        showStatus(`YouTube 전송 실패: ${errorMessage}`, 'error');
+    }
+}
+
+// Google 로그인/로그아웃 함수
+async function signInGoogle() {
+    try {
+        if (!authInstance) {
+            showStatus('Google API가 초기화되지 않았습니다', 'error');
+            return;
+        }
+        
+        showStatus('Google 로그인 중...', 'info');
+        await authInstance.signIn();
+        showStatus('✅ Google 로그인 성공!', 'success');
+        
+    } catch (error) {
+        console.error('Google 로그인 실패:', error);
+        showStatus(`Google 로그인 실패: ${error.error || error.message}`, 'error');
+    }
+}
+
+async function signOutGoogle() {
+    try {
+        if (!authInstance) {
+            showStatus('Google API가 초기화되지 않았습니다', 'error');
+            return;
+        }
+        
+        await authInstance.signOut();
+        showStatus('Google 로그아웃되었습니다', 'info');
+        
+    } catch (error) {
+        console.error('Google 로그아웃 실패:', error);
+        showStatus(`Google 로그아웃 실패: ${error.message}`, 'error');
     }
 }
 
@@ -185,10 +257,10 @@ function updateGoogleStatus() {
     const statusElement = document.getElementById('chatbot-status');
     if (isSignedIn) {
         statusElement.className = 'status status-success';
-        statusElement.innerHTML = '✅ <strong>Google 로그인됨</strong>: YouTube API를 사용할 수 있습니다!';
+        statusElement.innerHTML = '✅ <strong>Google 로그인됨</strong>: YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogle()" class="btn btn-secondary" style="margin-left:10px;">로그아웃</button>';
     } else {
         statusElement.className = 'status status-warning';
-        statusElement.innerHTML = '🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요.';
+        statusElement.innerHTML = '🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. <button onclick="signInGoogle()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
     }
 }
 
