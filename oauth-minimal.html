@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>최소한 OAuth 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f8f9fa; padding: 15px; font-family: monospace; white-space: pre-wrap; height: 300px; overflow-y: auto; border: 1px solid #ddd; margin: 10px 0; }
+        .btn { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; background: #007bff; color: white; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>최소한 OAuth 테스트</h1>
+    
+    <div id="status" class="status warning">초기화 중...</div>
+    
+    <button onclick="login()" class="btn">OAuth 로그인</button>
+    <button onclick="testAPI()" class="btn">API 테스트</button>
+    <button onclick="clearLog()" class="btn">로그 지우기</button>
+    
+    <div id="log" class="log">로그...</div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        const CLIENT_ID = '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4';
+        
+        let tokenClient;
+        let isSignedIn = false;
+        
+        function log(msg) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.textContent += `[${time}] ${msg}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function updateStatus(msg, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = msg;
+            statusEl.className = `status ${type}`;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+        
+        // 최소한의 초기화
+        async function init() {
+            try {
+                log('=== 초기화 시작 ===');
+                
+                // 1. API 로드 대기
+                let retries = 0;
+                while ((!window.gapi || !window.google?.accounts?.oauth2) && retries < 10) {
+                    log(`API 로드 대기... (${retries + 1}/10)`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    retries++;
+                }
+                
+                if (!window.gapi) throw new Error('GAPI 로드 실패');
+                if (!window.google?.accounts?.oauth2) throw new Error('GIS 로드 실패');
+                
+                log('✅ API 라이브러리 로드 완료');
+                
+                // 2. GAPI 최소 설정
+                await new Promise(resolve => gapi.load('client', resolve));
+                
+                // 3. 가장 간단한 초기화 (Discovery Docs 없이)
+                await gapi.client.init({
+                    apiKey: API_KEY
+                });
+                log('✅ GAPI 기본 초기화 완료');
+                
+                // 4. YouTube API 직접 로드
+                await gapi.client.load('youtube', 'v3');
+                log('✅ YouTube API 로드 완료');
+                
+                // 5. OAuth 클라이언트 설정
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl',
+                    callback: (response) => {
+                        if (response?.access_token) {
+                            gapi.client.setToken({ access_token: response.access_token });
+                            isSignedIn = true;
+                            updateStatus('✅ 로그인 성공!', 'success');
+                            log('✅ OAuth 토큰 획득 성공');
+                        } else {
+                            updateStatus('❌ 로그인 실패', 'error');
+                            log('❌ OAuth 토큰 획득 실패: ' + JSON.stringify(response));
+                        }
+                    }
+                });
+                
+                updateStatus('✅ 초기화 완료 - 로그인 버튼 클릭', 'success');
+                log('✅ 모든 초기화 완료');
+                
+            } catch (error) {
+                const errorMsg = `초기화 실패: ${error.message}`;
+                updateStatus('❌ ' + errorMsg, 'error');
+                log('❌ ' + errorMsg);
+                
+                // 상세 오류 정보
+                log('오류 상세:');
+                log('- Type: ' + typeof error);
+                log('- Message: ' + (error.message || 'No message'));
+                log('- Stack: ' + (error.stack || 'No stack'));
+                
+                if (error.result) {
+                    log('- API Result: ' + JSON.stringify(error.result, null, 2));
+                }
+            }
+        }
+        
+        function login() {
+            if (!tokenClient) {
+                updateStatus('❌ 초기화가 완료되지 않음', 'error');
+                return;
+            }
+            
+            log('OAuth 로그인 시도...');
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+        
+        async function testAPI() {
+            if (!isSignedIn) {
+                updateStatus('❌ 먼저 로그인하세요', 'error');
+                return;
+            }
+            
+            try {
+                log('YouTube API 테스트 중...');
+                
+                const response = await gapi.client.youtube.search.list({
+                    part: 'snippet',
+                    q: 'test',
+                    maxResults: 1,
+                    type: 'video'
+                });
+                
+                log('✅ API 호출 성공!');
+                log(`결과: ${response.result.items?.length || 0}개 아이템`);
+                updateStatus('✅ API 테스트 성공!', 'success');
+                
+            } catch (error) {
+                const errorMsg = `API 테스트 실패: ${error.message}`;
+                updateStatus('❌ ' + errorMsg, 'error');
+                log('❌ ' + errorMsg);
+            }
+        }
+        
+        // 페이지 로드 후 초기화
+        window.addEventListener('load', () => {
+            log('페이지 로드 완료, 3초 후 초기화 시작...');
+            setTimeout(init, 3000);
+        });
+    </script>
+</body>
+</html>
