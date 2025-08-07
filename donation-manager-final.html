@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>방송 후원 정산 챗봇 (OAuth 완성)</title>
+
+<!-- Google API Scripts -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+/* CSS는 기존과 동일 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; color: #333; margin: 0; padding: 0; overflow-x: hidden; }
+#app-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f0f2f5; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+#app-loader .spinner { border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #1877f2; animation: spin 1s ease infinite; }
+#app-loader p { margin-top: 20px; font-weight: 500; color: #606770; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.container { display: none; width: 100%; max-width: none; margin: 0; padding: 15px; grid-template-columns: 1.2fr 1.2fr 1.6fr; gap: 15px; min-height: calc(100vh - 30px); }
+.container.loaded { display: grid; }
+.panel { background: #ffffff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); min-height: calc(100vh - 100px); overflow-y: auto; resize: horizontal; }
+.panel h2 { margin: -20px -20px 15px -20px; padding: 15px 20px; color: #333; border-bottom: 1px solid #e0e0e0; font-size: 1.1rem; background-color: #fafafa; border-radius: 8px 8px 0 0;}
+.btn { padding: 8px 16px; border: 1px solid transparent; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; margin: 2px; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+.btn-primary { background-color: #1877f2; color: white; border-color: #1877f2;}
+.btn-success { background-color: #42b72a; color: white; border-color: #42b72a;}
+.btn-danger { background-color: #fa383e; color: white; border-color: #fa383e;}
+.btn-secondary { background-color: #e4e6eb; color: #4b4f56; border-color: #dddfe2;}
+.btn-warning { background-color: #f5c33b; color: #1c1e21; border-color: #f5c33b;}
+.btn:hover { opacity: 0.9; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.form-group { margin-bottom: 15px; }
+.form-label { display: block; margin-bottom: 5px; font-weight: 600; color: #606770; font-size: 0.9rem; }
+.form-input, .form-select { width: 100%; padding: 8px 12px; border: 1px solid #dddfe2; border-radius: 6px; font-size: 14px; }
+.form-input:focus, .form-select:focus { outline: none; border-color: #1877f2; box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2); }
+.table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+.table th, .table td { border: 1px solid #e9ebee; padding: 8px; text-align: center; }
+.table th { background-color: #f5f6f7; font-weight: 600; }
+#data-table-body td[data-field] { cursor: pointer; transition: background-color 0.2s; }
+#data-table-body td[data-field]:hover { background-color: #e7f3ff; }
+.copy-box { background-color: #f5f6f7; border-radius: 6px; padding: 10px; margin: 10px 0; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; word-break: break-all; min-height: 60px; white-space: pre-wrap; font-size: 12px; max-height: 200px; overflow-y: auto; border: 1px solid #e9ebee; }
+.status { padding: 10px; border-radius: 6px; margin: 10px 0; font-weight: 500; }
+.status-success { background-color: #e9f6ec; color: #348a47; border: 1px solid #cce8d2; }
+.status-error { background-color: #fde9e9; color: #a52828; border: 1px solid #f8d0d1; }
+.status-info { background-color: #e7f3ff; color: #185a9d; border: 1px solid #cbe3ff; }
+.status-warning { background-color: #fffbe6; color: #664d03; border: 1px solid #ffe58f; }
+.management-nav { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; border-bottom: 1px solid #e0e0e0; padding-bottom: 10px;}
+.tab-button { padding: 8px 12px; border: none; background: transparent; border-bottom: 2px solid transparent; border-radius: 0; cursor: pointer; font-size: 14px; font-weight: 600; color: #606770; }
+.tab-button.active { color: #1877f2; border-bottom-color: #1877f2; }
+.tab-content { display: none; padding-top: 15px;}
+.tab-content.active { display: block; }
+.summary-tab-content { display: none; }
+.summary-tab-content.active { display: block; }
+.streamer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; }
+.user-info { background-color: #e7f3ff; padding: 8px 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; text-align: center; }
+.admin { background-color: #fde9e9; color: #a52828; font-weight: 600; }
+.autocomplete-container { position: relative; flex: 2; }
+.donor-autocomplete { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #dddfe2; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 1001; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+.donor-autocomplete .autocomplete-item { padding: 8px 12px; cursor: pointer; font-size: 14px; }
+.donor-autocomplete .autocomplete-item:hover, .donor-autocomplete .autocomplete-item.selected { background-color: #1877f2; color: white; }
+.save-status { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 500; z-index: 1000; transition: all 0.5s; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+.save-status.saving { background-color: #f5c33b; color: #1c1e21; }
+.save-status.saved { background-color: #42b72a; color: white; }
+.save-status.error { background-color: #fa383e; color: white; }
+.summary-header { display: flex; justify-content: space-between; align-items: center; }
+.summary-header h4 { margin: 0; }
+.summary-actions .btn { font-size:12px; padding:4px 8px; margin-left: 5px; }
+@media (max-width: 1200px) { .container { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 900px) { .container { grid-template-columns: 1fr !important; } .panel { min-height: auto !important; resize: none !important; } }
+</style>
+</head>
+<body>
+<div id="app-loader">
+<div class="spinner"></div>
+<p>애플리케이션을 불러오는 중...</p>
+</div>
+<div id="save-status" style="display: none;"></div>
+<div class="container" id="app-container">
+<div class="panel">
+<h2>관리</h2>
+<div class="management-nav">
+<button class="tab-button active" onclick="switchTab(event, 'donation')">후원등록</button>
+<button class="tab-button" onclick="switchTab(event, 'streamer')">스트리머</button>
+<button class="tab-button" onclick="switchTab(event, 'mission')">🎄 퇴근미션</button>
+<button class="tab-button" onclick="switchTab(event, 'overlay')">🎨 오버레이</button>
+<button class="tab-button" onclick="switchTab(event, 'password')" id="password-tab-btn" style="display: none;">비밀번호</button>
+<button class="tab-button" onclick="switchTab(event, 'data')">데이터</button>
+<button class="tab-button" onclick="switchTab(event, 'chatbot')">🤖 챗봇</button>
+<button class="tab-button" onclick="switchTab(event, 'simple')" id="simple-tab-btn">🎯 조정</button>
+</div>
+<div id="main-content">
+<div class="tab-content active" id="donation-tab">
+<div id="password-section" style="display: none; margin-bottom:15px;">
+<div style="display: flex; gap: 5px;"><input type="password" id="password-input" placeholder="4자리 비밀번호" maxlength="4" class="form-input"><button onclick="verifyPassword()" class="btn btn-primary">확인</button></div>
+</div>
+<div class="form-group"><label class="form-label">후원자명</label><div class="autocomplete-container" style="flex:auto;"><input type="text" id="donor-input" class="form-input" autocomplete="off"><div id="donor-autocomplete" class="donor-autocomplete"></div></div></div>
+<div class="form-group"><label class="form-label">후원 타입</label><div style="display: flex; gap: 15px;"><label><input type="radio" name="paytype" value="계좌" checked> 계좌</label><label><input type="radio" name="paytype" value="투네"> 투네</label><label><input type="radio" name="paytype" value="슈퍼챗"> 슈퍼챗</label></div></div>
+<div class="form-group"><label class="form-label">스트리머별 금액(만)</label><div class="streamer-grid" id="streamer-inputs"></div></div>
+<button onclick="addDonation()" class="btn btn-primary" id="add-btn" style="width:100%;">✨ 등록</button>
+</div>
+
+<div class="tab-content" id="chatbot-tab">
+<div id="chatbot-status" class="status status-warning">
+🔐 <strong>OAuth 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요.
+</div>
+
+<div style="margin-bottom: 20px;">
+<h4 style="margin-bottom: 10px;">🔧 YouTube API 테스트</h4>
+<button onclick="testApiKey()" class="btn btn-primary">API 연결 테스트</button>
+</div>
+
+<div style="margin-bottom: 20px;">
+<h4 style="margin-bottom: 10px;">📺 라이브 채팅 연결</h4>
+<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+<input type="text" id="youtube-video-id" placeholder="YouTube 영상 ID" class="form-input">
+<button onclick="connectToLiveChat()" class="btn btn-success">연결</button>
+</div>
+<p style="font-size: 12px; color: #666; margin: 0;">
+💡 YouTube 라이브 방송 URL에서 watch?v= 뒤의 ID를 입력하세요
+</p>
+</div>
+
+<div style="margin-bottom: 20px;">
+<h4 style="margin-bottom: 10px;">💬 실시간 요약</h4>
+<div id="live-summary" class="copy-box">
+여기에 실시간 후원 요약이 표시됩니다...
+</div>
+<button onclick="sendToYouTube()" class="btn btn-primary">YouTube 채팅에 전송</button>
+</div>
+</div>
+
+<div class="tab-content" id="streamer-tab">
+<div style="display: flex; gap: 10px; margin-bottom: 15px;"><input type="text" id="new-streamer-name" placeholder="이름" class="form-input"><input type="text" id="new-streamer-emoji" placeholder="이모지" class="form-input" style="flex: 0 0 80px;"><button onclick="addStreamer()" class="btn btn-success" id="add-streamer-btn">추가</button></div>
+<div id="streamer-list"></div>
+</div>
+</div>
+</div>
+
+<div class="panel">
+<h2>데이터 조회</h2>
+<div id="data-status" class="status status-info">
+📊 <strong>데이터 동기화됨</strong>: 후원 데이터가 로드되었습니다.
+</div>
+<div id="data-table-container">
+<table class="table" id="data-table">
+<thead>
+<tr>
+<th>날짜</th>
+<th>후원자</th>
+<th>타입</th>
+<th>합계</th>
+</tr>
+</thead>
+<tbody id="data-table-body">
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="panel">
+<h2>실시간 요약</h2>
+<div class="summary-header">
+<h4>📊 오늘의 후원 현황</h4>
+</div>
+<div id="summary-content" class="copy-box">
+후원 데이터를 불러오는 중...
+</div>
+</div>
+</div>
+
+<script>
+// OAuth 전용 YouTube API 구현
+
+// Google API 설정
+const GOOGLE_CONFIG = {
+    CLIENT_ID: '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com',
+    SCOPES: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl'
+};
+
+let tokenClient;
+let isOAuthSignedIn = false;
+let liveChatId = '';
+
+// OAuth 전용 초기화
+async function initGoogleAPI() {
+    try {
+        console.log('🔄 OAuth 전용 초기화 시작...');
+        
+        // GIS 로드 대기
+        let retries = 0;
+        while (!window.google?.accounts?.oauth2 && retries < 15) {
+            console.log(`Google Identity Services 로드 대기... (${retries + 1}/15)`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            retries++;
+        }
+        
+        if (!window.google?.accounts?.oauth2) {
+            throw new Error('Google Identity Services 로드 실패');
+        }
+        
+        console.log('✅ Google Identity Services 로드 완료');
+        
+        // OAuth 토큰 클라이언트 설정
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CONFIG.CLIENT_ID,
+            scope: GOOGLE_CONFIG.SCOPES,
+            callback: (response) => {
+                console.log('OAuth 콜백:', response);
+                if (response && response.access_token) {
+                    // 전역 액세스 토큰 저장
+                    window.accessToken = response.access_token;
+                    isOAuthSignedIn = true;
+                    updateGoogleAuthStatus();
+                    showStatus('✅ OAuth 로그인 성공!', 'success');
+                } else {
+                    showStatus('❌ OAuth 로그인 실패', 'error');
+                    console.log('토큰 오류:', response);
+                }
+            },
+            error_callback: (error) => {
+                console.error('OAuth 오류:', error);
+                showStatus('❌ OAuth 오류', 'error');
+            }
+        });
+        
+        console.log('✅ OAuth 초기화 완료!');
+        updateGoogleAuthStatus();
+        
+    } catch (error) {
+        console.error('❌ OAuth 초기화 실패:', error);
+        updateFailedStatus();
+    }
+}
+
+// OAuth 로그인
+function signInGoogleOAuth() {
+    if (!tokenClient) {
+        showStatus('OAuth 초기화 안됨', 'error');
+        return;
+    }
+    try {
+        console.log('OAuth 로그인 시도...');
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+    } catch (error) {
+        console.error('로그인 오류:', error);
+        showStatus('❌ 로그인 오류', 'error');
+    }
+}
+
+// OAuth 로그아웃
+function signOutGoogleOAuth() {
+    if (window.accessToken) {
+        google.accounts.oauth2.revoke(window.accessToken, () => {
+            window.accessToken = null;
+            isOAuthSignedIn = false;
+            liveChatId = '';
+            updateGoogleAuthStatus();
+            showStatus('로그아웃 완료', 'info');
+        });
+    }
+}
+
+// 라이브 채팅 연결 (OAuth 전용)
+async function connectToLiveChatOAuth() {
+    if (!isOAuthSignedIn || !window.accessToken) {
+        showStatus('먼저 OAuth 로그인', 'error');
+        return;
+    }
+    
+    const videoId = document.getElementById('youtube-video-id')?.value?.trim();
+    if (!videoId) {
+        showStatus('영상 ID 입력', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}`, {
+            headers: {
+                'Authorization': `Bearer ${window.accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.items?.[0]?.liveStreamingDetails?.activeLiveChatId) {
+            throw new Error('라이브 아님/채팅 비활성');
+        }
+        
+        liveChatId = data.items[0].liveStreamingDetails.activeLiveChatId;
+        localStorage.setItem('youtube_video_id', videoId);
+        updateGoogleAuthStatus();
+        showStatus('✅ 라이브 채팅 연결 성공', 'success');
+        
+    } catch (error) {
+        showStatus(`❌ 연결 실패: ${error.message}`, 'error');
+    }
+}
+
+// YouTube 채팅 메시지 전송 (OAuth 전용)
+async function sendToYouTube() {
+    const message = document.getElementById('live-summary')?.textContent?.trim();
+    if (!message) {
+        showStatus('메시지 없음', 'error');
+        return;
+    }
+    if (!isOAuthSignedIn || !window.accessToken) {
+        showStatus('OAuth 로그인 필요', 'error');
+        return;
+    }
+    if (!liveChatId) {
+        showStatus('라이브 채팅 연결 필요', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${window.accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                snippet: {
+                    liveChatId: liveChatId,
+                    type: 'textMessageEvent',
+                    textMessageDetails: {
+                        messageText: message
+                    }
+                }
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        showStatus('✅ YouTube 채팅에 전송 완료!', 'success');
+    } catch (error) {
+        showStatus(`❌ 전송 실패: ${error.message}`, 'error');
+    }
+}
+
+// YouTube API 테스트 (OAuth 전용)
+async function testYouTubeOAuth() {
+    try {
+        if (!isOAuthSignedIn || !window.accessToken) {
+            showStatus('OAuth 로그인이 필요합니다', 'error');
+            return;
+        }
+        
+        showStatus('YouTube API 테스트 중...', 'info');
+        
+        const response = await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&q=test&maxResults=1&type=video', {
+            headers: {
+                'Authorization': `Bearer ${window.accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            showStatus('✅ YouTube API 연결 성공!', 'success');
+        } else {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+    } catch (error) {
+        console.error('YouTube API 테스트 실패:', error);
+        showStatus(`❌ YouTube API 테스트 실패: ${error.message}`, 'error');
+    }
+}
+
+// 상태 업데이트 함수
+function updateGoogleAuthStatus() {
+    const statusElement = document.getElementById('chatbot-status');
+    if (!statusElement) return;
+    
+    if (isOAuthSignedIn) {
+        statusElement.className = 'status status-success';
+        let statusHtml = '✅ <strong>OAuth 로그인됨</strong><br>모든 YouTube API 기능을 사용할 수 있습니다!';
+        if (liveChatId) {
+            statusHtml += '<br>💬 라이브 채팅 연결됨';
+        }
+        statusHtml += '<br><button onclick="signOutGoogleOAuth()" class="btn btn-secondary" style="margin-top:5px;">로그아웃</button>';
+        statusElement.innerHTML = statusHtml;
+    } else {
+        statusElement.className = 'status status-warning';
+        statusElement.innerHTML = '🔐 <strong>OAuth 로그인 필요</strong>: 전체 기능 사용을 위해 로그인하세요. <button onclick="signInGoogleOAuth()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
+    }
+}
+
+function updateFailedStatus() {
+    const statusElement = document.getElementById('chatbot-status');
+    if (!statusElement) return;
+    
+    statusElement.className = 'status status-error';
+    statusElement.innerHTML = `❌ <strong>API 초기화 실패</strong>: YouTube API에 연결할 수 없습니다<br>
+        <small>네트워크 연결을 확인해주세요</small><br>
+        <button onclick="initGoogleAPI()" class="btn btn-warning" style="margin-top:10px;">다시 시도</button>`;
+}
+
+// 전역 함수 매핑
+window.testApiKey = testYouTubeOAuth;
+window.connectToLiveChat = connectToLiveChatOAuth;
+window.sendToYouTube = sendToYouTube;
+
+// 페이지 로드 시 초기화 (기존 앱 + OAuth)
+window.addEventListener('load', async () => {
+    console.log('=== 페이지 로드 시작 ===');
+    console.log(`URL: ${window.location.href}`);
+    
+    // Google APIs 초기화 (약간 지연)
+    setTimeout(async () => {
+        await initGoogleAPI();
+        await initializeExistingApp();
+    }, 1000);
+});
+
+// --- 기존 애플리케이션 코드 ---
+
+let streamers = ['엄삼용','손덕배','연기','주옥','불곰','이효팔','동동','남붕','옥긔','국고'];
+let emojis = {'엄삼용': '🫅', '손덕배':'🌺', '연기': '🐧', '동동': '😎', '주옥': '👺', '불곰':'🎬', '이효팔': '🏝', '남붕': '🤠', '옥긔':'🦆', '국고':'🏦'};
+let donations = [], missionData = {}, user = { email: 'local@user.com', isAdmin: false };
+let currentPassword = '2749';
+let isAdminVerified = false;
+let autoSaveEnabled = true, selectedRows = new Set(), todayDonors = new Set();
+let activeAutocompleteIndex = -1;
+let currentlyEditing = null;
+let isBusy = false;
+
+// 기존 애플리케이션 초기화
+async function initializeExistingApp() {
+    const loader = document.getElementById('app-loader');
+    try {
+        console.log("기존 앱 초기화...");
+        initEventListeners();
+        loadFromLocalStorage();
+        updateAllUI();
+        updateAdminElements();
+        updateTabVisibility();
+        
+        document.getElementById('app-container').classList.add('loaded');
+        if (loader) loader.style.display = 'none';
+        
+        console.log("앱 초기화 완료");
+        
+    } catch (error) {
+        if (loader) {
+            const spinner = loader.querySelector('.spinner');
+            const text = loader.querySelector('p');
+            if (spinner) spinner.style.display = 'none';
+            if (text) text.textContent = `앱 로딩 실패: ${error.message}`;
+        }
+        console.error("앱 초기화 실패:", error);
+    }
+}
+
+// 로컬 스토리지 관리
+const STORAGE_KEYS = {
+    DONATIONS: 'donation_data',
+    STREAMERS: 'streamer_config',
+    EMOJIS: 'streamer_emojis',  
+    MISSIONS: 'mission_data',
+    PASSWORD: 'admin_password'
+};
+
+function saveToLocalStorage() {
+    try {
+        localStorage.setItem(STORAGE_KEYS.DONATIONS, JSON.stringify(donations));
+        localStorage.setItem(STORAGE_KEYS.STREAMERS, JSON.stringify(streamers));
+        localStorage.setItem(STORAGE_KEYS.EMOJIS, JSON.stringify(emojis));
+        localStorage.setItem(STORAGE_KEYS.MISSIONS, JSON.stringify(missionData));
+        localStorage.setItem(STORAGE_KEYS.PASSWORD, currentPassword);
+    } catch (error) {
+        console.error('로컬 스토리지 저장 실패:', error);
+    }
+}
+
+function loadFromLocalStorage() {
+    try {
+        const savedDonations = localStorage.getItem(STORAGE_KEYS.DONATIONS);
+        const savedStreamers = localStorage.getItem(STORAGE_KEYS.STREAMERS);
+        const savedEmojis = localStorage.getItem(STORAGE_KEYS.EMOJIS);
+        const savedMissions = localStorage.getItem(STORAGE_KEYS.MISSIONS);
+        const savedPassword = localStorage.getItem(STORAGE_KEYS.PASSWORD);
+
+        if (savedDonations) {
+            donations = JSON.parse(savedDonations).map(d => ({
+                ...d,
+                time: new Date(d.time),
+                amount: parseFloat(d.amount) || 0
+            }));
+        }
+        if (savedStreamers) streamers = JSON.parse(savedStreamers);
+        if (savedEmojis) emojis = JSON.parse(savedEmojis);
+        if (savedMissions) missionData = JSON.parse(savedMissions);
+        if (savedPassword) currentPassword = savedPassword;
+
+        todayDonors = new Set(donations.map(d => d.donor));
+    } catch (error) {
+        console.error('로컬 스토리지 로드 실패:', error);
+    }
+}
+
+// 탭 전환 함수
+function switchTab(event, tabId) {
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    event.target.classList.add('active');
+    
+    const tabContent = document.getElementById(tabId + '-tab');
+    if (tabContent) {
+        tabContent.classList.add('active');
+    }
+}
+
+// 스트리머 관리 함수
+function addStreamer() {
+    const nameInput = document.getElementById('new-streamer-name');
+    const emojiInput = document.getElementById('new-streamer-emoji');
+    const name = nameInput.value.trim();
+    const emoji = emojiInput.value.trim();
+    
+    if (!name) {
+        showStatus('스트리머 이름을 입력하세요', 'error');
+        return;
+    }
+    
+    if (streamers.includes(name)) {
+        showStatus('이미 존재하는 스트리머입니다', 'warning');
+        return;
+    }
+    
+    streamers.push(name);
+    if (emoji) emojis[name] = emoji;
+    
+    nameInput.value = '';
+    emojiInput.value = '';
+    
+    saveToLocalStorage();
+    updateAllUI();
+    showStatus(`스트리머 ${emoji}${name} 추가됨`, 'success');
+}
+
+function removeStreamer(index) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    
+    const streamerName = streamers[index];
+    streamers.splice(index, 1);
+    delete emojis[streamerName];
+    
+    saveToLocalStorage();
+    updateAllUI();
+    showStatus(`${streamerName} 삭제됨`, 'info');
+}
+
+// 후원 등록 함수
+function addDonation() {
+    const donor = document.getElementById('donor-input').value.trim();
+    if (!donor) return showStatus('후원자명을 입력하세요', 'error');
+    
+    const inputs = document.querySelectorAll('#streamer-inputs input[type="number"]');
+    const newDons = [];
+    
+    inputs.forEach(input => {
+        const amount = parseFloat(input.value);
+        if (!isNaN(amount) && amount > 0) {
+            const streamerName = input.dataset.streamer;
+            newDons.push({ 
+                donor, 
+                streamer: streamerName, 
+                type: document.querySelector('input[name="paytype"]:checked').value, 
+                amount, 
+                time: new Date() 
+            });
+        }
+    });
+    
+    if (newDons.length > 0) {
+        document.getElementById('donor-input').value = '';
+        inputs.forEach(input => input.value = '');
+        handleNewDonations(newDons);
+    } else {
+        showStatus('금액을 입력하세요', 'error');
+    }
+}
+
+function handleNewDonations(newDonations) {
+    if (!newDonations || newDonations.length === 0) return;
+
+    donations.unshift(...newDonations);
+    donations.sort((a, b) => b.time - a.time);
+    newDonations.forEach(d => todayDonors.add(d.donor));
+    
+    if (autoSaveEnabled) {
+        saveToLocalStorage();
+        showSaveStatus('저장 완료', 'saved');
+    }
+    
+    updateAllUI();
+}
+
+// UI 업데이트 함수
+function updateAllUI() {
+    updateStreamerInputs();
+    updateStreamerList();
+    updateTable();
+    updateSummary();
+}
+
+function updateStreamerInputs() {
+    const container = document.getElementById('streamer-inputs');
+    if (!container) return;
+    
+    const hiddenStreamers = JSON.parse(localStorage.getItem('hidden-streamers') || '[]');
+    const visibleStreamers = streamers.filter(s => !hiddenStreamers.includes(s));
+    
+    container.innerHTML = visibleStreamers.map(streamer => 
+        `<div style="display: flex; flex-direction: column; align-items: center;">
+            <span style="margin-bottom: 5px; font-size: 12px; font-weight: 600;">
+                ${emojis[streamer] || ''}${streamer}
+            </span>
+            <input type="number" step="0.1" min="0" data-streamer="${streamer}" 
+                   class="form-input" style="text-align: center;">
+        </div>`
+    ).join('');
+}
+
+function updateStreamerList() {
+    const container = document.getElementById('streamer-list');
+    if (!container) return;
+    
+    container.innerHTML = streamers.map((streamer, index) => 
+        `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 5px;">
+            <span>${emojis[streamer] || ''}${streamer}</span>
+            <button onclick="removeStreamer(${index})" class="btn btn-danger" style="font-size: 12px; padding: 4px 8px;">삭제</button>
+        </div>`
+    ).join('');
+}
+
+function updateTable() {
+    const tableBody = document.getElementById('data-table-body');
+    if (!tableBody) return;
+    
+    const recentDonations = donations.slice(0, 50);
+    
+    tableBody.innerHTML = recentDonations.map((donation, index) => 
+        `<tr>
+            <td>${new Date(donation.time).toLocaleDateString('ko-KR')}</td>
+            <td>${donation.donor}</td>
+            <td>${donation.type}</td>
+            <td>${donation.amount}만</td>
+        </tr>`
+    ).join('');
+}
+
+function updateSummary() {
+    const container = document.getElementById('summary-content');
+    if (!container) return;
+    
+    const today = new Date().toDateString();
+    const todayDonations = donations.filter(d => new Date(d.time).toDateString() === today);
+    
+    const streamerTotals = {};
+    todayDonations.forEach(d => {
+        if (!streamerTotals[d.streamer]) {
+            streamerTotals[d.streamer] = 0;
+        }
+        streamerTotals[d.streamer] += d.amount;
+    });
+    
+    const sortedStreamers = Object.entries(streamerTotals)
+        .sort(([,a], [,b]) => b - a)
+        .filter(([name]) => name !== '국고');
+    
+    let summary = '🔥🏫삼용스쿨🏫🔥\n\n';
+    sortedStreamers.forEach(([name, total]) => {
+        summary += `${emojis[name] || ''}${name}: ${total}만\n`;
+    });
+    summary += '\n🏧투네/계좌 [8:2] 🎉슈퍼챗은 국고로~!';
+    
+    container.textContent = summary;
+    
+    // live-summary에도 동일한 내용 복사
+    const liveSummaryEl = document.getElementById('live-summary');
+    if (liveSummaryEl) {
+        liveSummaryEl.textContent = summary;
+    }
+}
+
+// 상태 표시 함수
+function showStatus(message, type = 'info') {
+    console.log(`[${type}] ${message}`);
+}
+
+function showSaveStatus(message, type = 'info') {
+    const statusEl = document.getElementById('save-status');
+    if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.className = `save-status ${type}`;
+        statusEl.style.display = 'block';
+        
+        setTimeout(() => {
+            statusEl.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// 이벤트 리스너 초기화
+function initEventListeners() {
+    // 후원자 입력 자동완성 등 기존 이벤트 리스너
+}
+
+function updateAdminElements() {
+    // 관리자 요소 표시/숨김
+}
+
+function updateTabVisibility() {
+    // 탭 표시/숨김 로직
+}
+
+// 텍스트 복사 함수
+function copyText(elementId) {
+    const element = document.getElementById(elementId);
+    if (element && element.textContent) {
+        navigator.clipboard.writeText(element.textContent).then(() => {
+            showStatus('클립보드에 복사되었습니다', 'success');
+        }).catch(err => {
+            console.error('복사 실패:', err);
+            showStatus('복사에 실패했습니다', 'error');
+        });
+    }
+}
+
+</script>
+</body>
+</html>
