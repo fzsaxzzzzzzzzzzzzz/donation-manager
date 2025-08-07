@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>디버그 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .status { padding: 15px; margin: 10px 0; border-radius: 6px; }
+        .status-info { background: #e7f3ff; border: 1px solid #cbe3ff; }
+        .status-success { background: #e9f6ec; border: 1px solid #cce8d2; }
+        .status-error { background: #fde9e9; border: 1px solid #f8d0d1; }
+        .btn { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .log { background: #f8f9fa; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 YouTube API 디버그 테스트</h1>
+        
+        <div id="status" class="status status-info">
+            시스템 초기화 중...
+        </div>
+        
+        <div>
+            <h3>테스트 버튼들</h3>
+            <button onclick="testBasic()" class="btn btn-primary">1. 기본 테스트</button>
+            <button onclick="testGapi()" class="btn btn-primary">2. GAPI 로드 테스트</button>
+            <button onclick="testApiKey()" class="btn btn-primary">3. API 키 테스트</button>
+            <button onclick="testYoutube()" class="btn btn-primary">4. YouTube API 테스트</button>
+            <button onclick="clearLog()" class="btn btn-primary">로그 지우기</button>
+        </div>
+        
+        <div>
+            <h3>로그</h3>
+            <div id="log" class="log">로그가 여기에 표시됩니다...</div>
+        </div>
+    </div>
+
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        const API_KEY = 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4';
+        
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.textContent += `[${time}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status status-${type}`;
+            statusEl.textContent = message;
+            log(`상태: ${message}`);
+        }
+        
+        // 1. 기본 테스트
+        function testBasic() {
+            log('=== 기본 테스트 시작 ===');
+            log('현재 URL: ' + window.location.href);
+            log('User Agent: ' + navigator.userAgent);
+            log('gapi 존재 여부: ' + (typeof gapi !== 'undefined'));
+            updateStatus('기본 테스트 완료', 'success');
+        }
+        
+        // 2. GAPI 로드 테스트
+        async function testGapi() {
+            log('=== GAPI 로드 테스트 시작 ===');
+            updateStatus('GAPI 로드 중...', 'info');
+            
+            try {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('GAPI 로드 타임아웃'));
+                    }, 10000);
+                    
+                    gapi.load('client', () => {
+                        clearTimeout(timeout);
+                        log('✅ GAPI 클라이언트 로드 성공');
+                        resolve();
+                    });
+                });
+                
+                updateStatus('GAPI 로드 성공!', 'success');
+                
+            } catch (error) {
+                log('❌ GAPI 로드 실패: ' + error.message);
+                updateStatus('GAPI 로드 실패: ' + error.message, 'error');
+            }
+        }
+        
+        // 3. API 키 테스트
+        async function testApiKey() {
+            log('=== API 키 테스트 시작 ===');
+            updateStatus('API 키로 초기화 중...', 'info');
+            
+            try {
+                await gapi.client.init({
+                    apiKey: API_KEY
+                });
+                
+                log('✅ API 키 초기화 성공');
+                updateStatus('API 키 초기화 성공!', 'success');
+                
+            } catch (error) {
+                log('❌ API 키 초기화 실패: ' + error.message);
+                updateStatus('API 키 초기화 실패: ' + error.message, 'error');
+            }
+        }
+        
+        // 4. YouTube API 테스트
+        async function testYoutube() {
+            log('=== YouTube API 테스트 시작 ===');
+            updateStatus('YouTube API 호출 중...', 'info');
+            
+            try {
+                // YouTube API 로드
+                await gapi.client.load('youtube', 'v3');
+                log('✅ YouTube API 로드 성공');
+                
+                // 간단한 검색 요청
+                const response = await gapi.client.youtube.search.list({
+                    part: 'snippet',
+                    q: 'test',
+                    maxResults: 1,
+                    type: 'video'
+                });
+                
+                log('✅ YouTube API 호출 성공');
+                log('응답 상태: ' + response.status);
+                log('결과 개수: ' + (response.result.items ? response.result.items.length : 0));
+                
+                updateStatus('YouTube API 테스트 성공!', 'success');
+                
+            } catch (error) {
+                log('❌ YouTube API 테스트 실패: ' + error.message);
+                log('오류 세부사항: ' + JSON.stringify(error, null, 2));
+                updateStatus('YouTube API 테스트 실패: ' + error.message, 'error');
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+        
+        // 페이지 로드 시 자동 실행
+        window.addEventListener('load', () => {
+            log('=== 페이지 로드 완료 ===');
+            updateStatus('준비 완료. 테스트 버튼을 클릭하세요.', 'success');
+        });
+    </script>
+</body>
+</html>
