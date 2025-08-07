@@ -129,19 +129,58 @@
             log(`상태: ${message}`);
         }
         
-        // GIS OAuth 초기화
+        // GIS 로드 대기 함수
+        function waitForGoogleAPI() {
+            return new Promise((resolve) => {
+                const checkGIS = () => {
+                    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                        log('✅ Google Identity Services 로드 완룼');
+                        resolve();
+                    } else {
+                        log('⏳ Google Identity Services 로드 대기 중...');
+                        setTimeout(checkGIS, 500);
+                    }
+                };
+                checkGIS();
+            });
+        }
+        
+        function waitForGAPI() {
+            return new Promise((resolve) => {
+                const checkGAPI = () => {
+                    if (typeof gapi !== 'undefined' && gapi.load) {
+                        log('✅ Google API 라이브러리 로드 완룄');
+                        resolve();
+                    } else {
+                        log('⏳ Google API 라이브러리 로드 대기 중...');
+                        setTimeout(checkGAPI, 500);
+                    }
+                };
+                checkGAPI();
+            });
+        }
+        
+        // 안전한 OAuth 초기화
         async function initOAuth() {
             try {
                 log('=== OAuth 초기화 시작 ===');
                 
-                // 1) gapi client 초기화
+                // 1) Google APIs 로드 대기
+                updateStatus('⏳ Google APIs 로드 중...', 'info');
+                await waitForGAPI();
+                await waitForGoogleAPI();
+                
+                // 2) gapi client 초기화
+                log('GAPI 클라이언트 초기화 중...');
                 await new Promise((resolve) => gapi.load('client', resolve));
                 await gapi.client.init({
                     apiKey: API_KEY,
                     discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest']
                 });
+                log('✅ GAPI 클라이언트 초기화 완료');
                 
-                // 2) GIS 토큰 클라이언트 준비
+                // 3) GIS 토큰 클라이언트 준비
+                log('GIS 토큰 클라이언트 준비 중...');
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CLIENT_ID,
                     scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl',
@@ -150,29 +189,42 @@
                             gapi.client.setToken({ access_token: response.access_token });
                             isOAuthSignedIn = true;
                             updateStatus('✅ OAuth 로그인 성공!', 'success');
-                            log(`토큰: ${response.access_token.substring(0, 20)}...`);
+                            log(`토큰 획득: ${response.access_token.substring(0, 20)}...`);
                         } else {
                             updateStatus('❌ OAuth 토큰 획득 실패', 'error');
+                            log('토큰 응답 오류: ' + JSON.stringify(response));
                         }
                     }
                 });
                 
-                updateStatus('⏳ OAuth 준비 완료 - 로그인 버튼 클릭', 'warning');
-                log('OAuth 초기화 완료');
+                updateStatus('✅ OAuth 준비 완료 - 로그인 버튼 클릭', 'success');
+                log('✅ OAuth 초기화 완료');
                 
             } catch (error) {
-                log(`OAuth 초기화 실패: ${error.message}`);
+                log(`OAuth 초기화 실패: ${error.message || error}`);
+                log('Error stack: ' + (error.stack || '사용할 수 없음'));
                 updateStatus('❌ OAuth 초기화 실패', 'error');
             }
         }
         
         function signInOAuth() {
             if (!tokenClient) {
-                updateStatus('OAuth 초기화 안됨', 'error');
+                updateStatus('OAuth 초기화 안됨 - 재초기화 시도', 'error');
+                log('경고: tokenClient가 준비되지 않음');
+                initOAuth(); // 재초기화 시도
                 return;
             }
-            log('OAuth 로그인 시도...');
-            tokenClient.requestAccessToken({ prompt: 'consent' });
+            try {
+                log('OAuth 로그인 시도...');
+                updateStatus('⏳ OAuth 로그인 시도 중...', 'info');
+                tokenClient.requestAccessToken({ 
+                    prompt: 'consent',
+                    hint: '첫 번째 로그인에는 동의 화면이 표시됩니다' 
+                });
+            } catch (error) {
+                log(`로그인 오류: ${error.message}`);
+                updateStatus('❌ 로그인 오류', 'error');
+            }
         }
         
         function signOutOAuth() {
@@ -291,12 +343,17 @@
         window.addEventListener('load', () => {
             log('=== 페이지 로드 완료 ===');
             log(`현재 URL: ${window.location.href}`);
+            log(`Protocol: ${window.location.protocol}`);
+            log(`Host: ${window.location.host}`);
             
             if (window.location.protocol === 'file:') {
-                updateStatus('❌ file:// 프로토콜 감지 - http://localhost에서 실행 필요', 'error');
+                updateStatus('❌ file:// 프로토콜 감지 - HTTPS 사이트에서 실행 필요', 'error');
                 log('경고: OAuth는 file:// 프로토콜에서 작동하지 않습니다');
             } else {
-                initOAuth();
+                // 약간 지연 후 초기화 (스크립트 로드 대기)
+                setTimeout(() => {
+                    initOAuth();
+                }, 1000);
             }
         });
     </script>

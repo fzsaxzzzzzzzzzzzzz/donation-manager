@@ -186,19 +186,56 @@ let tokenClient;
 let isOAuthSignedIn = false;
 let liveChatId = '';
 
-// GIS 기반 Google API 초기화
+// GIS 로드 대기 함수
+function waitForGoogleAPI() {
+    return new Promise((resolve) => {
+        const checkGIS = () => {
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                console.log('✅ Google Identity Services 로드 완료');
+                resolve();
+            } else {
+                console.log('⏳ Google Identity Services 로드 대기 중...');
+                setTimeout(checkGIS, 500);
+            }
+        };
+        checkGIS();
+    });
+}
+
+function waitForGAPI() {
+    return new Promise((resolve) => {
+        const checkGAPI = () => {
+            if (typeof gapi !== 'undefined' && gapi.load) {
+                console.log('✅ Google API 라이브러리 로드 완룄');
+                resolve();
+            } else {
+                console.log('⏳ Google API 라이브러리 로드 대기 중...');
+                setTimeout(checkGAPI, 500);
+            }
+        };
+        checkGAPI();
+    });
+}
+
+// 안전한 GIS 기반 Google API 초기화
 async function initGoogleAPI() {
     try {
         console.log('🔄 GIS 방식으로 초기화 시도...');
         
-        // 1) gapi client만 초기화 (auth2 제거)
+        // 1) Google APIs 로드 대기
+        await waitForGAPI();
+        await waitForGoogleAPI();
+        
+        // 2) gapi client 초기화
+        console.log('GAPI 클라이언트 초기화 중...');
         await new Promise((resolve) => gapi.load('client', resolve));
         await gapi.client.init({
             apiKey: GOOGLE_CONFIG.API_KEY,
             discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS
         });
         
-        // 2) GIS OAuth 토큰 클라이언트 준비
+        // 3) GIS OAuth 토큰 클라이언트 준비
+        console.log('GIS 토큰 클라이언트 준비 중...');
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CONFIG.CLIENT_ID,
             scope: GOOGLE_CONFIG.SCOPES,
@@ -210,6 +247,7 @@ async function initGoogleAPI() {
                     showStatus('✅ OAuth 토큰 획득 완료', 'success');
                 } else {
                     showStatus('❌ OAuth 토큰 획득 실패', 'error');
+                    console.log('토큰 응답 오류:', response);
                 }
             }
         });
@@ -226,10 +264,17 @@ async function initGoogleAPI() {
 // GIS OAuth 로그인
 function signInGoogleOAuth() {
     if (!tokenClient) {
-        showStatus('OAuth 초기화 안됨', 'error');
+        showStatus('OAuth 초기화 안됨 - 재초기화 시도', 'error');
+        initGoogleAPI(); // 재초기화 시도
         return;
     }
-    tokenClient.requestAccessToken({ prompt: 'consent' });
+    try {
+        console.log('OAuth 로그인 시도...');
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+    } catch (error) {
+        console.error('로그인 오류:', error);
+        showStatus('❌ 로그인 오류', 'error');
+    }
 }
 
 // GIS OAuth 로그아웃
@@ -429,8 +474,14 @@ function updateFailedStatus() {
 
 // 페이지 로드 시 초기화 (기존 앱 + OAuth)
 window.addEventListener('load', async () => {
-    await initGoogleAPI();
-    await initializeExistingApp();
+    console.log('=== 페이지 로드 시작 ===');
+    console.log(`URL: ${window.location.href}`);
+    
+    // Google APIs 초기화 (약간 지연)
+    setTimeout(async () => {
+        await initGoogleAPI();
+        await initializeExistingApp();
+    }, 1000);
 });
 
 // 기존 애플리케이션 초기화
