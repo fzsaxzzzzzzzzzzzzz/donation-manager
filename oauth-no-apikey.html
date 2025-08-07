@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth 전용 (API 키 없이)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f8f9fa; padding: 15px; font-family: monospace; white-space: pre-wrap; height: 350px; overflow-y: auto; border: 1px solid #ddd; margin: 10px 0; }
+        .btn { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; background: #007bff; color: white; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>OAuth 전용 테스트 (API 키 없이)</h1>
+    
+    <div id="status" class="status warning">초기화 중...</div>
+    
+    <button onclick="login()" class="btn">OAuth 로그인</button>
+    <button onclick="testSearch()" class="btn">검색 테스트</button>
+    <button onclick="testLiveChat()" class="btn">라이브 채팅 테스트</button>
+    <button onclick="sendTestMessage()" class="btn">메시지 전송 테스트</button>
+    <button onclick="clearLog()" class="btn">로그 지우기</button>
+    
+    <div>
+        <input type="text" id="video-id" placeholder="YouTube 영상 ID (라이브)" style="width: 300px; padding: 8px; margin: 5px;">
+        <input type="text" id="test-message" placeholder="전송할 메시지" style="width: 200px; padding: 8px; margin: 5px;">
+    </div>
+    
+    <div id="log" class="log">로그...</div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        const CLIENT_ID = '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com';
+        
+        let tokenClient;
+        let isSignedIn = false;
+        let accessToken = null;
+        let liveChatId = null;
+        
+        function log(msg) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.textContent += `[${time}] ${msg}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function updateStatus(msg, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = msg;
+            statusEl.className = `status ${type}`;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+        
+        // 간단한 초기화 (API 키 없이 OAuth만)
+        async function init() {
+            try {
+                log('=== OAuth 전용 초기화 시작 ===');
+                
+                // GIS 로드 대기
+                let retries = 0;
+                while (!window.google?.accounts?.oauth2 && retries < 15) {
+                    log(`Google Identity Services 로드 대기... (${retries + 1}/15)`);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    retries++;
+                }
+                
+                if (!window.google?.accounts?.oauth2) {
+                    throw new Error('Google Identity Services 로드 실패');
+                }
+                
+                log('✅ Google Identity Services 로드 완료');
+                
+                // OAuth 클라이언트 설정
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl',
+                    callback: (response) => {
+                        log('OAuth 콜백:');
+                        log(JSON.stringify(response, null, 2));
+                        
+                        if (response?.access_token) {
+                            accessToken = response.access_token;
+                            isSignedIn = true;
+                            updateStatus('✅ OAuth 로그인 성공!', 'success');
+                            log('✅ 액세스 토큰 획득 성공');
+                        } else {
+                            updateStatus('❌ OAuth 실패', 'error');
+                        }
+                    },
+                    error_callback: (error) => {
+                        log('OAuth 오류: ' + JSON.stringify(error));
+                        updateStatus('❌ OAuth 오류', 'error');
+                    }
+                });
+                
+                updateStatus('✅ 초기화 완료 - 로그인 가능', 'success');
+                log('✅ OAuth 초기화 완료');
+                
+            } catch (error) {
+                const errorMsg = `초기화 실패: ${error.message}`;
+                updateStatus('❌ ' + errorMsg, 'error');
+                log('❌ ' + errorMsg);
+            }
+        }
+        
+        function login() {
+            if (!tokenClient) {
+                updateStatus('❌ 초기화가 완료되지 않음', 'error');
+                return;
+            }
+            
+            log('OAuth 로그인 시도...');
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+        
+        // API 키 없이 검색 테스트
+        async function testSearch() {
+            if (!isSignedIn || !accessToken) {
+                updateStatus('❌ 먼저 로그인하세요', 'error');
+                return;
+            }
+            
+            try {
+                log('YouTube 검색 API 호출 (OAuth 전용)...');
+                
+                const response = await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&q=test&maxResults=2&type=video', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`HTTP Status: ${response.status}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                log('✅ 검색 API 성공!');
+                log(`결과: ${data.items?.length || 0}개`);
+                
+                if (data.items?.[0]) {
+                    log(`첫 번째 영상: ${data.items[0].snippet.title}`);
+                }
+                
+                updateStatus('✅ 검색 테스트 성공!', 'success');
+                
+            } catch (error) {
+                log('❌ 검색 실패: ' + error.message);
+                updateStatus('❌ 검색 실패', 'error');
+            }
+        }
+        
+        // 라이브 채팅 연결
+        async function testLiveChat() {
+            if (!isSignedIn || !accessToken) {
+                updateStatus('❌ 먼저 로그인하세요', 'error');
+                return;
+            }
+            
+            const videoId = document.getElementById('video-id').value.trim();
+            if (!videoId) {
+                updateStatus('❌ 영상 ID를 입력하세요', 'error');
+                return;
+            }
+            
+            try {
+                log(`라이브 채팅 연결 시도: ${videoId}`);
+                
+                const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.items?.[0]?.liveStreamingDetails?.activeLiveChatId) {
+                    throw new Error('라이브 방송이 아니거나 채팅이 비활성화됨');
+                }
+                
+                liveChatId = data.items[0].liveStreamingDetails.activeLiveChatId;
+                log('✅ 라이브 채팅 연결 성공!');
+                log(`채팅 ID: ${liveChatId}`);
+                updateStatus('✅ 라이브 채팅 연결됨!', 'success');
+                
+            } catch (error) {
+                log('❌ 라이브 채팅 연결 실패: ' + error.message);
+                updateStatus('❌ 라이브 채팅 연결 실패', 'error');
+            }
+        }
+        
+        // 메시지 전송
+        async function sendTestMessage() {
+            if (!isSignedIn || !accessToken) {
+                updateStatus('❌ 먼저 로그인하세요', 'error');
+                return;
+            }
+            
+            if (!liveChatId) {
+                updateStatus('❌ 먼저 라이브 채팅에 연결하세요', 'error');
+                return;
+            }
+            
+            const message = document.getElementById('test-message').value.trim();
+            if (!message) {
+                updateStatus('❌ 전송할 메시지를 입력하세요', 'error');
+                return;
+            }
+            
+            try {
+                log(`메시지 전송 시도: "${message}"`);
+                
+                const response = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        snippet: {
+                            liveChatId: liveChatId,
+                            type: 'textMessageEvent',
+                            textMessageDetails: {
+                                messageText: message
+                            }
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                log('✅ 메시지 전송 성공!');
+                log(`전송된 메시지 ID: ${data.id}`);
+                updateStatus('✅ 메시지 전송 완료!', 'success');
+                
+                // 입력 필드 초기화
+                document.getElementById('test-message').value = '';
+                
+            } catch (error) {
+                log('❌ 메시지 전송 실패: ' + error.message);
+                updateStatus('❌ 메시지 전송 실패', 'error');
+            }
+        }
+        
+        // 페이지 로드 후 초기화
+        window.addEventListener('load', () => {
+            log('페이지 로드 완료, 2초 후 초기화 시작...');
+            setTimeout(init, 2000);
+        });
+    </script>
+</body>
+</html>
