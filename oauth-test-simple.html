@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 테스트 - 간단 버전</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 30px; 
+            background: #f5f5f5; 
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 15px; 
+            margin: 15px 0; 
+            border-radius: 8px; 
+            font-weight: 500;
+        }
+        .status-info { background: #e7f3ff; color: #185a9d; border: 1px solid #cbe3ff; }
+        .status-success { background: #e9f6ec; color: #348a47; border: 1px solid #cce8d2; }
+        .status-error { background: #fde9e9; color: #a52828; border: 1px solid #f8d0d1; }
+        .status-warning { background: #fffbe6; color: #664d03; border: 1px solid #ffe58f; }
+        .btn { 
+            padding: 12px 20px; 
+            margin: 8px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn:hover { opacity: 0.9; }
+        .form-group { margin: 15px 0; }
+        .form-input { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            font-size: 14px;
+        }
+        .message-box { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 6px; 
+            font-family: monospace; 
+            white-space: pre-wrap; 
+            min-height: 60px;
+            margin: 15px 0;
+        }
+        h1 { color: #333; margin-bottom: 10px; }
+        h2 { color: #555; margin: 25px 0 15px 0; }
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 YouTube OAuth 테스트</h1>
+        
+        <div class="warning-box">
+            <strong>⚠️ 중요:</strong> 이 페이지는 반드시 <code>http://localhost</code>에서 실행해야 합니다.<br>
+            <code>file://</code> 프로토콜에서는 OAuth가 작동하지 않습니다.
+        </div>
+        
+        <div id="auth-status" class="status status-warning">
+            🔄 초기화 중...
+        </div>
+        
+        <h2>1️⃣ 인증 테스트</h2>
+        <button onclick="signInOAuth()" class="btn btn-primary">OAuth 로그인</button>
+        <button onclick="signOutOAuth()" class="btn btn-secondary">로그아웃</button>
+        <button onclick="testAPI()" class="btn btn-success">YouTube API 테스트</button>
+        
+        <h2>2️⃣ 라이브 채팅 테스트</h2>
+        <div class="form-group">
+            <input type="text" id="video-id" placeholder="YouTube 영상 ID (예: dQw4w9WgXcQ)" class="form-input">
+            <button onclick="connectChat()" class="btn btn-primary">채팅 연결</button>
+        </div>
+        
+        <div class="form-group">
+            <input type="text" id="test-message" placeholder="테스트 메시지" class="form-input">
+            <button onclick="sendMessage()" class="btn btn-success">채팅 전송</button>
+        </div>
+        
+        <div class="message-box" id="log">
+로그가 여기에 표시됩니다...
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        const CLIENT_ID = '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4';
+        
+        let tokenClient;
+        let isOAuthSignedIn = false;
+        let liveChatId = '';
+        
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.textContent += `[${time}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('auth-status');
+            statusEl.className = `status status-${type}`;
+            statusEl.textContent = message;
+            log(`상태: ${message}`);
+        }
+        
+        // GIS OAuth 초기화
+        async function initOAuth() {
+            try {
+                log('=== OAuth 초기화 시작 ===');
+                
+                // 1) gapi client 초기화
+                await new Promise((resolve) => gapi.load('client', resolve));
+                await gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest']
+                });
+                
+                // 2) GIS 토큰 클라이언트 준비
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl',
+                    callback: (response) => {
+                        if (response && response.access_token) {
+                            gapi.client.setToken({ access_token: response.access_token });
+                            isOAuthSignedIn = true;
+                            updateStatus('✅ OAuth 로그인 성공!', 'success');
+                            log(`토큰: ${response.access_token.substring(0, 20)}...`);
+                        } else {
+                            updateStatus('❌ OAuth 토큰 획득 실패', 'error');
+                        }
+                    }
+                });
+                
+                updateStatus('⏳ OAuth 준비 완료 - 로그인 버튼 클릭', 'warning');
+                log('OAuth 초기화 완료');
+                
+            } catch (error) {
+                log(`OAuth 초기화 실패: ${error.message}`);
+                updateStatus('❌ OAuth 초기화 실패', 'error');
+            }
+        }
+        
+        function signInOAuth() {
+            if (!tokenClient) {
+                updateStatus('OAuth 초기화 안됨', 'error');
+                return;
+            }
+            log('OAuth 로그인 시도...');
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+        
+        function signOutOAuth() {
+            const token = gapi.client.getToken();
+            if (token && token.access_token) {
+                google.accounts.oauth2.revoke(token.access_token, () => {
+                    gapi.client.setToken('');
+                    isOAuthSignedIn = false;
+                    liveChatId = '';
+                    updateStatus('로그아웃 완료', 'info');
+                });
+            }
+        }
+        
+        async function testAPI() {
+            if (!isOAuthSignedIn) {
+                updateStatus('먼저 OAuth 로그인 필요', 'error');
+                return;
+            }
+            
+            try {
+                log('YouTube API 테스트 중...');
+                const response = await gapi.client.youtube.search.list({
+                    part: 'snippet',
+                    q: 'test',
+                    maxResults: 1,
+                    type: 'video'
+                });
+                
+                log(`API 테스트 성공! 결과: ${response.result.items.length}개`);
+                updateStatus('✅ YouTube API 연결 성공!', 'success');
+                
+            } catch (error) {
+                log(`API 테스트 실패: ${error.message}`);
+                updateStatus('❌ YouTube API 테스트 실패', 'error');
+            }
+        }
+        
+        async function connectChat() {
+            if (!isOAuthSignedIn) {
+                updateStatus('먼저 OAuth 로그인 필요', 'error');
+                return;
+            }
+            
+            const videoId = document.getElementById('video-id').value.trim();
+            if (!videoId) {
+                updateStatus('영상 ID 입력 필요', 'error');
+                return;
+            }
+            
+            try {
+                log(`라이브 채팅 연결 시도: ${videoId}`);
+                const resp = await gapi.client.youtube.videos.list({
+                    part: 'liveStreamingDetails',
+                    id: videoId
+                });
+                
+                const item = resp.result.items?.[0];
+                const liveDetails = item?.liveStreamingDetails;
+                
+                if (!liveDetails?.activeLiveChatId) {
+                    throw new Error('라이브 방송이 아니거나 채팅이 비활성화됨');
+                }
+                
+                liveChatId = liveDetails.activeLiveChatId;
+                log(`라이브 채팅 ID: ${liveChatId}`);
+                updateStatus('✅ 라이브 채팅 연결 성공!', 'success');
+                
+            } catch (error) {
+                log(`라이브 채팅 연결 실패: ${error.message}`);
+                updateStatus('❌ 라이브 채팅 연결 실패', 'error');
+            }
+        }
+        
+        async function sendMessage() {
+            const message = document.getElementById('test-message').value.trim();
+            if (!message) {
+                updateStatus('메시지 입력 필요', 'error');
+                return;
+            }
+            
+            if (!isOAuthSignedIn) {
+                updateStatus('먼저 OAuth 로그인 필요', 'error');
+                return;
+            }
+            
+            if (!liveChatId) {
+                updateStatus('먼저 라이브 채팅 연결 필요', 'error');
+                return;
+            }
+            
+            try {
+                log(`메시지 전송 시도: "${message}"`);
+                await gapi.client.youtube.liveChatMessages.insert({
+                    part: 'snippet',
+                    resource: {
+                        snippet: {
+                            liveChatId,
+                            type: 'textMessageEvent',
+                            textMessageDetails: { messageText: message }
+                        }
+                    }
+                });
+                
+                log('✅ 메시지 전송 성공!');
+                updateStatus('✅ 채팅 메시지 전송 완료!', 'success');
+                document.getElementById('test-message').value = '';
+                
+            } catch (error) {
+                log(`메시지 전송 실패: ${error.result?.error?.message || error.message}`);
+                updateStatus('❌ 메시지 전송 실패', 'error');
+            }
+        }
+        
+        // 페이지 로드시 초기화
+        window.addEventListener('load', () => {
+            log('=== 페이지 로드 완료 ===');
+            log(`현재 URL: ${window.location.href}`);
+            
+            if (window.location.protocol === 'file:') {
+                updateStatus('❌ file:// 프로토콜 감지 - http://localhost에서 실행 필요', 'error');
+                log('경고: OAuth는 file:// 프로토콜에서 작동하지 않습니다');
+            } else {
+                initOAuth();
+            }
+        });
+    </script>
+</body>
+</html>

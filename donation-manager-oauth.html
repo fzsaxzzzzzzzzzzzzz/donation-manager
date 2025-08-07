@@ -101,7 +101,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 
 <div class="tab-content" id="chatbot-tab">
 <div id="chatbot-status" class="status status-warning">
-🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요.
+🔐 <strong>OAuth 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요.
 </div>
 
 <div style="margin-bottom: 20px;">
@@ -169,116 +169,80 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 
 <script>
-// OAuth 인증 방식으로 YouTube API 사용하도록 수정된 핵심 함수들
+// GIS (Google Identity Services) 기반 OAuth 구현
 
-// Google API 설정 (YouTube API 추가)
+// Google API 설정
 const GOOGLE_CONFIG = {
     CLIENT_ID: '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com',
     API_KEY: 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4',
     DISCOVERY_DOCS: [
         'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
-        'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'  // YouTube API 추가
+        'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'
     ],
-    SCOPES: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl'
+    SCOPES: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/drive.file'
 };
 
-let isSignedIn = false;
-let authInstance = null;
+let tokenClient;
+let isOAuthSignedIn = false;
+let liveChatId = '';
 
-// Google API 초기화 - 다중 방법 시도
+// GIS 기반 Google API 초기화
 async function initGoogleAPI() {
-    // 방법 1: OAuth 방식 시도
-    console.log('🔄 방법 1: OAuth 방식으로 초기화 시도...');
-    const oauthResult = await tryOAuthInit();
-    
-    if (oauthResult) {
-        console.log('✅ OAuth 방식 초기화 성공!');
-        updateGoogleStatus();
-        return;
-    }
-    
-    // 방법 2: API 키만으로 기본 기능 초기화
-    console.log('🔄 방법 2: API 키 방식으로 기본 기능 초기화...');
-    const apiKeyResult = await tryApiKeyInit();
-    
-    if (apiKeyResult) {
-        console.log('✅ API 키 방식 초기화 성공! (제한된 기능)');
-        updateApiKeyStatus();
-        return;
-    }
-    
-    // 모든 방법 실패
-    console.error('❌ 모든 초기화 방법 실패');
-    updateFailedStatus();
-}
-
-// OAuth 방식 초기화 시도
-async function tryOAuthInit() {
     try {
-        // GAPI 로드
-        await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('타임아웃')), 8000);
-            gapi.load('client:auth2', () => {
-                clearTimeout(timeout);
-                resolve();
-            });
-        });
+        console.log('🔄 GIS 방식으로 초기화 시도...');
         
-        // 클라이언트 초기화 (간단하게)
+        // 1) gapi client만 초기화 (auth2 제거)
+        await new Promise((resolve) => gapi.load('client', resolve));
         await gapi.client.init({
             apiKey: GOOGLE_CONFIG.API_KEY,
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest']
+            discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS
         });
         
-        // OAuth2 초기화
-        await gapi.auth2.init({
+        // 2) GIS OAuth 토큰 클라이언트 준비
+        tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CONFIG.CLIENT_ID,
-            scope: GOOGLE_CONFIG.SCOPES
+            scope: GOOGLE_CONFIG.SCOPES,
+            callback: (response) => {
+                if (response && response.access_token) {
+                    gapi.client.setToken({ access_token: response.access_token });
+                    isOAuthSignedIn = true;
+                    updateGoogleAuthStatus();
+                    showStatus('✅ OAuth 토큰 획득 완료', 'success');
+                } else {
+                    showStatus('❌ OAuth 토큰 획득 실패', 'error');
+                }
+            }
         });
         
-        authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance) return false;
-        
-        isSignedIn = authInstance.isSignedIn.get();
-        authInstance.isSignedIn.listen((signedIn) => {
-            isSignedIn = signedIn;
-            updateGoogleStatus();
-        });
-        
-        return true;
+        console.log('✅ GIS 초기화 성공!');
+        updateGoogleAuthStatus();
         
     } catch (error) {
-        console.warn('OAuth 초기화 실패:', error);
-        return false;
+        console.error('❌ GIS 초기화 실패:', error);
+        updateFailedStatus();
     }
 }
 
-// API 키 방식 초기화 시도
-async function tryApiKeyInit() {
-    try {
-        // GAPI 로드 (클라이언트만)
-        await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('타임아웃')), 5000);
-            gapi.load('client', () => {
-                clearTimeout(timeout);
-                resolve();
-            });
+// GIS OAuth 로그인
+function signInGoogleOAuth() {
+    if (!tokenClient) {
+        showStatus('OAuth 초기화 안됨', 'error');
+        return;
+    }
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+// GIS OAuth 로그아웃
+function signOutGoogleOAuth() {
+    const token = gapi.client.getToken();
+    if (token && token.access_token) {
+        google.accounts.oauth2.revoke(token.access_token, () => {
+            gapi.client.setToken('');
+            isOAuthSignedIn = false;
+            liveChatId = '';
+            updateGoogleAuthStatus();
+            showStatus('로그아웃 완료', 'info');
         });
-        
-        // API 키로만 초기화
-        await gapi.client.init({
-            apiKey: GOOGLE_CONFIG.API_KEY
-        });
-        
-        // YouTube API 로드
-        await gapi.client.load('youtube', 'v3');
-        
-        window.apiKeyMode = true; // API 키 모드 플래그
-        return true;
-        
-    } catch (error) {
-        console.warn('API 키 초기화 실패:', error);
-        return false;
     }
 }
 
@@ -449,96 +413,9 @@ async function retryGoogleAPI() {
 }
 
 // Google 로그인/로그아웃 함수 - 안전한 방식
-async function signInGoogle() {
-    try {
-        // API 초기화 상태 확인
-        if (!authInstance) {
-            const statusElement = document.getElementById('chatbot-status');
-            if (statusElement) {
-                statusElement.className = 'status status-warning';
-                statusElement.innerHTML = '❌ <strong>Google API가 초기화되지 않았습니다</strong><br><button onclick="retryGoogleAPI()" class="btn btn-warning" style="margin-top:10px;">API 재초기화</button>';
-            }
-            return;
-        }
-        
-        // 로그인 상태 업데이트
-        updateGoogleStatus('로그인 중...', 'info');
-        
-        // OAuth 로그인 시도 (옵션 추가)
-        const signInOptions = {
-            prompt: 'select_account'
-        };
-        
-        await authInstance.signIn(signInOptions);
-        console.log('✅ Google OAuth 로그인 성공!');
-        updateGoogleStatus('✅ Google 로그인 성공!', 'success');
-        
-    } catch (error) {
-        console.error('❌ Google 로그인 실패:', error);
-        
-        let errorMessage = 'Google 로그인 실패';
-        if (error.error) {
-            errorMessage += `: ${error.error}`;
-        } else if (error.message) {
-            errorMessage += `: ${error.message}`;
-        }
-        
-        updateGoogleStatus(errorMessage, 'error');
-    }
-}
 
-async function signOutGoogle() {
-    try {
-        if (!authInstance) {
-            showStatus('Google API가 초기화되지 않았습니다', 'error');
-            return;
-        }
-        
-        await authInstance.signOut();
-        showStatus('Google 로그아웃되었습니다', 'info');
-        
-    } catch (error) {
-        console.error('Google 로그아웃 실패:', error);
-        showStatus(`Google 로그아웃 실패: ${error.message}`, 'error');
-    }
-}
 
-// 상태 업데이트 함수들
-function updateGoogleStatus(message = null, type = null) {
-    const statusElement = document.getElementById('chatbot-status');
-    if (!statusElement) return;
-    
-    if (message && type) {
-        statusElement.className = `status status-${type}`;
-        statusElement.innerHTML = `<strong>${message}</strong>`;
-        return;
-    }
-    
-    if (isSignedIn && authInstance) {
-        try {
-            const user = authInstance.currentUser.get();
-            const userEmail = user ? user.getBasicProfile().getEmail() : '';
-            statusElement.className = 'status status-success';
-            statusElement.innerHTML = `✅ <strong>OAuth 로그인됨</strong> (${userEmail})<br>모든 YouTube API 기능을 사용할 수 있습니다! <button onclick="signOutGoogle()" class="btn btn-secondary" style="margin-top:5px;">로그아웃</button>`;
-        } catch (error) {
-            updateApiKeyStatus();
-        }
-    } else {
-        statusElement.className = 'status status-warning';
-        statusElement.innerHTML = '🔐 <strong>OAuth 로그인 필요</strong>: 전체 기능 사용을 위해 로그인하세요. <button onclick="signInGoogle()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
-    }
-}
 
-function updateApiKeyStatus() {
-    const statusElement = document.getElementById('chatbot-status');
-    if (!statusElement) return;
-    
-    statusElement.className = 'status status-info';
-    statusElement.innerHTML = `🔑 <strong>API 키 모드</strong>: 기본 YouTube 검색 기능만 사용 가능<br>
-        <small>💡 라이브 채팅 기능을 사용하려면 OAuth 로그인이 필요합니다</small><br>
-        <button onclick="testApiKeyFunction()" class="btn btn-primary" style="margin-top:5px;">API 연결 테스트</button>
-        <button onclick="retryGoogleAPI()" class="btn btn-warning" style="margin-top:5px;">OAuth 재시도</button>`;
-}
 
 function updateFailedStatus() {
     const statusElement = document.getElementById('chatbot-status');
@@ -583,30 +460,6 @@ async function initializeExistingApp() {
     }
 }
 
-// API 키 모드 테스트 함수
-async function testApiKeyFunction() {
-    try {
-        updateGoogleStatus('YouTube API 연결 테스트 중...', 'info');
-        
-        // API 키로 간단한 검색 요청
-        const response = await gapi.client.youtube.search.list({
-            part: 'snippet',
-            q: 'test',
-            maxResults: 1,
-            type: 'video'
-        });
-        
-        if (response.status === 200) {
-            updateGoogleStatus('✅ YouTube API 연결 성공! (API 키 모드)', 'success');
-        } else {
-            throw new Error('API 응답 오류');
-        }
-        
-    } catch (error) {
-        console.error('API 키 테스트 실패:', error);
-        updateGoogleStatus(`❌ API 연결 실패: ${error.message}`, 'error');
-    }
-}
 
 // 기존 함수들을 조건부로 설정
 window.testApiKey = function() {
