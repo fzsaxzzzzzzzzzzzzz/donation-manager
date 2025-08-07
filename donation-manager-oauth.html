@@ -173,7 +173,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 
 // Google API 설정 (YouTube API 추가)
 const GOOGLE_CONFIG = {
-    CLIENT_ID: '493287022430-f3flnq1h5qnc68856hap4jcmmqe2rtpu.apps.googleusercontent.com',
+    CLIENT_ID: '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com',
+    API_KEY: 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4',
     DISCOVERY_DOCS: [
         'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
         'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'  // YouTube API 추가
@@ -194,6 +195,7 @@ async function initGoogleAPI() {
         await gapi.client.init({
             discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS,
             clientId: GOOGLE_CONFIG.CLIENT_ID,
+            apiKey: GOOGLE_CONFIG.API_KEY,
             scope: GOOGLE_CONFIG.SCOPES
         });
         

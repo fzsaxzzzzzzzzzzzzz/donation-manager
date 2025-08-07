@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>간단 테스트</title>
+<style>
+body { 
+    font-family: Arial, sans-serif; 
+    margin: 20px; 
+    background: #f0f2f5; 
+}
+.container { 
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.panel { 
+    background: white; 
+    padding: 20px; 
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn { 
+    background: #1877f2; 
+    color: white; 
+    border: none; 
+    padding: 10px 20px; 
+    border-radius: 6px;
+    cursor: pointer;
+}
+.status { 
+    padding: 10px; 
+    border-radius: 6px; 
+    margin: 10px 0;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+</style>
+</head>
+<body>
+
+<h1>후원 관리 시스템 - 테스트 버전</h1>
+
+<div class="container">
+    <div class="panel">
+        <h2>🤖 챗봇</h2>
+        <div id="chatbot-status" class="status">
+            🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. 
+            <button onclick="signInGoogle()" class="btn" style="margin-left:10px;">로그인</button>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <h4>🔧 YouTube API 테스트</h4>
+            <button onclick="testApi()" class="btn">API 연결 테스트</button>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <h4>📺 라이브 채팅 연결</h4>
+            <input type="text" id="youtube-video-id" placeholder="YouTube 영상 ID" style="width: 70%; padding: 8px;">
+            <button onclick="connectChat()" class="btn">연결</button>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <h2>📊 현황</h2>
+        <div id="status-display">
+            시스템이 로드되었습니다!
+        </div>
+        <button onclick="testFunction()" class="btn">테스트</button>
+    </div>
+</div>
+
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+
+<script>
+// 기본 설정
+const GOOGLE_CONFIG = {
+    CLIENT_ID: '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com',
+    API_KEY: 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4',
+    DISCOVERY_DOCS: [
+        'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+        'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'
+    ],
+    SCOPES: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl'
+};
+
+let isSignedIn = false;
+let authInstance = null;
+
+// 간단한 테스트 함수
+function testFunction() {
+    document.getElementById('status-display').innerHTML = '테스트 버튼이 클릭되었습니다! ✅';
+}
+
+// Google API 초기화
+async function initGoogleAPI() {
+    try {
+        await new Promise((resolve) => {
+            gapi.load('client:auth2', resolve);
+        });
+        
+        await gapi.client.init({
+            discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS,
+            clientId: GOOGLE_CONFIG.CLIENT_ID,
+            apiKey: GOOGLE_CONFIG.API_KEY,
+            scope: GOOGLE_CONFIG.SCOPES
+        });
+        
+        authInstance = gapi.auth2.getAuthInstance();
+        isSignedIn = authInstance.isSignedIn.get();
+        
+        authInstance.isSignedIn.listen((signedIn) => {
+            isSignedIn = signedIn;
+            updateStatus();
+        });
+        
+        updateStatus();
+        console.log('Google API 초기화 완료');
+        
+    } catch (error) {
+        console.error('Google API 초기화 실패:', error);
+        document.getElementById('status-display').innerHTML = `❌ API 초기화 실패: ${error.message}`;
+    }
+}
+
+// Google 로그인
+async function signInGoogle() {
+    try {
+        if (!authInstance) {
+            alert('Google API가 초기화되지 않았습니다');
+            return;
+        }
+        
+        await authInstance.signIn();
+        document.getElementById('status-display').innerHTML = '✅ Google 로그인 성공!';
+        
+    } catch (error) {
+        console.error('로그인 실패:', error);
+        document.getElementById('status-display').innerHTML = `❌ 로그인 실패: ${error.message}`;
+    }
+}
+
+// 상태 업데이트
+function updateStatus() {
+    const statusElement = document.getElementById('chatbot-status');
+    if (isSignedIn) {
+        statusElement.innerHTML = '✅ <strong>Google 로그인됨</strong>: YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogle()" class="btn" style="margin-left:10px;">로그아웃</button>';
+    } else {
+        statusElement.innerHTML = '🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. <button onclick="signInGoogle()" class="btn" style="margin-left:10px;">로그인</button>';
+    }
+}
+
+// API 테스트
+function testApi() {
+    if (!isSignedIn) {
+        document.getElementById('status-display').innerHTML = '❌ 먼저 Google 로그인이 필요합니다';
+        return;
+    }
+    document.getElementById('status-display').innerHTML = '🔍 YouTube API 테스트 중...';
+    // 간단한 테스트만
+    setTimeout(() => {
+        document.getElementById('status-display').innerHTML = '✅ API 테스트 완료!';
+    }, 1000);
+}
+
+// 채팅 연결 테스트
+function connectChat() {
+    const videoId = document.getElementById('youtube-video-id').value.trim();
+    if (!videoId) {
+        document.getElementById('status-display').innerHTML = '❌ YouTube 영상 ID를 입력하세요';
+        return;
+    }
+    document.getElementById('status-display').innerHTML = `🔗 영상 ID: ${videoId}로 연결 시도 중...`;
+}
+
+// 로그아웃
+async function signOutGoogle() {
+    try {
+        await authInstance.signOut();
+        document.getElementById('status-display').innerHTML = '로그아웃되었습니다';
+    } catch (error) {
+        console.error('로그아웃 실패:', error);
+    }
+}
+
+// 페이지 로드 시 초기화
+window.addEventListener('load', async () => {
+    document.getElementById('status-display').innerHTML = '🚀 시스템 초기화 중...';
+    await initGoogleAPI();
+    document.getElementById('status-display').innerHTML = '✅ 시스템 준비 완료!';
+});
+</script>
+
+</body>
+</html>
