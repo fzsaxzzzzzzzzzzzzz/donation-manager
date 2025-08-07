@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth 수정 버전</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f8f9fa; padding: 15px; font-family: monospace; white-space: pre-wrap; height: 350px; overflow-y: auto; border: 1px solid #ddd; margin: 10px 0; }
+        .btn { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; background: #007bff; color: white; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>OAuth 수정된 테스트</h1>
+    
+    <div id="status" class="status warning">초기화 중...</div>
+    
+    <button onclick="login()" class="btn">OAuth 로그인</button>
+    <button onclick="testAPI()" class="btn">API 테스트</button>
+    <button onclick="testFetch()" class="btn">Fetch 테스트</button>
+    <button onclick="checkStatus()" class="btn">상태 체크</button>
+    <button onclick="clearLog()" class="btn">로그 지우기</button>
+    
+    <div id="log" class="log">로그...</div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        const CLIENT_ID = '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4';
+        
+        let tokenClient;
+        let isSignedIn = false;
+        let accessToken = null;
+        
+        function log(msg) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.textContent += `[${time}] ${msg}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function updateStatus(msg, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = msg;
+            statusEl.className = `status ${type}`;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+        
+        function checkStatus() {
+            log('=== API 상태 체크 ===');
+            log('- gapi: ' + (typeof gapi !== 'undefined' ? 'OK' : 'MISSING'));
+            log('- google: ' + (typeof google !== 'undefined' ? 'OK' : 'MISSING'));
+            log('- google.accounts: ' + (google?.accounts ? 'OK' : 'MISSING'));
+            log('- google.accounts.oauth2: ' + (google?.accounts?.oauth2 ? 'OK' : 'MISSING'));
+            log('- tokenClient: ' + (tokenClient ? 'OK' : 'MISSING'));
+            log('- isSignedIn: ' + isSignedIn);
+            log('- accessToken: ' + (accessToken ? accessToken.substring(0, 20) + '...' : 'NONE'));
+            
+            if (gapi && gapi.client) {
+                log('- gapi.client: OK');
+                log('- gapi.client.youtube: ' + (gapi.client.youtube ? 'OK' : 'MISSING'));
+            }
+        }
+        
+        // 개선된 초기화 (YouTube API 로드 문제 해결)
+        async function init() {
+            try {
+                log('=== 초기화 시작 ===');
+                
+                // 1. API 로드 대기 (더 안전하게)
+                let retries = 0;
+                while ((!window.gapi || !window.google?.accounts?.oauth2) && retries < 15) {
+                    log(`API 로드 대기... (${retries + 1}/15)`);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    retries++;
+                }
+                
+                if (!window.gapi) throw new Error('GAPI 로드 실패');
+                if (!window.google?.accounts?.oauth2) throw new Error('GIS 로드 실패');
+                
+                log('✅ API 라이브러리 로드 완료');
+                
+                // 2. GAPI 클라이언트 로드
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('GAPI client 로드 타임아웃')), 5000);
+                    gapi.load('client', {
+                        callback: () => {
+                            clearTimeout(timeout);
+                            resolve();
+                        },
+                        onerror: () => {
+                            clearTimeout(timeout);
+                            reject(new Error('GAPI client 로드 실패'));
+                        }
+                    });
+                });
+                
+                // 3. 기본 초기화 (API 키만)
+                await gapi.client.init({
+                    apiKey: API_KEY
+                });
+                log('✅ GAPI 기본 초기화 완료');
+                
+                // 4. YouTube API 로드 시도 (실패해도 계속 진행)
+                try {
+                    log('YouTube API 로드 시도...');
+                    await gapi.client.load('youtube', 'v3');
+                    log('✅ YouTube API 로드 성공');
+                } catch (youtubeError) {
+                    log('❌ YouTube API 로드 실패 (Fetch 방식으로 대체 가능)');
+                    log('YouTube 로드 오류: ' + (youtubeError.message || 'Unknown'));
+                }
+                
+                // 5. OAuth 클라이언트 설정
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl',
+                    callback: (response) => {
+                        log('OAuth 콜백 호출됨:');
+                        log('- Response: ' + JSON.stringify(response, null, 2));
+                        
+                        if (response?.access_token) {
+                            accessToken = response.access_token;
+                            if (gapi.client.setToken) {
+                                gapi.client.setToken({ access_token: response.access_token });
+                            }
+                            isSignedIn = true;
+                            updateStatus('✅ 로그인 성공!', 'success');
+                            log('✅ OAuth 토큰 획득 성공');
+                        } else if (response?.error) {
+                            updateStatus('❌ 로그인 오류: ' + response.error, 'error');
+                            log('❌ OAuth 오류: ' + JSON.stringify(response));
+                        } else {
+                            updateStatus('❌ 로그인 실패', 'error');
+                            log('❌ 예상치 못한 응답: ' + JSON.stringify(response));
+                        }
+                    },
+                    error_callback: (error) => {
+                        log('OAuth 오류 콜백: ' + JSON.stringify(error));
+                        updateStatus('❌ OAuth 오류', 'error');
+                    }
+                });
+                
+                updateStatus('✅ 초기화 완료 - 로그인 가능', 'success');
+                log('✅ 모든 초기화 완료');
+                
+            } catch (error) {
+                const errorMsg = `초기화 실패: ${error.message || 'Unknown error'}`;
+                updateStatus('❌ ' + errorMsg, 'error');
+                log('❌ ' + errorMsg);
+                log('Error details: ' + JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            }
+        }
+        
+        function login() {
+            if (!tokenClient) {
+                updateStatus('❌ 초기화가 완료되지 않음', 'error');
+                log('오류: tokenClient가 준비되지 않음');
+                return;
+            }
+            
+            try {
+                log('OAuth 로그인 시도...');
+                updateStatus('⏳ 로그인 중...', 'warning');
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } catch (error) {
+                log('로그인 시도 오류: ' + error.message);
+                updateStatus('❌ 로그인 시도 실패', 'error');
+            }
+        }
+        
+        // GAPI 방식으로 API 테스트
+        async function testAPI() {
+            if (!isSignedIn) {
+                updateStatus('❌ 먼저 로그인하세요', 'error');
+                return;
+            }
+            
+            if (!gapi.client.youtube?.search) {
+                log('⚠️ gapi.client.youtube.search 사용 불가, Fetch 방식 사용');
+                return testFetch();
+            }
+            
+            try {
+                log('YouTube API 테스트 중... (GAPI 방식)');
+                
+                const response = await gapi.client.youtube.search.list({
+                    part: 'snippet',
+                    q: 'test',
+                    maxResults: 1,
+                    type: 'video'
+                });
+                
+                log('✅ GAPI API 호출 성공!');
+                log(`결과: ${response.result.items?.length || 0}개 아이템`);
+                if (response.result.items?.[0]) {
+                    log('첫 번째 결과: ' + response.result.items[0].snippet.title);
+                }
+                updateStatus('✅ API 테스트 성공! (GAPI)', 'success');
+                
+            } catch (error) {
+                const errorMsg = `GAPI API 테스트 실패: ${error.message || 'Unknown'}`;
+                updateStatus('❌ ' + errorMsg, 'error');
+                log('❌ ' + errorMsg);
+                log('Error details: ' + JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            }
+        }
+        
+        // Fetch 방식으로 API 테스트
+        async function testFetch() {
+            if (!isSignedIn || !accessToken) {
+                updateStatus('❌ 먼저 로그인하세요', 'error');
+                return;
+            }
+            
+            try {
+                log('YouTube API 테스트 중... (Fetch 방식)');
+                
+                const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=test&maxResults=1&type=video&key=${API_KEY}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`HTTP Status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                log('✅ Fetch API 호출 성공!');
+                log(`결과: ${data.items?.length || 0}개 아이템`);
+                if (data.items?.[0]) {
+                    log('첫 번째 결과: ' + data.items[0].snippet.title);
+                }
+                updateStatus('✅ API 테스트 성공! (Fetch)', 'success');
+                
+            } catch (error) {
+                const errorMsg = `Fetch API 테스트 실패: ${error.message || 'Unknown'}`;
+                updateStatus('❌ ' + errorMsg, 'error');
+                log('❌ ' + errorMsg);
+            }
+        }
+        
+        // 페이지 로드 후 초기화
+        window.addEventListener('load', () => {
+            log('페이지 로드 완료, 3초 후 초기화 시작...');
+            setTimeout(init, 3000);
+        });
+    </script>
+</body>
+</html>
