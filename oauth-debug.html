@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 디버그</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f8f9fa; padding: 15px; font-family: monospace; white-space: pre-wrap; height: 400px; overflow-y: auto; border: 1px solid #ddd; }
+        .btn { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <h1>OAuth 상세 디버그</h1>
+    
+    <button onclick="testStep1()" class="btn">1. 기본 체크</button>
+    <button onclick="testStep2()" class="btn">2. GAPI 로드</button>
+    <button onclick="testStep3()" class="btn">3. GAPI 초기화</button>
+    <button onclick="testStep4()" class="btn">4. GIS 체크</button>
+    <button onclick="clearLog()" class="btn">로그 지우기</button>
+    
+    <div id="log" class="log">로그 출력...</div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        const API_KEY = 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4';
+        const CLIENT_ID = '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com';
+        
+        function log(msg) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.textContent += `[${time}] ${msg}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(msg);
+        }
+        
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+        
+        // Step 1: 기본 환경 체크
+        function testStep1() {
+            log('=== Step 1: 기본 환경 체크 ===');
+            log(`URL: ${window.location.href}`);
+            log(`Protocol: ${window.location.protocol}`);
+            log(`typeof gapi: ${typeof gapi}`);
+            log(`typeof google: ${typeof google}`);
+            
+            if (typeof gapi !== 'undefined') {
+                log(`gapi.load: ${typeof gapi.load}`);
+                log(`gapi.client: ${typeof gapi.client}`);
+            }
+            
+            if (typeof google !== 'undefined') {
+                log(`google.accounts: ${!!google.accounts}`);
+                if (google.accounts) {
+                    log(`google.accounts.oauth2: ${!!google.accounts.oauth2}`);
+                }
+            }
+        }
+        
+        // Step 2: GAPI 로드 테스트
+        async function testStep2() {
+            log('=== Step 2: GAPI 로드 테스트 ===');
+            
+            if (typeof gapi === 'undefined') {
+                log('❌ gapi가 로드되지 않음');
+                return;
+            }
+            
+            try {
+                log('gapi.load 호출 시작...');
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('gapi.load 타임아웃'));
+                    }, 5000);
+                    
+                    gapi.load('client', {
+                        callback: () => {
+                            clearTimeout(timeout);
+                            log('✅ gapi.load client 성공');
+                            resolve();
+                        },
+                        onerror: (error) => {
+                            clearTimeout(timeout);
+                            log('❌ gapi.load client 실패: ' + JSON.stringify(error));
+                            reject(error);
+                        },
+                        timeout: 5000,
+                        ontimeout: () => {
+                            clearTimeout(timeout);
+                            log('❌ gapi.load client 타임아웃');
+                            reject(new Error('Timeout'));
+                        }
+                    });
+                });
+                
+                log('gapi.client 상태:');
+                log(`- typeof gapi.client: ${typeof gapi.client}`);
+                log(`- gapi.client.init: ${typeof gapi.client.init}`);
+                
+            } catch (error) {
+                log('GAPI 로드 실패:');
+                log(`- Error: ${error.message}`);
+                log(`- Stack: ${error.stack}`);
+            }
+        }
+        
+        // Step 3: GAPI 초기화 테스트 (상세 디버깅)
+        async function testStep3() {
+            log('=== Step 3: GAPI 초기화 상세 테스트 ===');
+            
+            if (!gapi || !gapi.client || !gapi.client.init) {
+                log('❌ gapi.client.init가 사용 불가능');
+                return;
+            }
+            
+            try {
+                log('gapi.client.init 호출 시작...');
+                log(`API Key: ${API_KEY.substring(0, 10)}...`);
+                
+                const initConfig = {
+                    apiKey: API_KEY,
+                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest']
+                };
+                
+                log('초기화 설정: ' + JSON.stringify(initConfig, null, 2));
+                
+                // Promise로 래핑해서 상세 오류 캐치
+                const result = await new Promise((resolve, reject) => {
+                    gapi.client.init(initConfig).then(
+                        (success) => {
+                            log('✅ gapi.client.init 성공');
+                            log('Success result: ' + JSON.stringify(success));
+                            resolve(success);
+                        },
+                        (error) => {
+                            log('❌ gapi.client.init 실패 (Promise reject)');
+                            log('Error type: ' + typeof error);
+                            log('Error constructor: ' + (error?.constructor?.name || 'Unknown'));
+                            log('Error message: ' + (error?.message || 'No message'));
+                            log('Error details: ' + JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+                            
+                            if (error?.result) {
+                                log('Error result: ' + JSON.stringify(error.result, null, 2));
+                            }
+                            
+                            reject(error);
+                        }
+                    ).catch((catchError) => {
+                        log('❌ gapi.client.init 실패 (Catch)');
+                        log('Catch error: ' + JSON.stringify(catchError, Object.getOwnPropertyNames(catchError), 2));
+                        reject(catchError);
+                    });
+                });
+                
+                log('✅ GAPI 초기화 완전 성공');
+                
+            } catch (error) {
+                log('최종 캐치된 오류:');
+                log('- Type: ' + typeof error);
+                log('- Constructor: ' + (error?.constructor?.name || 'Unknown'));
+                log('- Message: ' + (error?.message || 'No message'));
+                log('- Full error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            }
+        }
+        
+        // Step 4: Google Identity Services 체크
+        function testStep4() {
+            log('=== Step 4: Google Identity Services 체크 ===');
+            
+            if (typeof google === 'undefined') {
+                log('❌ google 객체가 로드되지 않음');
+                return;
+            }
+            
+            log('✅ google 객체 존재');
+            
+            if (!google.accounts) {
+                log('❌ google.accounts가 없음');
+                return;
+            }
+            
+            log('✅ google.accounts 존재');
+            
+            if (!google.accounts.oauth2) {
+                log('❌ google.accounts.oauth2가 없음');
+                return;
+            }
+            
+            log('✅ google.accounts.oauth2 존재');
+            
+            try {
+                const testClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/youtube',
+                    callback: (response) => {
+                        log('테스트 토큰 클라이언트 콜백: ' + JSON.stringify(response));
+                    }
+                });
+                
+                log('✅ GIS 토큰 클라이언트 생성 성공');
+                log('Client type: ' + typeof testClient);
+                
+            } catch (error) {
+                log('❌ GIS 토큰 클라이언트 생성 실패');
+                log('Error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            }
+        }
+        
+        // 페이지 로드 시 자동 실행
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('=== 페이지 로드 완료 ===');
+                testStep1(); // 기본 체크 자동 실행
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
