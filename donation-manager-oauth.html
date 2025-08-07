@@ -185,27 +185,47 @@ const GOOGLE_CONFIG = {
 let isSignedIn = false;
 let authInstance = null;
 
-// Google API 초기화 (YouTube API 포함)
+// Google API 초기화 (YouTube API 포함) - 안전한 방식
 async function initGoogleAPI() {
     try {
-        await new Promise((resolve) => {
-            gapi.load('client:auth2', resolve);
+        // 단계 1: GAPI 로드 대기
+        console.log('1단계: Google API 라이브러리 로드 중...');
+        await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Google API 로드 타임아웃'));
+            }, 10000);
+            
+            gapi.load('client:auth2', () => {
+                clearTimeout(timeout);
+                console.log('✅ Google API 라이브러리 로드 완료');
+                resolve();
+            });
         });
         
-        // 클라이언트 초기화
+        // 단계 2: 클라이언트 초기화
+        console.log('2단계: Google 클라이언트 초기화 중...');
         await gapi.client.init({
             apiKey: GOOGLE_CONFIG.API_KEY,
             discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS
         });
+        console.log('✅ Google 클라이언트 초기화 완료');
         
-        // OAuth2 별도 초기화
+        // 단계 3: OAuth2 초기화
+        console.log('3단계: OAuth2 초기화 중...');
         await gapi.auth2.init({
             client_id: GOOGLE_CONFIG.CLIENT_ID,
             scope: GOOGLE_CONFIG.SCOPES
         });
+        console.log('✅ OAuth2 초기화 완료');
         
+        // 단계 4: Auth 인스턴스 확인
         authInstance = gapi.auth2.getAuthInstance();
+        if (!authInstance) {
+            throw new Error('Auth 인스턴스를 가져올 수 없습니다');
+        }
+        
         isSignedIn = authInstance.isSignedIn.get();
+        console.log('현재 로그인 상태:', isSignedIn);
         
         // 인증 상태 변경 리스너 추가
         authInstance.isSignedIn.listen((signedIn) => {
@@ -214,12 +234,19 @@ async function initGoogleAPI() {
             console.log('인증 상태 변경:', signedIn ? '로그인됨' : '로그아웃됨');
         });
         
-        console.log('Google API (Drive + YouTube) 초기화 완료');
+        console.log('🎉 Google API 전체 초기화 완료!');
         updateGoogleStatus();
         
     } catch (error) {
-        console.error('Google API 초기화 실패:', error);
-        showStatus(`Google API 초기화 실패: ${error.message}`, 'error');
+        console.error('❌ Google API 초기화 실패:', error);
+        
+        // 상세 에러 정보 표시
+        const errorMsg = error.message || error.error || '알 수 없는 오류';
+        const statusElement = document.getElementById('chatbot-status');
+        if (statusElement) {
+            statusElement.className = 'status status-error';
+            statusElement.innerHTML = `❌ <strong>Google API 초기화 실패</strong>: ${errorMsg}<br><button onclick="retryGoogleAPI()" class="btn btn-warning" style="margin-top:10px;">다시 시도</button>`;
+        }
     }
 }
 
@@ -374,21 +401,57 @@ async function sendToYouTubeOAuth() {
     }
 }
 
-// Google 로그인/로그아웃 함수
+// 다시 시도 함수
+async function retryGoogleAPI() {
+    const statusElement = document.getElementById('chatbot-status');
+    if (statusElement) {
+        statusElement.className = 'status status-info';
+        statusElement.innerHTML = '🔄 <strong>Google API 재초기화 중...</strong>';
+    }
+    
+    // 기존 인스턴스 초기화
+    authInstance = null;
+    isSignedIn = false;
+    
+    await initGoogleAPI();
+}
+
+// Google 로그인/로그아웃 함수 - 안전한 방식
 async function signInGoogle() {
     try {
+        // API 초기화 상태 확인
         if (!authInstance) {
-            showStatus('Google API가 초기화되지 않았습니다', 'error');
+            const statusElement = document.getElementById('chatbot-status');
+            if (statusElement) {
+                statusElement.className = 'status status-warning';
+                statusElement.innerHTML = '❌ <strong>Google API가 초기화되지 않았습니다</strong><br><button onclick="retryGoogleAPI()" class="btn btn-warning" style="margin-top:10px;">API 재초기화</button>';
+            }
             return;
         }
         
-        showStatus('Google 로그인 중...', 'info');
-        await authInstance.signIn();
-        showStatus('✅ Google 로그인 성공!', 'success');
+        // 로그인 상태 업데이트
+        updateGoogleStatus('로그인 중...', 'info');
+        
+        // OAuth 로그인 시도 (옵션 추가)
+        const signInOptions = {
+            prompt: 'select_account'
+        };
+        
+        await authInstance.signIn(signInOptions);
+        console.log('✅ Google OAuth 로그인 성공!');
+        updateGoogleStatus('✅ Google 로그인 성공!', 'success');
         
     } catch (error) {
-        console.error('Google 로그인 실패:', error);
-        showStatus(`Google 로그인 실패: ${error.error || error.message}`, 'error');
+        console.error('❌ Google 로그인 실패:', error);
+        
+        let errorMessage = 'Google 로그인 실패';
+        if (error.error) {
+            errorMessage += `: ${error.error}`;
+        } else if (error.message) {
+            errorMessage += `: ${error.message}`;
+        }
+        
+        updateGoogleStatus(errorMessage, 'error');
     }
 }
 
@@ -408,12 +471,24 @@ async function signOutGoogle() {
     }
 }
 
-// Google 로그인 상태 업데이트
-function updateGoogleStatus() {
+// Google 로그인 상태 업데이트 - 개선된 버전
+function updateGoogleStatus(message = null, type = null) {
     const statusElement = document.getElementById('chatbot-status');
-    if (isSignedIn) {
+    if (!statusElement) return;
+    
+    // 사용자 정의 메시지가 있는 경우
+    if (message && type) {
+        statusElement.className = `status status-${type}`;
+        statusElement.innerHTML = `<strong>${message}</strong>`;
+        return;
+    }
+    
+    // 로그인 상태에 따른 기본 메시지
+    if (isSignedIn && authInstance) {
+        const user = authInstance.currentUser.get();
+        const userEmail = user ? user.getBasicProfile().getEmail() : '';
         statusElement.className = 'status status-success';
-        statusElement.innerHTML = '✅ <strong>Google 로그인됨</strong>: YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogle()" class="btn btn-secondary" style="margin-left:10px;">로그아웃</button>';
+        statusElement.innerHTML = `✅ <strong>Google 로그인됨</strong> (${userEmail})<br>YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogle()" class="btn btn-secondary" style="margin-top:5px;">로그아웃</button>`;
     } else {
         statusElement.className = 'status status-warning';
         statusElement.innerHTML = '🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. <button onclick="signInGoogle()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
