@@ -185,68 +185,100 @@ const GOOGLE_CONFIG = {
 let isSignedIn = false;
 let authInstance = null;
 
-// Google API 초기화 (YouTube API 포함) - 안전한 방식
+// Google API 초기화 - 다중 방법 시도
 async function initGoogleAPI() {
+    // 방법 1: OAuth 방식 시도
+    console.log('🔄 방법 1: OAuth 방식으로 초기화 시도...');
+    const oauthResult = await tryOAuthInit();
+    
+    if (oauthResult) {
+        console.log('✅ OAuth 방식 초기화 성공!');
+        updateGoogleStatus();
+        return;
+    }
+    
+    // 방법 2: API 키만으로 기본 기능 초기화
+    console.log('🔄 방법 2: API 키 방식으로 기본 기능 초기화...');
+    const apiKeyResult = await tryApiKeyInit();
+    
+    if (apiKeyResult) {
+        console.log('✅ API 키 방식 초기화 성공! (제한된 기능)');
+        updateApiKeyStatus();
+        return;
+    }
+    
+    // 모든 방법 실패
+    console.error('❌ 모든 초기화 방법 실패');
+    updateFailedStatus();
+}
+
+// OAuth 방식 초기화 시도
+async function tryOAuthInit() {
     try {
-        // 단계 1: GAPI 로드 대기
-        console.log('1단계: Google API 라이브러리 로드 중...');
+        // GAPI 로드
         await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error('Google API 로드 타임아웃'));
-            }, 10000);
-            
+            const timeout = setTimeout(() => reject(new Error('타임아웃')), 8000);
             gapi.load('client:auth2', () => {
                 clearTimeout(timeout);
-                console.log('✅ Google API 라이브러리 로드 완료');
                 resolve();
             });
         });
         
-        // 단계 2: 클라이언트 초기화
-        console.log('2단계: Google 클라이언트 초기화 중...');
+        // 클라이언트 초기화 (간단하게)
         await gapi.client.init({
             apiKey: GOOGLE_CONFIG.API_KEY,
-            discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest']
         });
-        console.log('✅ Google 클라이언트 초기화 완료');
         
-        // 단계 3: OAuth2 초기화
-        console.log('3단계: OAuth2 초기화 중...');
+        // OAuth2 초기화
         await gapi.auth2.init({
             client_id: GOOGLE_CONFIG.CLIENT_ID,
             scope: GOOGLE_CONFIG.SCOPES
         });
-        console.log('✅ OAuth2 초기화 완료');
         
-        // 단계 4: Auth 인스턴스 확인
         authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance) {
-            throw new Error('Auth 인스턴스를 가져올 수 없습니다');
-        }
+        if (!authInstance) return false;
         
         isSignedIn = authInstance.isSignedIn.get();
-        console.log('현재 로그인 상태:', isSignedIn);
-        
-        // 인증 상태 변경 리스너 추가
         authInstance.isSignedIn.listen((signedIn) => {
             isSignedIn = signedIn;
             updateGoogleStatus();
-            console.log('인증 상태 변경:', signedIn ? '로그인됨' : '로그아웃됨');
         });
         
-        console.log('🎉 Google API 전체 초기화 완료!');
-        updateGoogleStatus();
+        return true;
         
     } catch (error) {
-        console.error('❌ Google API 초기화 실패:', error);
+        console.warn('OAuth 초기화 실패:', error);
+        return false;
+    }
+}
+
+// API 키 방식 초기화 시도
+async function tryApiKeyInit() {
+    try {
+        // GAPI 로드 (클라이언트만)
+        await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('타임아웃')), 5000);
+            gapi.load('client', () => {
+                clearTimeout(timeout);
+                resolve();
+            });
+        });
         
-        // 상세 에러 정보 표시
-        const errorMsg = error.message || error.error || '알 수 없는 오류';
-        const statusElement = document.getElementById('chatbot-status');
-        if (statusElement) {
-            statusElement.className = 'status status-error';
-            statusElement.innerHTML = `❌ <strong>Google API 초기화 실패</strong>: ${errorMsg}<br><button onclick="retryGoogleAPI()" class="btn btn-warning" style="margin-top:10px;">다시 시도</button>`;
-        }
+        // API 키로만 초기화
+        await gapi.client.init({
+            apiKey: GOOGLE_CONFIG.API_KEY
+        });
+        
+        // YouTube API 로드
+        await gapi.client.load('youtube', 'v3');
+        
+        window.apiKeyMode = true; // API 키 모드 플래그
+        return true;
+        
+    } catch (error) {
+        console.warn('API 키 초기화 실패:', error);
+        return false;
     }
 }
 
@@ -471,28 +503,51 @@ async function signOutGoogle() {
     }
 }
 
-// Google 로그인 상태 업데이트 - 개선된 버전
+// 상태 업데이트 함수들
 function updateGoogleStatus(message = null, type = null) {
     const statusElement = document.getElementById('chatbot-status');
     if (!statusElement) return;
     
-    // 사용자 정의 메시지가 있는 경우
     if (message && type) {
         statusElement.className = `status status-${type}`;
         statusElement.innerHTML = `<strong>${message}</strong>`;
         return;
     }
     
-    // 로그인 상태에 따른 기본 메시지
     if (isSignedIn && authInstance) {
-        const user = authInstance.currentUser.get();
-        const userEmail = user ? user.getBasicProfile().getEmail() : '';
-        statusElement.className = 'status status-success';
-        statusElement.innerHTML = `✅ <strong>Google 로그인됨</strong> (${userEmail})<br>YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogle()" class="btn btn-secondary" style="margin-top:5px;">로그아웃</button>`;
+        try {
+            const user = authInstance.currentUser.get();
+            const userEmail = user ? user.getBasicProfile().getEmail() : '';
+            statusElement.className = 'status status-success';
+            statusElement.innerHTML = `✅ <strong>OAuth 로그인됨</strong> (${userEmail})<br>모든 YouTube API 기능을 사용할 수 있습니다! <button onclick="signOutGoogle()" class="btn btn-secondary" style="margin-top:5px;">로그아웃</button>`;
+        } catch (error) {
+            updateApiKeyStatus();
+        }
     } else {
         statusElement.className = 'status status-warning';
-        statusElement.innerHTML = '🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. <button onclick="signInGoogle()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
+        statusElement.innerHTML = '🔐 <strong>OAuth 로그인 필요</strong>: 전체 기능 사용을 위해 로그인하세요. <button onclick="signInGoogle()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
     }
+}
+
+function updateApiKeyStatus() {
+    const statusElement = document.getElementById('chatbot-status');
+    if (!statusElement) return;
+    
+    statusElement.className = 'status status-info';
+    statusElement.innerHTML = `🔑 <strong>API 키 모드</strong>: 기본 YouTube 검색 기능만 사용 가능<br>
+        <small>💡 라이브 채팅 기능을 사용하려면 OAuth 로그인이 필요합니다</small><br>
+        <button onclick="testApiKeyFunction()" class="btn btn-primary" style="margin-top:5px;">API 연결 테스트</button>
+        <button onclick="retryGoogleAPI()" class="btn btn-warning" style="margin-top:5px;">OAuth 재시도</button>`;
+}
+
+function updateFailedStatus() {
+    const statusElement = document.getElementById('chatbot-status');
+    if (!statusElement) return;
+    
+    statusElement.className = 'status status-error';
+    statusElement.innerHTML = `❌ <strong>API 초기화 실패</strong>: YouTube API에 연결할 수 없습니다<br>
+        <small>네트워크 연결이나 API 키를 확인해주세요</small><br>
+        <button onclick="retryGoogleAPI()" class="btn btn-warning" style="margin-top:10px;">다시 시도</button>`;
 }
 
 // 페이지 로드 시 초기화 (기존 앱 + OAuth)
@@ -528,10 +583,55 @@ async function initializeExistingApp() {
     }
 }
 
-// 기존 함수들을 OAuth 버전으로 교체
-window.testApiKey = testYouTubeOAuth;
-window.connectToLiveChat = connectToLiveChatOAuth;
-window.sendToYouTube = sendToYouTubeOAuth;
+// API 키 모드 테스트 함수
+async function testApiKeyFunction() {
+    try {
+        updateGoogleStatus('YouTube API 연결 테스트 중...', 'info');
+        
+        // API 키로 간단한 검색 요청
+        const response = await gapi.client.youtube.search.list({
+            part: 'snippet',
+            q: 'test',
+            maxResults: 1,
+            type: 'video'
+        });
+        
+        if (response.status === 200) {
+            updateGoogleStatus('✅ YouTube API 연결 성공! (API 키 모드)', 'success');
+        } else {
+            throw new Error('API 응답 오류');
+        }
+        
+    } catch (error) {
+        console.error('API 키 테스트 실패:', error);
+        updateGoogleStatus(`❌ API 연결 실패: ${error.message}`, 'error');
+    }
+}
+
+// 기존 함수들을 조건부로 설정
+window.testApiKey = function() {
+    if (window.apiKeyMode) {
+        testApiKeyFunction();
+    } else {
+        testYouTubeOAuth();
+    }
+};
+
+window.connectToLiveChat = function() {
+    if (window.apiKeyMode) {
+        updateGoogleStatus('❌ 라이브 채팅은 OAuth 로그인이 필요합니다', 'error');
+    } else {
+        connectToLiveChatOAuth();
+    }
+};
+
+window.sendToYouTube = function() {
+    if (window.apiKeyMode) {
+        updateGoogleStatus('❌ 채팅 전송은 OAuth 로그인이 필요합니다', 'error');
+    } else {
+        sendToYouTubeOAuth();
+    }
+};
 
 // --- 기존 애플리케이션 전역 변수 및 함수들 ---
 
