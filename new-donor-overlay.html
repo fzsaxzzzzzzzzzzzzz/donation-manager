@@ -294,6 +294,9 @@ setInterval(() => {
         const textAlign = localStorage.getItem('overlay-text-align') || 'left';
         
         // 매우 강력하게 스타일 강제 적용
+        const strokeWidth = localStorage.getItem('overlay-stroke-width') || '3';
+        const shadow = `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000`;
+        
         contentEl.style.cssText = `
             font-size: ${fontSize}px !important;
             text-align: ${textAlign} !important;
@@ -301,6 +304,7 @@ setInterval(() => {
             color: white !important;
             line-height: 1.5 !important;
             white-space: pre-line !important;
+            text-shadow: ${shadow} !important;
         `;
     }
 }, 500); // 0.5초마다 강제 적용
