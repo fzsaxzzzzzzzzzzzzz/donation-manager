@@ -211,14 +211,14 @@ GitHub Settings → Developer settings → Personal access tokens에서 생성 (
 <div style="margin-bottom: 10px;">
 <label style="font-size: 12px; color: #666;">💝 후원자별 총액:</label>
 <div style="display: flex; gap: 5px;">
-<input type="text" readonly class="form-input" style="flex: 1;" value="https://saxzzzzzzzzzzzzz.github.io/donation-manager/new-donor-overlay.html">
+<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/new-donor-overlay.html">
 <button onclick="copyText(this.previousElementSibling.value)" class="btn btn-secondary">📋</button>
 </div>
 </div>
 <div>
 <label style="font-size: 12px; color: #666;">🏆 스트리머 테이블:</label>
 <div style="display: flex; gap: 5px;">
-<input type="text" readonly class="form-input" style="flex: 1;" value="https://saxzzzzzzzzzzzzz.github.io/donation-manager/new-streamer-table-overlay.html">
+<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/new-streamer-table-overlay.html">
 <button onclick="copyText(this.previousElementSibling.value)" class="btn btn-secondary">📋</button>
 </div>
 </div>
@@ -776,7 +776,6 @@ function safeAddClass(element, className) {
 }
 
 // --- 핵심 로직 (초기화 및 동기화 제어) ---
-"""// --- 핵심 로직 (초기화 및 동기화 제어) ---
 async function initializeApp() {
     // 오버레이 모드 확인 (URL 파라미터)
     const urlParams = new URLSearchParams(window.location.search);
@@ -791,19 +790,11 @@ async function initializeApp() {
     const loader = safeGetElement('app-loader');
     
     try {
-        console.log("GitHub 우선 초기화 시작...");
+        console.log("안전한 초기화 시작...");
         
-        // 1. GitHub에서 데이터 로드 시도
-        const githubLoaded = await loadDataFromGitHub();
-
-        // 2. GitHub 로드 실패 시 로컬 스토리지에서 로드
-        if (!githubLoaded) {
-            console.log("GitHub 데이터 로드 실패, 로컬 스토리지에서 로드합니다.");
-            loadFromLocalStorage();
-        }
-        
-        // 3. 나머지 초기화 단계 실행
+        // 각 초기화 단계를 안전하게 실행
         try { initEventListeners(); } catch (e) { console.error('이벤트 리스너 초기화 실패:', e); }
+        try { loadFromLocalStorage(); } catch (e) { console.error('로컬 스토리지 로드 실패:', e); }
         try { loadYouTubeSettings(); } catch (e) { console.error('YouTube 설정 로드 실패:', e); }
         try { loadOverlaySettings(); } catch (e) { console.error('오버레이 설정 로드 실패:', e); }
         
@@ -816,24 +807,120 @@ async function initializeApp() {
         try { updateAllUI(); } catch (e) { console.error('UI 업데이트 실패:', e); }
         try { updateAdminElements(); } catch (e) { console.error('관리자 요소 업데이트 실패:', e); }
         
+        // 탭 시스템 디버깅
+        console.log('=== 탭 시스템 디버깅 ===');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        console.log(`탭 버튼 개수: ${tabButtons.length}`);
+        console.log(`탭 콘텐츠 개수: ${tabContents.length}`);
+        
+        tabButtons.forEach((btn, index) => {
+            console.log(`탭 버튼 ${index}: ${btn.textContent.trim()} - onclick: ${btn.onclick ? 'O' : 'X'}`);
+        });
+        
+        tabContents.forEach((content, index) => {
+            console.log(`탭 콘텐츠 ${index}: ${content.id} - display: ${window.getComputedStyle(content).display}`);
+        });
+        console.log('=== 탭 시스템 디버깅 완료 ===');
+        
+        // 간단한 탭 테스트 기능 추가
+        window.testOverlayTab = function() {
+            console.log('🔥 오버레이 탭 강제 활성화 테스트');
+            const overlayTab = document.getElementById('overlay-tab');
+            if (overlayTab) {
+                // 모든 탭 비활성화
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                // 오버레이 탭만 활성화
+                overlayTab.classList.add('active');
+                console.log('✅ 오버레이 탭 강제 활성화됨');
+                console.log('👁️ 현재 display:', window.getComputedStyle(overlayTab).display);
+                console.log('📝 내용물:', overlayTab.innerHTML.slice(0, 200) + '...');
+            } else {
+                console.log('❌ overlay-tab 요소를 찾을 수 없음');
+            }
+        };
+        
+        console.log('🛠️ 콘솔에서 testOverlayTab() 함수를 실행해보세요!');
+        
+        // HTML 구조 체크 함수
+        window.checkTabStructure = function() {
+            console.log('🔍 HTML 구조 체크');
+            const mainContent = document.getElementById('main-content');
+            const overlayTab = document.getElementById('overlay-tab');
+            
+            console.log('main-content 존재:', !!mainContent);
+            console.log('overlay-tab 존재:', !!overlayTab);
+            
+            if (overlayTab) {
+                console.log('overlay-tab의 부모:', overlayTab.parentElement?.id);
+                console.log('overlay-tab 클래스:', overlayTab.className);
+                console.log('overlay-tab computed display:', window.getComputedStyle(overlayTab).display);
+                console.log('overlay-tab computed visibility:', window.getComputedStyle(overlayTab).visibility);
+                console.log('overlay-tab 높이:', overlayTab.offsetHeight);
+            }
+            
+            // 모든 탭 컨텐츠 체크
+            const tabContents = document.querySelectorAll('.tab-content');
+            console.log('총 탭 컨텐츠 개수:', tabContents.length);
+            tabContents.forEach((content, idx) => {
+                const style = window.getComputedStyle(content);
+                console.log(`${idx}: ${content.id} - active: ${content.classList.contains('active')} - display: ${style.display}`);
+            });
+        };
+        
+        console.log('🛠️ 콘솔에서 checkTabStructure() 함수도 실행해보세요!');
         try { updateTabVisibility(); } catch (e) { console.error('탭 가시성 업데이트 실패:', e); }
         
-        // 초기 탭 설정
+        // 초기 탭 설정 (후원등록 탭 활성화)
         setTimeout(() => {
-            switchTab(null, 'donation');
-            switchSimpleMode('streamer');
+            console.log('초기 탭 설정 시작...');
+            const donationTab = document.getElementById('donation-tab');
+            if (donationTab) {
+                // 모든 탭 숨기기
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.style.display = 'none';
+                    tab.classList.remove('active');
+                });
+                // 후원등록 탭만 보이기
+                donationTab.style.display = 'block';
+                donationTab.classList.add('active');
+                console.log('✅ 초기 탭 설정 완료');
+            }
         }, 100);
         
-        // 앱 컨테이너 로딩 완료 처리
+        // 조정 모드 기본값 설정 (안전하게)
+        setTimeout(() => {
+            try {
+                switchSimpleMode('streamer');
+            } catch (e) {
+                console.error('조정 모드 설정 실패:', e);
+            }
+        }, 100);
+        
+        // 앱 컨테이너 로딩 완료 처리 (완전히 안전하게)
         setTimeout(() => {
             const appContainer = safeGetElement('app-container');
-            if (appContainer) safeAddClass(appContainer, 'loaded');
-            if (loader) safeSetProperty(loader.style, 'display', 'none');
+            if (appContainer) {
+                safeAddClass(appContainer, 'loaded');
+                console.log('앱 컨테이너 로딩 완료');
+            } else {
+                console.warn('app-container 요소를 찾을 수 없습니다 - 강제로 표시합니다');
+                // 대체 방법: CSS를 직접 수정
+                const style = document.createElement('style');
+                style.textContent = '.container { display: grid !important; }';
+                document.head.appendChild(style);
+            }
+            
+            if (loader) {
+                safeSetProperty(loader.style, 'display', 'none');
+            }
         }, 200);
         
         console.log("Application loaded successfully.");
         
-        // Google API 초기화
+        // Google API 초기화 (안전하게)
         setTimeout(() => {
             try {
                 initGoogleAPI();
@@ -844,12 +931,33 @@ async function initializeApp() {
         
     } catch (error) {
         console.error("Critical initialization error:", error);
-        if (loader) {
-            const message = loader.querySelector('p');
-            if (message) message.textContent = `앱 로딩 중 심각한 오류 발생: ${error.message}`;
+        
+        // 오류 발생 시 안전 모드 활성화
+        try {
+            if (loader) {
+                const spinner = loader.querySelector('.spinner');
+                const message = loader.querySelector('p');
+                
+                if (spinner) spinner.style.display = 'none';
+                if (message) message.textContent = `앱 로딩 실패: ${error.message} - 안전 모드로 계속...`;
+            }
+            
+            // 강제로 앱 표시
+            setTimeout(() => {
+                const style = document.createElement('style');
+                style.textContent = `
+                    #app-loader { display: none !important; }
+                    .container { display: grid !important; }
+                `;
+                document.head.appendChild(style);
+                console.log('안전 모드로 앱을 강제 표시했습니다');
+            }, 1000);
+            
+        } catch (fallbackError) {
+            console.error("Even fallback failed:", fallbackError);
         }
     }
-}""
+}
 
 // --- 오버레이 모드 초기화 ---
 async function initializeOverlayMode(mode) {
@@ -1068,123 +1176,6 @@ function updateOverlayTableDisplay(donations, streamers, emojis) {
     tbody.innerHTML = html;
 }
 
-async function loadDataFromGitHub() {
-    const GITHUB_API_URL = 'https://api.github.com/repos/saxzzzzzzzzzzzzz/donation-manager/contents/data.json';
-    const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/saxzzzzzzzzzzzzz/donation-manager/main/data.json';
-
-    try {
-        const response = await fetch(GITHUB_RAW_URL + '?t=' + new Date().getTime(), {
-            headers: { 'Cache-Control': 'no-cache' }
-        });
-
-        if (!response.ok) {
-            throw new Error(`GitHub raw file not found or access denied. Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // 데이터 파싱 및 전역 변수 업데이트
-        if (data.donations) {
-            donations = data.donations.map(d => ({
-                ...d,
-                time: new Date(d.time),
-                amount: parseFloat(d.amount) || 0
-            }));
-        }
-        if (data.streamers) streamers = data.streamers;
-        if (data.emojis) emojis = data.emojis;
-        if (data.missionData) missionData = data.missionData;
-        if (data.settings) {
-            // 로컬 스토리지에 설정 저장
-            Object.keys(data.settings).forEach(key => {
-                localStorage.setItem(key, data.settings[key]);
-            });
-        }
-
-        console.log('✅ GitHub에서 데이터를 성공적으로 로드했습니다.');
-        return true;
-
-    } catch (error) {
-        console.error('❌ GitHub에서 데이터를 로드하는 중 오류 발생:', error);
-        showStatus('GitHub에서 데이터를 불러오지 못했습니다. 오프라인 모드로 작동합니다.', 'warning');
-        return false;
-    }
-}
-
-async function saveDataToGitHub() {
-    const GITHUB_API_URL = 'https://api.github.com/repos/saxzzzzzzzzzzzzz/donation-manager/contents/data.json';
-    const token = localStorage.getItem('github_token');
-
-    if (!token) {
-        // 토큰이 없으면 로컬 스토리지에만 저장
-        saveToLocalStorage();
-        return;
-    }
-
-    showSaveStatus('GitHub에 저장 중...', 'saving');
-
-    try {
-        // 1. 현재 파일의 SHA 가져오기
-        const getFileResponse = await fetch(GITHUB_API_URL, {
-            headers: { 'Authorization': `token ${token}` }
-        });
-
-        if (!getFileResponse.ok) {
-            throw new Error('GitHub에서 파일 정보를 가져오지 못했습니다.');
-        }
-
-        const fileInfo = await getFileResponse.json();
-        const sha = fileInfo.sha;
-
-        // 2. 저장할 데이터 준비
-        const settings = {};
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.startsWith('overlay-') || key.startsWith('table-') || key.startsWith('hidden-') || key.startsWith('group-') || key.startsWith('show-') || key.startsWith('rank-')) {
-                settings[key] = localStorage.getItem(key);
-            }
-        }
-
-        const dataToSave = {
-            donations,
-            streamers,
-            emojis,
-            missionData,
-            settings,
-            lastUpdated: new Date().toISOString()
-        };
-
-        // 3. 파일 업데이트
-        const response = await fetch(GITHUB_API_URL, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: `[DonationManager] 데이터 업데이트: ${new Date().toLocaleString()}`,
-                content: btoa(unescape(encodeURIComponent(JSON.stringify(dataToSave, null, 2)))),
-                sha: sha
-            })
-        });
-
-        if (response.ok) {
-            showSaveStatus('GitHub에 저장 완료', 'saved');
-            console.log('✅ GitHub에 데이터가 성공적으로 저장되었습니다.');
-        } else {
-            const errorData = await response.json();
-            throw new Error(`GitHub 저장 실패: ${errorData.message}`);
-        }
-
-    } catch (error) {
-        showSaveStatus('GitHub 저장 실패', 'error');
-        console.error('❌ GitHub 저장 중 오류 발생:', error);
-        showStatus(`GitHub 저장 실패: ${error.message}`, 'error');
-        // 실패 시 로컬 스토리지에 저장
-        saveToLocalStorage();
-    }
-}
-
 // --- 로컬 스토리지 관리 ---
 function saveToLocalStorage() {
     try {
@@ -1193,7 +1184,6 @@ function saveToLocalStorage() {
         localStorage.setItem(STORAGE_KEYS.EMOJIS, JSON.stringify(emojis));
         localStorage.setItem(STORAGE_KEYS.MISSIONS, JSON.stringify(missionData));
         localStorage.setItem(STORAGE_KEYS.PASSWORD, currentPassword);
-        console.log('💾 데이터가 로컬 스토리지에 저장되었습니다.');
     } catch (error) {
         console.error('로컬 스토리지 저장 실패:', error);
     }
@@ -1452,16 +1442,38 @@ function handleNewDonations(newDonations) {
     newDonations.forEach(d => todayDonors.add(d.donor));
     
     if (autoSaveEnabled) {
-        saveDataToGitHub(); // GitHub에 직접 저장
+        saveToLocalStorage();
+        showSaveStatus('저장 완료', 'saved');
+        
+        // GitHub 자동 동기화 시도
+        setTimeout(async () => {
+            console.log('GitHub 자동 동기화 시작...');
+            const result = await autoSyncToGitHub();
+            if (result) {
+                console.log('✅ GitHub 동기화 성공');
+            } else {
+                console.log('❌ GitHub 동기화 실패');
+            }
+        }, 500);
     }
     
     updateAllUI();
     
+    // 브로드캐스트로 실시간 동기화
+    broadcastDataUpdate();
+    
+    // 🤖 후원시 챗봇 자동 알림
     const autoChatElement = document.getElementById('auto-chat-notify');
     const isChecked = autoChatElement ? autoChatElement.checked : false;
+    console.log('자동 챗봇 알림 체크:', isChecked, '/ 새 후원 개수:', newDonations.length);
     
     if (isChecked && newDonations.length > 0) {
+        console.log('자동 챗봇 알림 실행...');
         sendDonationNotification(newDonations);
+    } else if (!isChecked) {
+        console.log('자동 챗봇 알림이 비활성화됨');
+    } else if (newDonations.length === 0) {
+        console.log('새 후원이 없어서 알림 스킵');
     }
 }
 
@@ -1704,6 +1716,9 @@ function toggleStreamerVisibility(streamerName) {
     forceSyncSettingsToGitHub();
     updateStreamerList();
     updateAllUI(); // 모든 UI 업데이트
+    
+    // 설정 변경 시 브로드캐스트
+    broadcastDataUpdate();
 }
 
 function updateQuickAddForm() {
@@ -3528,6 +3543,56 @@ async function testGitHubConnection() {
     }
 }
 
+// downloadDataAsJson 함수 alias 추가 (호환성을 위해)
+function downloadDataAsJson() {
+    return exportDataFile();
+}
+
+// 브로드캐스트 채널로 오버레이에 실시간 데이터 전송
+let broadcastChannel = null;
+try {
+    broadcastChannel = new BroadcastChannel('donation-sync');
+    console.log('📡 브로드캐스트 채널 활성화됨');
+} catch (error) {
+    console.log('ℹ️ 브로드캐스트 채널 사용 불가:', error.message);
+}
+
+function broadcastDataUpdate() {
+    if (!broadcastChannel) return;
+    
+    try {
+        const data = {
+            donations: donations,
+            streamers: streamers,
+            emojis: emojis,
+            settings: {
+                'overlay-font-size': localStorage.getItem('overlay-font-size') || '16',
+                'overlay-stroke-width': localStorage.getItem('overlay-stroke-width') || '2',
+                'overlay-text-align': localStorage.getItem('overlay-text-align') || 'left',
+                'table-opacity': localStorage.getItem('table-opacity') || '85',
+                'table-number-size': localStorage.getItem('table-number-size') || '16',
+                'table-font-size': localStorage.getItem('table-font-size') || '14',
+                'table-text-color': localStorage.getItem('table-text-color') || 'white',
+                'hidden-streamers': localStorage.getItem('hidden-streamers') || '[]',
+                'group-threshold': localStorage.getItem('group-threshold') || '1',
+                'show-total-row': localStorage.getItem('show-total-row') || 'true',
+                'show-update-time': localStorage.getItem('show-update-time') || 'false',
+                'table-title': localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆'
+            },
+            lastUpdated: new Date().toISOString()
+        };
+        
+        broadcastChannel.postMessage({
+            type: 'DATA_UPDATE',
+            payload: data
+        });
+        
+        console.log('📡 브로드캐스트로 데이터 전송됨');
+    } catch (error) {
+        console.error('브로드캐스트 전송 실패:', error);
+    }
+}
+
 // GitHub API를 사용해서 data.json 파일 자동 업데이트
 async function autoSyncToGitHub() {
     const token = localStorage.getItem('github-token');
@@ -3562,44 +3627,113 @@ async function autoSyncToGitHub() {
         };
         
         // 기존 파일의 SHA 가져오기 (업데이트를 위해 필요)
-        const fileResponse = await fetch('https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager/contents/data.json', {
-            headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-        
         let sha = null;
-        if (fileResponse.ok) {
-            const fileData = await fileResponse.json();
-            sha = fileData.sha;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (retryCount < maxRetries) {
+            try {
+                const fileResponse = await fetch('https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager/contents/data.json', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
+                if (fileResponse.ok) {
+                    const fileData = await fileResponse.json();
+                    sha = fileData.sha;
+                    console.log(`✅ SHA 획득 성공 (시도 ${retryCount + 1}):`, sha);
+                    break;
+                } else if (fileResponse.status === 409) {
+                    console.log(`⚠️ SHA 충돌 감지 (시도 ${retryCount + 1}), 재시도 중...`);
+                    retryCount++;
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                } else {
+                    throw new Error(`SHA 가져오기 실패: ${fileResponse.status}`);
+                }
+            } catch (error) {
+                console.log(`❌ SHA 가져오기 실패 (시도 ${retryCount + 1}):`, error);
+                retryCount++;
+                if (retryCount >= maxRetries) break;
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            }
         }
         
         // Base64로 인코딩된 JSON 데이터
         const jsonContent = JSON.stringify(data, null, 2);
         const encodedContent = btoa(unescape(encodeURIComponent(jsonContent)));
         
-        // GitHub API로 파일 업데이트
-        const updateResponse = await fetch('https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager/contents/data.json', {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: '자동 동기화: 후원 데이터 업데이트',
-                content: encodedContent,
-                sha: sha
-            })
-        });
+        // SHA가 없으면 업데이트 중단
+        if (!sha) {
+            throw new Error('SHA 정보를 가져올 수 없어 업데이트를 중단합니다.');
+        }
         
-        if (updateResponse.ok) {
-            console.log('✅ GitHub 자동 동기화 성공');
-            showSaveStatus('GitHub 자동 동기화 완료', 'saved');
-            return true;
-        } else {
-            throw new Error(`GitHub 업데이트 실패: ${updateResponse.status}`);
+        // GitHub API로 파일 업데이트 (재시도 로직 포함)
+        let updateSuccess = false;
+        retryCount = 0;
+        
+        while (retryCount < maxRetries && !updateSuccess) {
+            try {
+                const updateResponse = await fetch('https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager/contents/data.json', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: '자동 동기화: 후원 데이터 업데이트',
+                        content: encodedContent,
+                        sha: sha
+                    })
+                });
+                
+                if (updateResponse.ok) {
+                    console.log('✅ GitHub 자동 동기화 성공');
+                    showSaveStatus('GitHub 자동 동기화 완료', 'saved');
+                    updateSuccess = true;
+                    return true;
+                } else if (updateResponse.status === 409) {
+                    console.log(`⚠️ 업데이트 충돌 감지 (시도 ${retryCount + 1}), SHA 재획득 중...`);
+                    // SHA 다시 가져오기
+                    const freshFileResponse = await fetch('https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager/contents/data.json', {
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    if (freshFileResponse.ok) {
+                        const freshFileData = await freshFileResponse.json();
+                        sha = freshFileData.sha;
+                        console.log(`✅ 새 SHA 획득:`, sha);
+                    }
+                    
+                    retryCount++;
+                    await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+                } else {
+                    console.log(`❌ GitHub 업데이트 실패: ${updateResponse.status}`);
+                    retryCount++;
+                    if (retryCount >= maxRetries) {
+                        throw new Error(`GitHub 업데이트 실패: ${updateResponse.status} (모든 재시도 실패)`);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+                }
+            } catch (error) {
+                console.log(`❌ 업데이트 실패 (시도 ${retryCount + 1}):`, error);
+                retryCount++;
+                if (retryCount >= maxRetries) {
+                    throw error;
+                }
+                await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+            }
+        }
+        
+        if (!updateSuccess) {
+            throw new Error('모든 재시도가 실패했습니다.');
         }
         
     } catch (error) {

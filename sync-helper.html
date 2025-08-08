@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오버레이 동기화 도구</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .method {
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        
+        .method.active {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+        
+        .method h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        
+        .url-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .copy-btn {
+            background: #28a745;
+        }
+        
+        .copy-btn:hover {
+            background: #1e7e34;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 오버레이 동기화 도구</h1>
+        <p>GitHub API 문제 없이 오버레이를 동기화하는 여러 방법을 제공합니다.</p>
+        
+        <div class="method active" id="method1">
+            <h3>1. URL 파라미터 방식 (추천)</h3>
+            <p>현재 데이터를 URL에 포함시켜 어떤 컴퓨터에서든 동일하게 표시</p>
+            
+            <button onclick="generateUrls()">현재 데이터로 URL 생성</button>
+            <button onclick="loadFromDonationManager()">donation-manager.html에서 데이터 가져오기</button>
+            
+            <div id="url-results" style="display: none;">
+                <h4>생성된 오버레이 URL:</h4>
+                
+                <p><strong>후원자 오버레이:</strong></p>
+                <div class="url-box" id="donor-url"></div>
+                <button class="copy-btn" onclick="copyUrl('donor-url')">복사</button>
+                <button onclick="testUrl('donor-url')">테스트</button>
+                
+                <p><strong>스트리머 테이블 오버레이:</strong></p>
+                <div class="url-box" id="table-url"></div>
+                <button class="copy-btn" onclick="copyUrl('table-url')">복사</button>
+                <button onclick="testUrl('table-url')">테스트</button>
+                
+                <div class="status info">
+                    <strong>사용법:</strong> 생성된 URL을 OBS 브라우저 소스에 붙여넣으면 됩니다.
+                    다른 컴퓨터에서도 동일하게 작동합니다.
+                </div>
+            </div>
+        </div>
+        
+        <div class="method" id="method2">
+            <h3>2. 로컬 웹서버 방식</h3>
+            <p>간단한 로컬 웹서버를 실행하여 네트워크 내 모든 기기에서 접근</p>
+            
+            <div class="status warning">
+                <strong>Python이 설치된 경우:</strong><br>
+                1. 이 폴더에서 터미널 열기<br>
+                2. <code>python -m http.server 8080</code> 실행<br>
+                3. 브라우저에서 <code>http://localhost:8080/donor-overlay.html</code> 접근<br>
+                4. 다른 컴퓨터에서는 <code>http://[내IP]:8080/donor-overlay.html</code> 접근
+            </div>
+            
+            <div class="status warning">
+                <strong>Node.js가 설치된 경우:</strong><br>
+                1. <code>npx http-server -p 8080</code> 실행<br>
+                2. 표시된 URL로 접근
+            </div>
+            
+            <button onclick="showLocalIp()">내 IP 주소 확인</button>
+            <div id="ip-result"></div>
+        </div>
+        
+        <div class="method" id="method3">
+            <h3>3. 브로드캐스트 채널 방식</h3>
+            <p>같은 브라우저 내에서 탭 간 실시간 동기화</p>
+            
+            <button onclick="enableBroadcast()">브로드캐스트 채널 활성화</button>
+            <button onclick="testBroadcast()">동기화 테스트</button>
+            
+            <div id="broadcast-status"></div>
+            
+            <div class="status info">
+                <strong>사용법:</strong> 
+                1. donation-manager.html과 오버레이를 같은 브라우저에서 열기<br>
+                2. 브로드캐스트 채널 활성화<br>
+                3. donation-manager에서 데이터 변경 시 오버레이에 자동 반영
+            </div>
+        </div>
+        
+        <div class="method" id="method4">
+            <h3>4. 클립보드 동기화 방식</h3>
+            <p>클립보드를 통한 수동 동기화</p>
+            
+            <button onclick="exportToClipboard()">현재 데이터를 클립보드로 복사</button>
+            <button onclick="importFromClipboard()">클립보드에서 데이터 가져오기</button>
+            
+            <div id="clipboard-status"></div>
+            
+            <div class="status info">
+                <strong>사용법:</strong> 
+                1. donation-manager에서 "클립보드로 복사"<br>
+                2. 다른 컴퓨터에서 오버레이 열기<br>
+                3. "클립보드에서 가져오기" 실행
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+        
+        // GitHub Pages 기본 URL
+        const GITHUB_BASE = 'https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/';
+        
+        // 1. URL 파라미터 방식
+        function generateUrls() {
+            // 현재 donation-manager에서 데이터 로드 시도
+            loadFromDonationManager();
+        }
+        
+        function loadFromDonationManager() {
+            try {
+                // 로컬 스토리지에서 데이터 로드
+                const donations = JSON.parse(localStorage.getItem('donation_data') || '[]');
+                const streamers = JSON.parse(localStorage.getItem('streamer_config') || '[]');
+                const emojis = JSON.parse(localStorage.getItem('streamer_emojis') || '{}');
+                
+                // 설정 데이터
+                const settings = {
+                    'overlay-font-size': localStorage.getItem('overlay-font-size') || '16',
+                    'overlay-stroke-width': localStorage.getItem('overlay-stroke-width') || '2',
+                    'overlay-text-align': localStorage.getItem('overlay-text-align') || 'left',
+                    'table-opacity': localStorage.getItem('table-opacity') || '85',
+                    'table-number-size': localStorage.getItem('table-number-size') || '16',
+                    'table-font-size': localStorage.getItem('table-font-size') || '14',
+                    'table-text-color': localStorage.getItem('table-text-color') || 'white',
+                    'hidden-streamers': localStorage.getItem('hidden-streamers') || '[]',
+                    'group-threshold': localStorage.getItem('group-threshold') || '1',
+                    'show-total-row': localStorage.getItem('show-total-row') || 'true',
+                    'show-update-time': localStorage.getItem('show-update-time') || 'false',
+                    'table-title': localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆'
+                };
+                
+                currentData = {
+                    donations: donations,
+                    streamers: streamers,
+                    emojis: emojis,
+                    settings: settings,
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                // Base64로 인코딩
+                const dataString = JSON.stringify(currentData);
+                const encodedData = btoa(encodeURIComponent(dataString));
+                
+                // URL 생성
+                const donorUrl = `${GITHUB_BASE}donor-overlay.html?data=${encodedData}`;
+                const tableUrl = `${GITHUB_BASE}streamer-table-overlay.html?data=${encodedData}`;
+                
+                document.getElementById('donor-url').textContent = donorUrl;
+                document.getElementById('table-url').textContent = tableUrl;
+                document.getElementById('url-results').style.display = 'block';
+                
+                showStatus('success', `✅ URL 생성 완료! (데이터: ${donations.length}개 후원, ${streamers.length}명 스트리머)`);
+                
+            } catch (error) {
+                showStatus('warning', '❌ 데이터를 찾을 수 없습니다. donation-manager.html을 먼저 열어주세요.');
+                console.error('데이터 로드 실패:', error);
+            }
+        }
+        
+        function copyUrl(elementId) {
+            const element = document.getElementById(elementId);
+            const url = element.textContent;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showStatus('success', '✅ URL이 클립보드에 복사되었습니다!');
+                });
+            } else {
+                // 구형 브라우저 호환
+                const textarea = document.createElement('textarea');
+                textarea.value = url;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showStatus('success', '✅ URL이 클립보드에 복사되었습니다!');
+            }
+        }
+        
+        function testUrl(elementId) {
+            const element = document.getElementById(elementId);
+            const url = element.textContent;
+            window.open(url, '_blank');
+        }
+        
+        // 2. 로컬 웹서버 방식
+        function showLocalIp() {
+            // WebRTC를 사용한 로컬 IP 확인
+            const pc = new RTCPeerConnection({iceServers: []});
+            pc.createDataChannel('');
+            
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    const candidate = event.candidate.candidate;
+                    const ip = candidate.split(' ')[4];
+                    
+                    if (ip && ip !== '0.0.0.0' && !ip.includes(':')) {
+                        document.getElementById('ip-result').innerHTML = `
+                            <div class="status info">
+                                <strong>내 IP 주소:</strong> ${ip}<br>
+                                <strong>다른 컴퓨터에서 접근 URL:</strong><br>
+                                • http://${ip}:8080/donor-overlay.html<br>
+                                • http://${ip}:8080/streamer-table-overlay.html
+                            </div>
+                        `;
+                        pc.close();
+                    }
+                }
+            };
+        }
+        
+        // 3. 브로드캐스트 채널 방식
+        let broadcastChannel = null;
+        
+        function enableBroadcast() {
+            try {
+                broadcastChannel = new BroadcastChannel('donation-sync');
+                
+                broadcastChannel.onmessage = (event) => {
+                    if (event.data.type === 'DATA_UPDATE') {
+                        // 받은 데이터로 로컬 스토리지 업데이트
+                        const data = event.data.payload;
+                        
+                        localStorage.setItem('donation_data', JSON.stringify(data.donations || []));
+                        localStorage.setItem('streamer_config', JSON.stringify(data.streamers || []));
+                        localStorage.setItem('streamer_emojis', JSON.stringify(data.emojis || {}));
+                        
+                        // 설정도 동기화
+                        if (data.settings) {
+                            Object.entries(data.settings).forEach(([key, value]) => {
+                                localStorage.setItem(key, value);
+                            });
+                        }
+                        
+                        showBroadcastStatus('success', '✅ 데이터가 동기화되었습니다!');
+                    }
+                };
+                
+                showBroadcastStatus('success', '✅ 브로드캐스트 채널이 활성화되었습니다!');
+                
+            } catch (error) {
+                showBroadcastStatus('warning', '❌ 브로드캐스트 채널을 지원하지 않는 브라우저입니다.');
+            }
+        }
+        
+        function testBroadcast() {
+            if (!broadcastChannel) {
+                showBroadcastStatus('warning', '먼저 브로드캐스트 채널을 활성화해주세요.');
+                return;
+            }
+            
+            // 테스트 데이터 전송
+            const testData = {
+                type: 'DATA_UPDATE',
+                payload: currentData || {
+                    donations: [],
+                    streamers: [],
+                    emojis: {},
+                    settings: {},
+                    lastUpdated: new Date().toISOString()
+                }
+            };
+            
+            broadcastChannel.postMessage(testData);
+            showBroadcastStatus('info', '📡 테스트 데이터를 전송했습니다.');
+        }
+        
+        // 4. 클립보드 동기화 방식
+        function exportToClipboard() {
+            loadFromDonationManager();
+            
+            if (!currentData) {
+                showClipboardStatus('warning', '❌ 내보낼 데이터가 없습니다.');
+                return;
+            }
+            
+            const dataString = JSON.stringify(currentData, null, 2);
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(dataString).then(() => {
+                    showClipboardStatus('success', '✅ 데이터가 클립보드에 복사되었습니다!');
+                });
+            }
+        }
+        
+        function importFromClipboard() {
+            if (navigator.clipboard) {
+                navigator.clipboard.readText().then(text => {
+                    try {
+                        const data = JSON.parse(text);
+                        
+                        // 데이터 검증
+                        if (data.donations && data.streamers) {
+                            // 로컬 스토리지에 저장
+                            localStorage.setItem('donation_data', JSON.stringify(data.donations));
+                            localStorage.setItem('streamer_config', JSON.stringify(data.streamers));
+                            localStorage.setItem('streamer_emojis', JSON.stringify(data.emojis || {}));
+                            
+                            // 설정도 복원
+                            if (data.settings) {
+                                Object.entries(data.settings).forEach(([key, value]) => {
+                                    localStorage.setItem(key, value);
+                                });
+                            }
+                            
+                            showClipboardStatus('success', '✅ 클립보드에서 데이터를 가져왔습니다!');
+                        } else {
+                            showClipboardStatus('warning', '❌ 올바른 데이터 형식이 아닙니다.');
+                        }
+                    } catch (error) {
+                        showClipboardStatus('warning', '❌ 클립보드 데이터를 해석할 수 없습니다.');
+                    }
+                });
+            }
+        }
+        
+        // 유틸리티 함수들
+        function showStatus(type, message) {
+            // 기존 상태 메시지 제거
+            const existing = document.querySelector('.status.temp');
+            if (existing) existing.remove();
+            
+            const status = document.createElement('div');
+            status.className = `status ${type} temp`;
+            status.innerHTML = message;
+            
+            document.querySelector('.method.active').appendChild(status);
+            
+            setTimeout(() => {
+                if (status.parentNode) status.remove();
+            }, 5000);
+        }
+        
+        function showBroadcastStatus(type, message) {
+            document.getElementById('broadcast-status').innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function showClipboardStatus(type, message) {
+            document.getElementById('clipboard-status').innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // 페이지 로드 시 자동으로 데이터 확인
+        window.addEventListener('load', () => {
+            // 로컬 스토리지에 데이터가 있는지 확인
+            const donations = localStorage.getItem('donation_data');
+            if (donations) {
+                showStatus('info', 'ℹ️ 기존 데이터가 감지되었습니다. "URL 생성" 버튼을 클릭하세요.');
+            } else {
+                showStatus('warning', '⚠️ donation-manager.html을 먼저 열어 데이터를 로드해주세요.');
+            }
+        });
+        
+        // 메소드 선택 기능
+        document.querySelectorAll('.method').forEach(method => {
+            method.addEventListener('click', () => {
+                document.querySelectorAll('.method').forEach(m => m.classList.remove('active'));
+                method.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
