@@ -240,15 +240,17 @@ async function loadData() {
                 emojis = {};
             }
             
-            // GitHub 설정은 localStorage에 기존 설정이 없을 때만 적용
+            // GitHub 설정을 항상 적용 (다른 PC에서 최신 설정 동기화)
             if (data.settings && typeof data.settings === 'object') {
+                console.log('🔄 GitHub 설정 동기화 시작...');
                 Object.entries(data.settings).forEach(([key, value]) => {
-                    // localStorage에 이미 설정이 있으면 GitHub 설정 무시
-                    if (localStorage.getItem(key) === null && value !== null && value !== undefined) {
+                    if (value !== null && value !== undefined) {
+                        const oldValue = localStorage.getItem(key);
                         localStorage.setItem(key, value);
-                        console.log('GitHub 기본 설정 적용:', key, '=', value);
+                        console.log(`📝 설정 동기화: ${key} ${oldValue} → ${value}`);
                     }
                 });
+                console.log('✅ GitHub 설정 동기화 완료');
             }
             
             updateTable();
