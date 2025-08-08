@@ -1864,10 +1864,10 @@ async function sendDonationNotification(newDonations) {
     console.log('- liveChatId:', liveChatId);
     console.log('- hasWritePermission function exists:', typeof hasWritePermission === 'function');
     
-    // 권한 체크: 관리자이거나 비밀번호가 입력된 경우만 자동 알림 허용
-    if (typeof hasWritePermission === 'function' && !hasWritePermission()) {
-        console.log('챗봇 자동 알림 권한이 없습니다. (관리자이거나 비밀번호 입력 필요)');
-        showStatus('🔒 챗봇 자동 알림은 관리자 권한이 필요합니다. 비밀번호를 입력하세요.', 'warning', 5000);
+    // 권한 체크: OAuth 로그인이 되어있으면 자동 알림 허용 (관리자 권한 불필요)
+    if (typeof hasWritePermission === 'function' && !hasWritePermission() && !isOAuthSignedIn) {
+        console.log('챗봇 자동 알림: 관리자 권한 또는 OAuth 로그인이 필요합니다.');
+        showStatus('🔒 챗봇 자동 알림은 관리자 권한 또는 OAuth 로그인이 필요합니다.', 'warning', 5000);
         return;
     }
     
