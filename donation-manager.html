@@ -1878,10 +1878,11 @@ async function sendDonationNotification(newDonations) {
         return;
     }
     
-    // OAuth는 로그인되었지만 liveChatId가 없는 경우 경고만 표시하고 계속 진행
+    // OAuth는 로그인되었지만 liveChatId가 없는 경우 중단
     if (isOAuthSignedIn && !liveChatId) {
-        console.log('OAuth는 연결되었지만 라이브 채팅 ID가 없습니다. 연결 후 더 안정적인 전송이 가능합니다.');
-        showStatus('💡 YouTube 영상에 연결하면 더 안정적인 전송이 가능합니다', 'info', 2000);
+        console.log('OAuth는 연결되었지만 라이브 채팅 ID가 없습니다. 영상에 연결하세요.');
+        showStatus('🔗 먼저 YouTube 영상에 연결해야 자동 알림을 보낼 수 있습니다', 'warning', 4000);
+        return;
     }
     
     try {
