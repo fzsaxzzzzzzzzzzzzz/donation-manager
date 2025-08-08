@@ -145,9 +145,9 @@
     "국고": "🏦"
   },
   "settings": {
-    "overlay-font-size": "77",
+    "overlay-font-size": "99",
     "overlay-stroke-width": "2",
-    "overlay-text-align": "left",
+    "overlay-text-align": "center",
     "table-opacity": "85",
     "table-number-size": "16",
     "table-font-size": "14",
@@ -158,5 +158,5 @@
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆"
   },
-  "lastUpdated": "2025-08-08T13:20:32.259Z"
+  "lastUpdated": "2025-08-08T13:20:38.104Z"
 }
