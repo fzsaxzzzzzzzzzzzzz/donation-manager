@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 동기화 테스트</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .test-card {
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            background: #f8f9fa;
+        }
+        
+        .test-card.success {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .test-card.error {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .log {
+            background: #1e1e1e;
+            color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 실시간 동기화 테스트</h1>
+        <p>BroadcastChannel을 사용한 실시간 연동이 정상 작동하는지 테스트합니다.</p>
+        
+        <!-- BroadcastChannel 지원 확인 -->
+        <div class="test-card" id="broadcast-support">
+            <h3>📡 BroadcastChannel 지원 확인</h3>
+            <p id="support-status">확인 중...</p>
+        </div>
+        
+        <!-- 메시지 수신 테스트 -->
+        <div class="test-card" id="message-test">
+            <h3>📨 메시지 수신 테스트</h3>
+            <p>donation-manager에서 후원 추가 시 실시간으로 메시지를 받는지 테스트</p>
+            <button onclick="startListening()">메시지 수신 시작</button>
+            <button onclick="stopListening()">수신 중지</button>
+            <button onclick="sendTestMessage()">테스트 메시지 전송</button>
+        </div>
+        
+        <!-- 실시간 로그 -->
+        <div class="test-card">
+            <h3>📋 실시간 로그</h3>
+            <div class="log" id="test-log">
+                <div>[시스템] 실시간 동기화 테스트 도구 초기화</div>
+            </div>
+            <button onclick="clearLog()">로그 지우기</button>
+        </div>
+        
+        <!-- 테스트 결과 -->
+        <div class="test-card" id="test-results">
+            <h3>✅ 테스트 결과</h3>
+            <div id="results-content">
+                테스트를 실행해주세요.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let broadcastChannel = null;
+        let messageCount = 0;
+        let isListening = false;
+        
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            checkBroadcastSupport();
+        });
+        
+        // BroadcastChannel 지원 확인
+        function checkBroadcastSupport() {
+            const supportCard = document.getElementById('broadcast-support');
+            const statusEl = document.getElementById('support-status');
+            
+            if (window.BroadcastChannel) {
+                supportCard.classList.add('success');
+                statusEl.innerHTML = '✅ BroadcastChannel이 지원됩니다! 실시간 동기화 가능';
+                addLog('✅ BroadcastChannel 지원 확인됨');
+            } else {
+                supportCard.classList.add('error');
+                statusEl.innerHTML = '❌ BroadcastChannel이 지원되지 않습니다. 최신 브라우저를 사용해주세요.';
+                addLog('❌ BroadcastChannel 지원되지 않음');
+            }
+        }
+        
+        // 메시지 수신 시작
+        function startListening() {
+            if (!window.BroadcastChannel) {
+                addLog('❌ BroadcastChannel이 지원되지 않습니다');
+                return;
+            }
+            
+            if (isListening) {
+                addLog('⚠️ 이미 메시지 수신 중입니다');
+                return;
+            }
+            
+            try {
+                broadcastChannel = new BroadcastChannel('donation-sync');
+                isListening = true;
+                
+                broadcastChannel.onmessage = (event) => {
+                    messageCount++;
+                    addLog(`📨 메시지 수신 #${messageCount}:`, 'success');
+                    addLog(`   타입: ${event.data.type}`);
+                    addLog(`   소스: ${event.data.source || 'unknown'}`);
+                    addLog(`   시간: ${new Date(event.data.timestamp || Date.now()).toLocaleString('ko-KR')}`);
+                    
+                    if (event.data.payload) {
+                        const payload = event.data.payload;
+                        addLog(`   후원 ${payload.donations?.length || 0}개, 스트리머 ${payload.streamers?.length || 0}명`);
+                    }
+                    
+                    updateTestResults('success', `메시지 ${messageCount}개 수신 성공`);
+                };
+                
+                addLog('🎧 메시지 수신 시작됨', 'success');
+                addLog('💡 이제 donation-manager.html에서 후원을 추가해보세요!');
+                
+            } catch (error) {
+                addLog(`❌ 메시지 수신 시작 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        // 메시지 수신 중지
+        function stopListening() {
+            if (broadcastChannel) {
+                broadcastChannel.close();
+                broadcastChannel = null;
+            }
+            isListening = false;
+            addLog('🔇 메시지 수신 중지됨');
+        }
+        
+        // 테스트 메시지 전송
+        function sendTestMessage() {
+            if (!window.BroadcastChannel) {
+                addLog('❌ BroadcastChannel이 지원되지 않습니다');
+                return;
+            }
+            
+            try {
+                const testChannel = new BroadcastChannel('donation-sync');
+                const testMessage = {
+                    type: 'DATA_UPDATE',
+                    payload: {
+                        donations: [
+                            {
+                                donor: '테스트후원자',
+                                amount: 1000,
+                                streamers: { '테스트스트리머': 1000 },
+                                time: new Date().toISOString()
+                            }
+                        ],
+                        streamers: [{ name: '테스트스트리머', emoji: '🧪' }],
+                        emojis: { '테스트스트리머': '🧪' },
+                        lastUpdated: new Date().toISOString()
+                    },
+                    source: 'realtime-test',
+                    timestamp: Date.now()
+                };
+                
+                testChannel.postMessage(testMessage);
+                testChannel.close();
+                
+                addLog('📤 테스트 메시지 전송됨', 'success');
+                addLog('   테스트후원자 1000원 → 테스트스트리머');
+                
+            } catch (error) {
+                addLog(`❌ 테스트 메시지 전송 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        // 테스트 결과 업데이트
+        function updateTestResults(status, message) {
+            const resultsCard = document.getElementById('test-results');
+            const resultsContent = document.getElementById('results-content');
+            
+            resultsCard.classList.remove('success', 'error');
+            resultsCard.classList.add(status);
+            
+            resultsContent.innerHTML = `
+                <p><strong>상태:</strong> ${status === 'success' ? '✅ 성공' : '❌ 실패'}</p>
+                <p><strong>메시지:</strong> ${message}</p>
+                <p><strong>수신된 메시지 수:</strong> ${messageCount}개</p>
+                <p><strong>테스트 시간:</strong> ${new Date().toLocaleString('ko-KR')}</p>
+            `;
+        }
+        
+        // 로그 추가
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString('ko-KR');
+            const icon = {
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            }[type] || 'ℹ️';
+            
+            logContainer.innerHTML += `<div>[${timestamp}] ${icon} ${message}</div>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // 로그 지우기
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = 
+                '<div>[시스템] 로그가 지워졌습니다.</div>';
+        }
+        
+        // 페이지 종료 시 정리
+        window.addEventListener('beforeunload', () => {
+            if (broadcastChannel) {
+                broadcastChannel.close();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1184,6 +1184,24 @@ function saveToLocalStorage() {
         localStorage.setItem(STORAGE_KEYS.EMOJIS, JSON.stringify(emojis));
         localStorage.setItem(STORAGE_KEYS.MISSIONS, JSON.stringify(missionData));
         localStorage.setItem(STORAGE_KEYS.PASSWORD, currentPassword);
+        
+        // 🚀 실시간 연동: BroadcastChannel로 모든 오버레이에 즉시 알림
+        if (window.BroadcastChannel) {
+            const channel = new BroadcastChannel('donation-sync');
+            channel.postMessage({
+                type: 'DATA_UPDATE',
+                payload: {
+                    donations: donations,
+                    streamers: streamers,
+                    emojis: emojis,
+                    lastUpdated: new Date().toISOString()
+                },
+                source: 'donation-manager',
+                timestamp: Date.now()
+            });
+            channel.close();
+            console.log('✅ 실시간 동기화: 모든 오버레이에 데이터 업데이트 알림 전송');
+        }
     } catch (error) {
         console.error('로컬 스토리지 저장 실패:', error);
     }
