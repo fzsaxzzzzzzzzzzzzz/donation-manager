@@ -1849,8 +1849,66 @@ function makeCellEditable(cell, index) {
     });
 }
 
-function switchTab(event, tabName) { document.querySelectorAll('#main-content .tab-button').forEach(btn => btn.classList.remove('active')); event.currentTarget.classList.add('active'); document.querySelectorAll('#main-content .tab-content').forEach(content => content.classList.remove('active')); document.getElementById(tabName + '-tab').classList.add('active'); }
-function switchSummaryTab(event, tabName) { const panel = event.currentTarget.closest('.panel'); panel.querySelectorAll('.management-nav .tab-button').forEach(btn => btn.classList.remove('active')); event.currentTarget.classList.add('active'); panel.querySelectorAll('.summary-tab-content').forEach(content => content.classList.remove('active')); document.getElementById(tabName).classList.add('active'); }
+function switchTab(event, tabName) {
+    try {
+        console.log('탭 전환:', tabName);
+        
+        // 모든 탭 버튼에서 active 클래스 제거
+        document.querySelectorAll('#main-content .tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // 클릭된 탭 버튼에 active 클래스 추가
+        event.currentTarget.classList.add('active');
+        
+        // 모든 탭 콘텐츠에서 active 클래스 제거
+        document.querySelectorAll('#main-content .tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // 선택된 탭 콘텐츠에 active 클래스 추가
+        const targetTab = document.getElementById(tabName + '-tab');
+        if (targetTab) {
+            targetTab.classList.add('active');
+            console.log('✅ 탭 전환 완료:', tabName);
+        } else {
+            console.error('❌ 탭을 찾을 수 없음:', tabName + '-tab');
+        }
+    } catch (error) {
+        console.error('탭 전환 오류:', error);
+    }
+}
+function switchSummaryTab(event, tabName) {
+    try {
+        console.log('요약 탭 전환:', tabName);
+        
+        const panel = event.currentTarget.closest('.panel');
+        
+        // 패널 내 모든 탭 버튼에서 active 클래스 제거
+        panel.querySelectorAll('.management-nav .tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // 클릭된 탭 버튼에 active 클래스 추가
+        event.currentTarget.classList.add('active');
+        
+        // 패널 내 모든 요약 탭 콘텐츠에서 active 클래스 제거
+        panel.querySelectorAll('.summary-tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // 선택된 요약 탭 콘텐츠에 active 클래스 추가
+        const targetTab = document.getElementById(tabName);
+        if (targetTab) {
+            targetTab.classList.add('active');
+            console.log('✅ 요약 탭 전환 완료:', tabName);
+        } else {
+            console.error('❌ 요약 탭을 찾을 수 없음:', tabName);
+        }
+    } catch (error) {
+        console.error('요약 탭 전환 오류:', error);
+    }
+}
 
 async function updateUserInfo() { 
     const statusText = isAdminVerified ? '관리자 인증됨' : '일반 사용자';
