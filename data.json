@@ -147,7 +147,7 @@
   "settings": {
     "overlay-font-size": "54",
     "overlay-stroke-width": "2",
-    "overlay-text-align": "left",
+    "overlay-text-align": "right",
     "table-opacity": "85",
     "table-number-size": "16",
     "table-font-size": "14",
@@ -158,5 +158,5 @@
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆"
   },
-  "lastUpdated": "2025-08-08T12:36:43.972Z"
+  "lastUpdated": "2025-08-08T12:37:11.519Z"
 }
