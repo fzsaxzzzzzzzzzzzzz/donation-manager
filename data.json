@@ -1,5 +1,13 @@
 {
-  "donations": [],
+  "donations": [
+    {
+      "donor": "1",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1,
+      "time": "2025-08-08T21:59:18.225Z"
+    }
+  ],
   "streamers": [
     "엄삼용",
     "손덕배",
@@ -38,5 +46,5 @@
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆"
   },
-  "lastUpdated": "2025-08-08T21:58:30.005Z"
+  "lastUpdated": "2025-08-08T21:59:18.727Z"
 }
