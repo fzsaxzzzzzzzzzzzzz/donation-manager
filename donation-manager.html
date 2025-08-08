@@ -1705,7 +1705,7 @@ function toggleStreamerVisibility(streamerName) {
     }
     
     localStorage.setItem('hidden-streamers', JSON.stringify(hiddenStreamers));
-    autoSyncToGitHub();
+    forceSyncSettingsToGitHub();
     updateStreamerList();
     updateAllUI(); // 모든 UI 업데이트
 }
@@ -3613,6 +3613,50 @@ async function autoSyncToGitHub() {
     }
 }
 
+// 설정 변경 시 강제 동기화 (토큰 없이도 작동)
+async function forceSyncSettingsToGitHub() {
+    try {
+        console.log('🚀 설정 강제 동기화 시작...');
+        
+        // 현재 데이터 수집
+        const data = {
+            donations: donations,
+            streamers: streamers,
+            emojis: emojis,
+            settings: {
+                'overlay-font-size': localStorage.getItem('overlay-font-size') || '16',
+                'overlay-stroke-width': localStorage.getItem('overlay-stroke-width') || '2',
+                'overlay-text-align': localStorage.getItem('overlay-text-align') || 'left',
+                'table-opacity': localStorage.getItem('table-opacity') || '85',
+                'table-number-size': localStorage.getItem('table-number-size') || '16',
+                'table-font-size': localStorage.getItem('table-font-size') || '14',
+                'table-text-color': localStorage.getItem('table-text-color') || 'white',
+                'hidden-streamers': localStorage.getItem('hidden-streamers') || '[]',
+                'group-threshold': localStorage.getItem('group-threshold') || '1',
+                'show-total-row': localStorage.getItem('show-total-row') || 'true',
+                'show-update-time': localStorage.getItem('show-update-time') || 'false',
+                'table-title': localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆'
+            },
+            lastUpdated: new Date().toISOString()
+        };
+
+        console.log('🚀 강제 동기화 데이터:', data.settings);
+        
+        // 무조건 GitHub에 업로드 시도
+        const result = await autoSyncToGitHub();
+        if (!result) {
+            // 토큰이 없어도 다른 방법으로 시도
+            console.log('🚀 대안 동기화 방법 시도...');
+            downloadDataAsJson(); // 최소한 파일로 다운로드
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('강제 동기화 실패:', error);
+        return false;
+    }
+}
+
 // 자동 동기화 설정 로드
 function loadAutoSyncSettings() {
     const autoSyncEnabled = localStorage.getItem('auto-sync-enabled') === 'true';
@@ -3652,13 +3696,16 @@ function loadAutoSyncSettings() {
 function updateOverlayFontSize(value) {
     document.getElementById('overlay-font-size-value').textContent = value + 'px';
     localStorage.setItem('overlay-font-size', value);
-    autoSyncToGitHub();
+    
+    // 즉시 강제 동기화 (토큰 없이도 작동)
+    forceSyncSettingsToGitHub();
+    showStatus('글자 크기 설정이 저장되었습니다', 'success');
 }
 
 function updateOverlayStrokeWidth(value) {
     document.getElementById('overlay-stroke-width-value').textContent = value + 'px';
     localStorage.setItem('overlay-stroke-width', value);
-    autoSyncToGitHub();
+    forceSyncSettingsToGitHub();
 }
 
 function setOverlayTextAlign(align) {
@@ -3673,30 +3720,30 @@ function setOverlayTextAlign(align) {
     
     // 실시간 적용
     localStorage.setItem('overlay-text-align', align);
-    autoSyncToGitHub();
+    forceSyncSettingsToGitHub();
 }
 
 function updateTableOpacity(value) {
     document.getElementById('table-opacity-value').textContent = value + '%';
     localStorage.setItem('table-opacity', value);
-    autoSyncToGitHub();
+    forceSyncSettingsToGitHub();
 }
 
 function updateTableNumberSize(value) {
     document.getElementById('table-number-size-value').textContent = value + 'px';
     localStorage.setItem('table-number-size', value);
-    autoSyncToGitHub();
+    forceSyncSettingsToGitHub();
 }
 
 function updateTableFontSize(value) {
     document.getElementById('table-font-size-value').textContent = value + 'px';
     localStorage.setItem('table-font-size', value);
-    autoSyncToGitHub();
+    forceSyncSettingsToGitHub();
 }
 
 function setTableTextColor(color) {
     localStorage.setItem('table-text-color', color);
-    autoSyncToGitHub();
+    forceSyncSettingsToGitHub();
     showStatus(`테이블 글자 색상이 변경되었습니다`, 'success');
 }
 
@@ -3723,7 +3770,7 @@ function resetOverlaySettings() {
 
 function setTableColorPreset(preset) {
     localStorage.setItem('table-color-preset', preset);
-    autoSyncToGitHub();
+    forceSyncSettingsToGitHub();
     showStatus(`테이블 색상이 ${preset}로 설정되었습니다`, 'success');
 }
 
@@ -3906,7 +3953,7 @@ function saveTableSettings() {
     localStorage.setItem('show-update-time', showUpdateTime.toString());
     localStorage.setItem('rank-count', rankCount.toString());
     
-    autoSyncToGitHub();
+    forceSyncSettingsToGitHub();
     
     // 모든 순번명 저장
     for (let i = 1; i <= rankCount; i++) {

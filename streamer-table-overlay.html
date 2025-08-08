@@ -321,7 +321,15 @@ async function loadData() {
         
         // 1. GitHub raw 파일에서 데이터 시도 (가장 최신)
         try {
-            const response = await fetch('https://raw.githubusercontent.com/fzsaxzzzzzzzzzzzzz/donation-manager/main/data.json?t=' + Date.now());
+            const timestamp = Date.now();
+            const response = await fetch(`https://raw.githubusercontent.com/fzsaxzzzzzzzzzzzzz/donation-manager/main/data.json?t=${timestamp}&cache=false&v=${Math.random()}`, {
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 
