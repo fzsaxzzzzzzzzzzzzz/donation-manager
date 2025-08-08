@@ -168,13 +168,38 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="openOverlay('donor')" class="btn btn-primary">💝 후원자별 총액 열기</button>
 <button onclick="openOverlay('table')" class="btn btn-primary">🏆 스트리머 테이블 열기</button>
 </div>
+<div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+<h4 style="margin: 0 0 10px 0; font-size: 14px; color: #495057;">🚀 자동 동기화 설정</h4>
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+<label style="display: flex; align-items: center; gap: 5px; font-size: 14px;">
+<input type="checkbox" id="auto-sync-enabled" onchange="toggleAutoSync()" style="margin: 0;">
+자동 동기화 활성화 (후원 등록 시 GitHub 자동 업데이트)
+</label>
+</div>
+<div id="github-token-setup" style="display: none;">
+<div style="margin-bottom: 10px;">
+<label class="form-label" style="font-size: 12px;">GitHub Personal Access Token:</label>
+<div style="display: flex; gap: 5px;">
+<input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxx" class="form-input" style="flex: 1; font-size: 12px;">
+<button onclick="testGitHubConnection()" class="btn btn-secondary" style="font-size: 12px;">테스트</button>
+</div>
+<p style="font-size: 11px; color: #666; margin: 5px 0 0 0;">
+GitHub Settings → Developer settings → Personal access tokens에서 생성 (repo 권한 필요)
+</p>
+</div>
+<div id="auto-sync-status" class="status status-info" style="margin: 10px 0 0 0; padding: 8px; font-size: 12px;">
+자동 동기화가 비활성화되어 있습니다
+</div>
+</div>
+</div>
+
 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
 <button onclick="exportDataFile()" class="btn btn-success">📁 데이터 파일 내보내기</button>
 <button onclick="showSimpleOverlayUrls()" class="btn btn-primary">🔗 간단 링크 보기</button>
 </div>
 <p style="font-size: 13px; color: #666; margin-bottom: 20px;">
 💡 같은 PC: 위 오버레이 열기 버튼 사용<br>
-💡 다른 PC: 데이터 파일 내보내기 → GitHub에 data.json 업로드 → 아래 간단 링크 사용
+💡 다른 PC: 자동 동기화 활성화 또는 수동으로 데이터 내보내기 → 아래 간단 링크 사용
 </p>
 <div id="simple-overlay-urls" style="display: none; margin-bottom: 15px;">
 <label class="form-label">다른 PC용 간단한 오버레이 링크:</label>
@@ -1306,6 +1331,11 @@ function handleNewDonations(newDonations) {
     if (autoSaveEnabled) {
         saveToLocalStorage();
         showSaveStatus('저장 완료', 'saved');
+        
+        // GitHub 자동 동기화 시도
+        setTimeout(async () => {
+            await autoSyncToGitHub();
+        }, 500);
     }
     
     updateAllUI();
@@ -3271,6 +3301,181 @@ function copyText(text) {
     });
 }
 
+// --- 자동 동기화 관련 함수들 ---
+function toggleAutoSync() {
+    const checkbox = document.getElementById('auto-sync-enabled');
+    const tokenSetup = document.getElementById('github-token-setup');
+    const status = document.getElementById('auto-sync-status');
+    
+    if (checkbox.checked) {
+        tokenSetup.style.display = 'block';
+        status.textContent = '자동 동기화를 활성화하려면 GitHub Token을 입력하세요';
+        status.className = 'status status-warning';
+        localStorage.setItem('auto-sync-enabled', 'true');
+    } else {
+        tokenSetup.style.display = 'none';
+        status.textContent = '자동 동기화가 비활성화되어 있습니다';
+        status.className = 'status status-info';
+        localStorage.setItem('auto-sync-enabled', 'false');
+    }
+}
+
+async function testGitHubConnection() {
+    const token = document.getElementById('github-token').value.trim();
+    const status = document.getElementById('auto-sync-status');
+    
+    if (!token) {
+        status.textContent = 'GitHub Token을 입력하세요';
+        status.className = 'status status-error';
+        return;
+    }
+    
+    try {
+        status.textContent = 'GitHub 연결을 테스트하는 중...';
+        status.className = 'status status-info';
+        
+        // GitHub API 테스트 호출
+        const response = await fetch('https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager', {
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        
+        if (response.ok) {
+            localStorage.setItem('github-token', token);
+            status.textContent = '✅ GitHub 연결 성공! 자동 동기화가 활성화되었습니다';
+            status.className = 'status status-success';
+            showStatus('GitHub 연결 성공! 이제 후원 등록 시 자동 업데이트됩니다.', 'success');
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+    } catch (error) {
+        console.error('GitHub 연결 테스트 실패:', error);
+        status.textContent = `❌ GitHub 연결 실패: ${error.message}`;
+        status.className = 'status status-error';
+        showStatus('GitHub Token을 확인해주세요', 'error');
+    }
+}
+
+// GitHub API를 사용해서 data.json 파일 자동 업데이트
+async function autoSyncToGitHub() {
+    const token = localStorage.getItem('github-token');
+    const autoSyncEnabled = localStorage.getItem('auto-sync-enabled') === 'true';
+    
+    if (!autoSyncEnabled || !token) {
+        console.log('자동 동기화가 비활성화되어 있습니다');
+        return false;
+    }
+    
+    try {
+        // 현재 데이터 수집
+        const data = {
+            donations: donations,
+            streamers: streamers,
+            emojis: emojis,
+            settings: {
+                'overlay-font-size': localStorage.getItem('overlay-font-size') || '16',
+                'overlay-stroke-width': localStorage.getItem('overlay-stroke-width') || '2',
+                'overlay-text-align': localStorage.getItem('overlay-text-align') || 'left',
+                'table-opacity': localStorage.getItem('table-opacity') || '85',
+                'table-number-size': localStorage.getItem('table-number-size') || '16',
+                'table-font-size': localStorage.getItem('table-font-size') || '14',
+                'table-text-color': localStorage.getItem('table-text-color') || 'white',
+                'hidden-streamers': localStorage.getItem('hidden-streamers') || '[]',
+                'group-threshold': localStorage.getItem('group-threshold') || '1',
+                'show-total-row': localStorage.getItem('show-total-row') || 'true',
+                'show-update-time': localStorage.getItem('show-update-time') || 'false',
+                'table-title': localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆'
+            },
+            lastUpdated: new Date().toISOString()
+        };
+        
+        // 기존 파일의 SHA 가져오기 (업데이트를 위해 필요)
+        const fileResponse = await fetch('https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager/contents/data.json', {
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        
+        let sha = null;
+        if (fileResponse.ok) {
+            const fileData = await fileResponse.json();
+            sha = fileData.sha;
+        }
+        
+        // Base64로 인코딩된 JSON 데이터
+        const jsonContent = JSON.stringify(data, null, 2);
+        const encodedContent = btoa(unescape(encodeURIComponent(jsonContent)));
+        
+        // GitHub API로 파일 업데이트
+        const updateResponse = await fetch('https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager/contents/data.json', {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: '자동 동기화: 후원 데이터 업데이트',
+                content: encodedContent,
+                sha: sha
+            })
+        });
+        
+        if (updateResponse.ok) {
+            console.log('✅ GitHub 자동 동기화 성공');
+            showSaveStatus('GitHub 자동 동기화 완료', 'saved');
+            return true;
+        } else {
+            throw new Error(`GitHub 업데이트 실패: ${updateResponse.status}`);
+        }
+        
+    } catch (error) {
+        console.error('GitHub 자동 동기화 실패:', error);
+        showSaveStatus('GitHub 동기화 실패', 'error');
+        return false;
+    }
+}
+
+// 자동 동기화 설정 로드
+function loadAutoSyncSettings() {
+    const autoSyncEnabled = localStorage.getItem('auto-sync-enabled') === 'true';
+    const githubToken = localStorage.getItem('github-token');
+    
+    const checkbox = document.getElementById('auto-sync-enabled');
+    const tokenSetup = document.getElementById('github-token-setup');
+    const tokenInput = document.getElementById('github-token');
+    const status = document.getElementById('auto-sync-status');
+    
+    if (checkbox) {
+        checkbox.checked = autoSyncEnabled;
+    }
+    
+    if (autoSyncEnabled && githubToken) {
+        if (tokenSetup) tokenSetup.style.display = 'block';
+        if (tokenInput) tokenInput.value = githubToken;
+        if (status) {
+            status.textContent = '✅ 자동 동기화가 활성화되어 있습니다';
+            status.className = 'status status-success';
+        }
+    } else if (autoSyncEnabled && !githubToken) {
+        if (tokenSetup) tokenSetup.style.display = 'block';
+        if (status) {
+            status.textContent = 'GitHub Token을 입력하여 자동 동기화를 완성하세요';
+            status.className = 'status status-warning';
+        }
+    } else {
+        if (tokenSetup) tokenSetup.style.display = 'none';
+        if (status) {
+            status.textContent = '자동 동기화가 비활성화되어 있습니다';
+            status.className = 'status status-info';
+        }
+    }
+}
+
 function updateOverlayFontSize(value) {
     document.getElementById('overlay-font-size-value').textContent = value + 'px';
     localStorage.setItem('overlay-font-size', value);
@@ -3389,6 +3594,9 @@ function loadOverlaySettings() {
     
     // 스트리머 총액 설정 로드
     loadStreamerSummarySettings();
+    
+    // 자동 동기화 설정 로드
+    loadAutoSyncSettings();
     
     // 테이블 설정 로드
     loadTableSettings();
