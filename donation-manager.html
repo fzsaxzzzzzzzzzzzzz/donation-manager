@@ -279,7 +279,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 
 <!-- API 설정 섹션 (기존 API 키 방식 유지) -->
 <div class="form-group" style="border: 1px solid #ddd; padding: 15px; border-radius: 6px; background: #f9f9f9; margin-top: 20px;">
-<h4 style="margin: 0 0 15px 0;">🔑 YouTube API 키 방식 (대안)</h4>
+<h4 style="margin: 0 0 15px 0;">⚠️ YouTube API 키 방식 (제한적)</h4>
+<div class="status status-warning" style="margin-bottom: 15px; font-size: 12px;">
+🔐 <strong>주의:</strong> YouTube Live Chat 메시지 전송은 OAuth 로그인만 지원합니다. API 키는 읽기 전용입니다.
+</div>
 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
 <input type="password" id="youtube-api-key" placeholder="YouTube API 키 입력" class="form-input" style="flex: 2;">
 <button onclick="testApiKey()" class="btn btn-secondary">🧪 테스트</button>
@@ -2440,64 +2443,14 @@ function updateGoogleDriveStatus(message, type = 'info') {
 }
 
 async function sendMessageToYouTube(message, retryCount = 0) {
-    if (!liveChatId || !youtubeApiKey) {
-        throw new Error('YouTube 연결이 설정되지 않았습니다.');
+    // YouTube Live Chat Messages API는 OAuth만 지원하므로 OAuth 방식으로 전환
+    if (isOAuthSignedIn && liveChatId) {
+        console.log('API 키 방식 대신 OAuth 방식으로 메시지 전송');
+        return await sendToYouTubeOAuth(message);
     }
     
-    try {
-        const response = await fetch(`https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet&key=${youtubeApiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${youtubeApiKey}`
-            },
-            body: JSON.stringify({
-                snippet: {
-                    liveChatId: liveChatId,
-                    type: 'textMessageEvent',
-                    textMessageDetails: {
-                        messageText: message
-                    }
-                }
-            })
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            const errorMessage = error.error?.message || '메시지 전송 실패';
-            
-            // API 키 관련 에러시 백업 키로 자동 전환
-            if ((errorMessage.includes('quota') || errorMessage.includes('invalid') || errorMessage.includes('blocked')) 
-                && retryCount < backupApiKeys.length - 1) {
-                
-                console.log(`API 키 에러로 백업 키로 전환: ${errorMessage}`);
-                currentKeyIndex = (currentKeyIndex + 1) % backupApiKeys.length;
-                youtubeApiKey = backupApiKeys[currentKeyIndex];
-                
-                showStatus(`⚠️ API 키 자동 전환됨 (${currentKeyIndex + 1}/${backupApiKeys.length})`, 'warning');
-                
-                // 백업 키로 재시도
-                return await sendMessageToYouTube(message, retryCount + 1);
-            }
-            
-            throw new Error(errorMessage);
-        }
-        
-        return response.json();
-        
-    } catch (networkError) {
-        if (retryCount < backupApiKeys.length - 1) {
-            console.log(`네트워크 에러로 백업 키로 전환: ${networkError.message}`);
-            currentKeyIndex = (currentKeyIndex + 1) % backupApiKeys.length;
-            youtubeApiKey = backupApiKeys[currentKeyIndex];
-            
-            showStatus(`⚠️ 네트워크 에러로 API 키 전환됨`, 'warning');
-            
-            return await sendMessageToYouTube(message, retryCount + 1);
-        }
-        
-        throw networkError;
-    }
+    // OAuth가 로그인되지 않았으면 에러 메시지
+    throw new Error('🔐 YouTube Live Chat 메시지 전송은 OAuth 로그인이 필요합니다. Google OAuth 로그인을 하고 영상에 연결하세요.');
 }
 
 // --- YouTube API 관련 함수 ---
@@ -2537,6 +2490,9 @@ function updateYouTubeUI() {
 }
 
 async function testApiKey() {
+    // API 키 방식의 제한사항 안내
+    showStatus('⚠️ API 키는 검색만 가능하고, Live Chat 메시지 전송은 OAuth가 필요합니다', 'warning', 5000);
+    
     const apiKey = document.getElementById('youtube-api-key').value.trim();
     if (!apiKey) {
         showStatus('API 키를 입력하세요', 'error');
@@ -2544,7 +2500,7 @@ async function testApiKey() {
     }
     
     try {
-        showStatus('API 키 테스트 중...', 'info');
+        showStatus('API 키 테스트 중... (검색 API만 테스트)', 'info');
         const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=test&key=${apiKey}&maxResults=1`);
         
         if (response.ok) {
@@ -2589,6 +2545,11 @@ function saveApiKey() {
 }
 
 async function connectToLiveChat() {
+    // OAuth 방식 우선 권장
+    if (isOAuthSignedIn) {
+        showStatus('💡 OAuth가 로그인되어 있습니다. OAuth 연결을 사용하시겠어요?', 'info', 3000);
+    }
+    
     const videoId = document.getElementById('youtube-video-id').value.trim();
     if (!videoId) {
         showStatus('유튜브 영상 ID를 입력하세요', 'error');
@@ -2596,7 +2557,7 @@ async function connectToLiveChat() {
     }
     
     if (!youtubeApiKey) {
-        showStatus('먼저 API 키를 저장하세요', 'error');
+        showStatus('⚠️ API 키를 저장하세요 (단, 메시지 전송은 OAuth만 가능)', 'warning');
         return;
     }
     
@@ -2619,7 +2580,7 @@ async function connectToLiveChat() {
         liveChatId = liveDetails.activeLiveChatId;
         localStorage.setItem(STORAGE_KEYS.YOUTUBE_VIDEO_ID, videoId);
         updateYouTubeUI();
-        showStatus('✅ 라이브 채팅에 성공적으로 연결되었습니다!', 'success');
+        showStatus('✅ 라이브 채팅에 연결되었습니다! (메시지 전송은 OAuth 필요)', 'success');
         
     } catch (error) {
         showStatus(`❌ 연결 실패: ${error.message}`, 'error');
