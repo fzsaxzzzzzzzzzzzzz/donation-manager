@@ -117,21 +117,31 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="openOverlay('table')" class="btn btn-primary">🏆 스트리머 테이블 열기</button>
 </div>
 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-<button onclick="generateOverlayLink('donor')" class="btn btn-success">🔗 후원자별 링크 생성</button>
-<button onclick="generateOverlayLink('table')" class="btn btn-success">🔗 스트리머 테이블 링크 생성</button>
+<button onclick="exportDataFile()" class="btn btn-success">📁 데이터 파일 내보내기</button>
+<button onclick="showSimpleOverlayUrls()" class="btn btn-primary">🔗 간단 링크 보기</button>
 </div>
 <p style="font-size: 13px; color: #666; margin-bottom: 20px;">
-💡 같은 PC: 위 버튼으로 오버레이 열기<br>
-💡 다른 PC: 링크 생성으로 URL 복사 후 다른 PC에서 열기
+💡 같은 PC: 위 오버레이 열기 버튼 사용<br>
+💡 다른 PC: 데이터 파일 내보내기 → data.json을 GitHub에 업로드 → 간단 링크 사용
 </p>
-<div id="overlay-link-result" style="display: none; margin-bottom: 15px;">
-<label class="form-label">다른 PC용 오버레이 링크:</label>
+<div id="simple-overlay-urls" style="display: none; margin-bottom: 15px;">
+<label class="form-label">다른 PC용 간단한 오버레이 링크:</label>
+<div style="margin-bottom: 10px;">
+<label style="font-size: 12px; color: #666;">💝 후원자별 총액:</label>
 <div style="display: flex; gap: 5px;">
-<input type="text" id="overlay-link-text" readonly class="form-input" style="flex: 1;">
-<button onclick="copyOverlayLink()" class="btn btn-secondary">📋 복사</button>
+<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/donor-overlay.html">
+<button onclick="copyText(this.previousElementSibling.value)" class="btn btn-secondary">📋</button>
+</div>
+</div>
+<div>
+<label style="font-size: 12px; color: #666;">🏆 스트리머 테이블:</label>
+<div style="display: flex; gap: 5px;">
+<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/streamer-table-overlay.html">
+<button onclick="copyText(this.previousElementSibling.value)" class="btn btn-secondary">📋</button>
+</div>
 </div>
 <p style="font-size: 12px; color: #666; margin-top: 5px;">
-이 링크를 방송 PC의 OBS 브라우저 소스에 붙여넣기하세요
+먼저 데이터 파일을 내보내고 data.json을 GitHub에 업로드한 후 위 링크 사용
 </p>
 </div>
 </div>
@@ -2938,8 +2948,8 @@ function openOverlay(type) {
     }
 }
 
-// 다른 PC용 오버레이 링크 생성
-function generateOverlayLink(type) {
+// 데이터 파일 내보내기 (간단한 JSON 파일)
+function exportDataFile() {
     try {
         // 현재 데이터 수집
         const data = {
@@ -2959,55 +2969,48 @@ function generateOverlayLink(type) {
                 'show-total-row': localStorage.getItem('show-total-row') || 'true',
                 'show-update-time': localStorage.getItem('show-update-time') || 'false',
                 'table-title': localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆'
-            }
+            },
+            lastUpdated: new Date().toISOString()
         };
         
-        // 데이터를 Base64로 인코딩 (URL 안전)
-        const dataString = JSON.stringify(data);
-        const encodedData = btoa(encodeURIComponent(dataString));
+        // JSON 파일 다운로드
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
         
-        // 오버레이 URL 생성
-        const baseUrl = window.location.origin + window.location.pathname.replace('donation-manager.html', '');
-        let overlayUrl = '';
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'data.json';
+        a.click();
         
-        if (type === 'donor') {
-            overlayUrl = baseUrl + 'donor-overlay.html?data=' + encodedData;
-        } else if (type === 'table') {
-            overlayUrl = baseUrl + 'streamer-table-overlay.html?data=' + encodedData;
-        }
-        
-        if (overlayUrl) {
-            // 링크 표시
-            document.getElementById('overlay-link-text').value = overlayUrl;
-            document.getElementById('overlay-link-result').style.display = 'block';
-            showStatus('오버레이 링크가 생성되었습니다! 다른 PC에서 사용하세요.', 'success');
-        }
+        URL.revokeObjectURL(url);
+        showStatus('data.json 파일이 다운로드되었습니다!', 'success');
         
     } catch (error) {
-        console.error('링크 생성 실패:', error);
-        showStatus('링크 생성에 실패했습니다.', 'error');
+        console.error('데이터 내보내기 실패:', error);
+        showStatus('데이터 내보내기에 실패했습니다.', 'error');
     }
 }
 
-// 오버레이 링크 복사
-function copyOverlayLink() {
-    const linkText = document.getElementById('overlay-link-text');
-    if (linkText && linkText.value) {
-        navigator.clipboard.writeText(linkText.value).then(() => {
-            showStatus('링크가 클립보드에 복사되었습니다!', 'success');
-        }).catch(err => {
-            console.error('복사 실패:', err);
-            // 폴백: 텍스트 선택
-            linkText.select();
-            linkText.setSelectionRange(0, 99999);
-            try {
-                document.execCommand('copy');
-                showStatus('링크가 클립보드에 복사되었습니다!', 'success');
-            } catch (e) {
-                showStatus('수동으로 링크를 복사해주세요.', 'warning');
-            }
-        });
+// 간단한 오버레이 URL 보기
+function showSimpleOverlayUrls() {
+    const urlDiv = document.getElementById('simple-overlay-urls');
+    if (urlDiv.style.display === 'none') {
+        urlDiv.style.display = 'block';
+        showStatus('간단한 오버레이 링크를 표시했습니다.', 'info');
+    } else {
+        urlDiv.style.display = 'none';
     }
+}
+
+// 텍스트 복사 유틸리티
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showStatus('링크가 클립보드에 복사되었습니다!', 'success');
+    }).catch(err => {
+        console.error('복사 실패:', err);
+        showStatus('수동으로 링크를 복사해주세요.', 'warning');
+    });
 }
 
 function updateOverlayFontSize(value) {
