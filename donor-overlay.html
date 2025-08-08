@@ -83,6 +83,16 @@ let isTransparentMode = false;
 let currentDonorText = '';
 let settingsSyncedFromServer = false; // 설정 동기화 플래그
 
+// localStorage 변경 추적을 위한 감시자
+const originalSetItem = localStorage.setItem;
+localStorage.setItem = function(key, value) {
+    if (key.startsWith('overlay-') || key.startsWith('table-')) {
+        console.log(`🔧 localStorage 변경: ${key} = ${value} (이전: ${localStorage.getItem(key)})`);
+        console.trace('호출 스택:'); // 어디서 호출되었는지 추적
+    }
+    return originalSetItem.call(this, key, value);
+};
+
 // 정산요약과 동일한 금액 포맷팅
 function formatAmount(num) {
     const number = parseFloat(num);
