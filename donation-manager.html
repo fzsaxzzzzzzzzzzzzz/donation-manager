@@ -211,14 +211,14 @@ GitHub Settings → Developer settings → Personal access tokens에서 생성 (
 <div style="margin-bottom: 10px;">
 <label style="font-size: 12px; color: #666;">💝 후원자별 총액:</label>
 <div style="display: flex; gap: 5px;">
-<input type="text" readonly class="form-input" style="flex: 1;" value="https://saxzzzzzzzzzzzzz.github.io/donation-manager/new-donor-overlay.html">
+<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/new-donor-overlay.html">
 <button onclick="copyText(this.previousElementSibling.value)" class="btn btn-secondary">📋</button>
 </div>
 </div>
 <div>
 <label style="font-size: 12px; color: #666;">🏆 스트리머 테이블:</label>
 <div style="display: flex; gap: 5px;">
-<input type="text" readonly class="form-input" style="flex: 1;" value="https://saxzzzzzzzzzzzzz.github.io/donation-manager/new-streamer-table-overlay.html">
+<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/new-streamer-table-overlay.html">
 <button onclick="copyText(this.previousElementSibling.value)" class="btn btn-secondary">📋</button>
 </div>
 </div>
@@ -776,7 +776,7 @@ function safeAddClass(element, className) {
 }
 
 // --- 핵심 로직 (초기화 및 동기화 제어) ---
-"""// --- 핵심 로직 (초기화 및 동기화 제어) ---
+// --- 핵심 로직 (초기화 및 동기화 제어) ---
 async function initializeApp() {
     // 오버레이 모드 확인 (URL 파라미터)
     const urlParams = new URLSearchParams(window.location.search);
@@ -849,7 +849,7 @@ async function initializeApp() {
             if (message) message.textContent = `앱 로딩 중 심각한 오류 발생: ${error.message}`;
         }
     }
-}""
+    }
 
 // --- 오버레이 모드 초기화 ---
 async function initializeOverlayMode(mode) {
@@ -1069,8 +1069,9 @@ function updateOverlayTableDisplay(donations, streamers, emojis) {
 }
 
 async function loadDataFromGitHub() {
-    const GITHUB_API_URL = 'https://api.github.com/repos/saxzzzzzzzzzzzzz/donation-manager/contents/data.json';
-    const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/saxzzzzzzzzzzzzz/donation-manager/main/data.json';
+    // Use the correct GitHub repository for this project
+    const GITHUB_API_URL = 'https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager/contents/data.json';
+    const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/fzsaxzzzzzzzzzzzzz/donation-manager/main/data.json';
 
     try {
         const response = await fetch(GITHUB_RAW_URL + '?t=' + new Date().getTime(), {
@@ -1112,7 +1113,8 @@ async function loadDataFromGitHub() {
 }
 
 async function saveDataToGitHub() {
-    const GITHUB_API_URL = 'https://api.github.com/repos/saxzzzzzzzzzzzzz/donation-manager/contents/data.json';
+    // Use the correct GitHub repository for this project
+    const GITHUB_API_URL = 'https://api.github.com/repos/fzsaxzzzzzzzzzzzzz/donation-manager/contents/data.json';
     const token = localStorage.getItem('github_token');
 
     if (!token) {
