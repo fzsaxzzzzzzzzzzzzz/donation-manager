@@ -1334,7 +1334,13 @@ function handleNewDonations(newDonations) {
         
         // GitHub 자동 동기화 시도
         setTimeout(async () => {
-            await autoSyncToGitHub();
+            console.log('GitHub 자동 동기화 시작...');
+            const result = await autoSyncToGitHub();
+            if (result) {
+                console.log('✅ GitHub 동기화 성공');
+            } else {
+                console.log('❌ GitHub 동기화 실패');
+            }
         }, 500);
     }
     
