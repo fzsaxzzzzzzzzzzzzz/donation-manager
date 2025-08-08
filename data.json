@@ -1,6 +1,13 @@
 {
   "donations": [
     {
+      "donor": "1",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1121,
+      "time": "2025-08-08T12:42:54.704Z"
+    },
+    {
       "donor": "ㅁㅁㅁ",
       "streamer": "엄삼용",
       "type": "계좌",
@@ -147,7 +154,7 @@
   "settings": {
     "overlay-font-size": "37",
     "overlay-stroke-width": "2",
-    "overlay-text-align": "right",
+    "overlay-text-align": "left",
     "table-opacity": "85",
     "table-number-size": "16",
     "table-font-size": "14",
@@ -158,5 +165,5 @@
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆"
   },
-  "lastUpdated": "2025-08-08T12:42:10.953Z"
+  "lastUpdated": "2025-08-08T12:42:55.217Z"
 }
