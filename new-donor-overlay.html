@@ -192,8 +192,12 @@ function updateDisplay() {
     const contentEl = document.getElementById('donor-content');
     
     if (!donations || donations.length === 0) {
-        contentEl.innerHTML = '<div class="no-data">사랑해요♡</div>';
+        contentEl.innerHTML = '사랑해요♡';
+        contentEl.className = 'no-data'; // 클래스 직접 지정
         applyOverlaySettings(); // 설정 적용
+        setTimeout(() => {
+            applyOverlaySettings(); // 한 번 더 적용
+        }, 100);
         return;
     }
     
@@ -230,11 +234,17 @@ function updateDisplay() {
         displayText = "사랑해요♡";
     }
     
-    contentEl.innerHTML = `<div class="donor-content">${displayText}</div>`;
+    contentEl.innerHTML = displayText;
+    contentEl.className = 'donor-content'; // 클래스 직접 지정
     console.log('화면 업데이트 완료:', sortedDonors.length + '명');
     
-    // 설정 적용
+    // 설정 즉시 적용
     applyOverlaySettings();
+    
+    // 0.1초 후 한 번 더 적용 (DOM 업데이트 완료 후)
+    setTimeout(() => {
+        applyOverlaySettings();
+    }, 100);
 }
 
 // 크로마키 모드 토글
@@ -267,7 +277,33 @@ console.log('후원자 오버레이 시작...');
 loadData();
 
 // 설정을 주기적으로 확인하고 적용 (실시간 반영)
-setInterval(applyOverlaySettings, 1000);
+setInterval(() => {
+    const contentEl = document.getElementById('donor-content');
+    if (contentEl) {
+        console.log('📏 현재 실제 폰트크기:', window.getComputedStyle(contentEl).fontSize);
+        console.log('📐 localStorage 설정:', localStorage.getItem('overlay-font-size'));
+    }
+    applyOverlaySettings();
+}, 1000);
+
+// 강력한 설정 적용 함수 (매우 빈번하게 실행)
+setInterval(() => {
+    const contentEl = document.getElementById('donor-content');
+    if (contentEl) {
+        const fontSize = localStorage.getItem('overlay-font-size') || '18';
+        const textAlign = localStorage.getItem('overlay-text-align') || 'left';
+        
+        // 매우 강력하게 스타일 강제 적용
+        contentEl.style.cssText = `
+            font-size: ${fontSize}px !important;
+            text-align: ${textAlign} !important;
+            font-weight: bold !important;
+            color: white !important;
+            line-height: 1.5 !important;
+            white-space: pre-line !important;
+        `;
+    }
+}, 500); // 0.5초마다 강제 적용
 </script>
 
 </body>
