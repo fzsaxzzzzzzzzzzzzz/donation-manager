@@ -83,17 +83,27 @@ let isTransparentMode = false;
 let currentDonorText = '';
 let settingsSyncedFromServer = false; // 설정 동기화 플래그
 
-// localStorage 변경 추적을 위한 감시자 (더 강화됨)
+// localStorage 변경 추적을 위한 감시자 (최대 강화)
 const originalSetItem = localStorage.setItem;
 localStorage.setItem = function(key, value) {
-    const oldValue = localStorage.getItem(key);
-    if (key.includes('overlay') || key.includes('table') || key.includes('font') || key.includes('stroke') || key.includes('align')) {
-        console.log(`🔧🔧🔧 localStorage 변경 감지: ${key} = ${value} (이전: ${oldValue})`);
-        console.log('🔧🔧🔧 변경 시점:', new Date().toLocaleTimeString());
-        console.trace('🔧🔧🔧 호출 스택:');
+    const oldValue = this.getItem(key);
+    const result = originalSetItem.call(this, key, value);
+    
+    // 모든 localStorage 변경 추적
+    console.log(`🔧🔧🔧 localStorage 변경: ${key} = ${value} (이전: ${oldValue})`);
+    
+    // 오버레이 관련 설정만 특별 추적
+    if (key.includes('overlay') || key.includes('font') || key.includes('stroke') || key.includes('align')) {
+        console.error(`🚨🚨🚨 오버레이 설정 변경 감지!!! ${key} = ${value}`);
+        console.trace('🚨🚨🚨 오버레이 설정 변경 스택:');
     }
-    return originalSetItem.call(this, key, value);
+    
+    return result;
 };
+
+// 추가 보안: localStorage 객체 자체 감시
+const originalLocalStorage = window.localStorage;
+console.log('localStorage 추적 시작됨');
 
 // 정산요약과 동일한 금액 포맷팅
 function formatAmount(num) {
