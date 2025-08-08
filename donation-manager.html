@@ -1705,7 +1705,7 @@ function toggleStreamerVisibility(streamerName) {
     }
     
     localStorage.setItem('hidden-streamers', JSON.stringify(hiddenStreamers));
-    saveToServer();
+    autoSyncToGitHub();
     updateStreamerList();
     updateAllUI(); // 모든 UI 업데이트
 }
@@ -3652,13 +3652,13 @@ function loadAutoSyncSettings() {
 function updateOverlayFontSize(value) {
     document.getElementById('overlay-font-size-value').textContent = value + 'px';
     localStorage.setItem('overlay-font-size', value);
-    saveToServer();
+    autoSyncToGitHub();
 }
 
 function updateOverlayStrokeWidth(value) {
     document.getElementById('overlay-stroke-width-value').textContent = value + 'px';
     localStorage.setItem('overlay-stroke-width', value);
-    saveToServer();
+    autoSyncToGitHub();
 }
 
 function setOverlayTextAlign(align) {
@@ -3673,30 +3673,30 @@ function setOverlayTextAlign(align) {
     
     // 실시간 적용
     localStorage.setItem('overlay-text-align', align);
-    saveToServer();
+    autoSyncToGitHub();
 }
 
 function updateTableOpacity(value) {
     document.getElementById('table-opacity-value').textContent = value + '%';
     localStorage.setItem('table-opacity', value);
-    saveToServer();
+    autoSyncToGitHub();
 }
 
 function updateTableNumberSize(value) {
     document.getElementById('table-number-size-value').textContent = value + 'px';
     localStorage.setItem('table-number-size', value);
-    saveToServer();
+    autoSyncToGitHub();
 }
 
 function updateTableFontSize(value) {
     document.getElementById('table-font-size-value').textContent = value + 'px';
     localStorage.setItem('table-font-size', value);
-    saveToServer();
+    autoSyncToGitHub();
 }
 
 function setTableTextColor(color) {
     localStorage.setItem('table-text-color', color);
-    saveToServer();
+    autoSyncToGitHub();
     showStatus(`테이블 글자 색상이 변경되었습니다`, 'success');
 }
 
@@ -3723,7 +3723,7 @@ function resetOverlaySettings() {
 
 function setTableColorPreset(preset) {
     localStorage.setItem('table-color-preset', preset);
-    saveToServer();
+    autoSyncToGitHub();
     showStatus(`테이블 색상이 ${preset}로 설정되었습니다`, 'success');
 }
 
@@ -3906,7 +3906,7 @@ function saveTableSettings() {
     localStorage.setItem('show-update-time', showUpdateTime.toString());
     localStorage.setItem('rank-count', rankCount.toString());
     
-    saveToServer();
+    autoSyncToGitHub();
     
     // 모든 순번명 저장
     for (let i = 1; i <= rankCount; i++) {
