@@ -89,26 +89,72 @@ function formatAmount(num) {
     return parseFloat(number.toFixed(1)).toString();
 }
 
-// 메인 후원 관리 페이지에서 데이터 가져오기
+// URL 파라미터 또는 로컬스토리지에서 데이터 가져오기
 function loadDonationData() {
     try {
-        const savedDonations = localStorage.getItem('donation_data');
+        let dataLoaded = false;
         
-        if (savedDonations) {
-            donations = JSON.parse(savedDonations).map(d => ({
-                ...d,
-                time: new Date(d.time),
-                amount: parseFloat(d.amount) || 0
-            }));
-        } else {
+        // 1. URL 파라미터에서 데이터 시도
+        const urlParams = new URLSearchParams(window.location.search);
+        const encodedData = urlParams.get('data');
+        
+        if (encodedData) {
+            try {
+                // Base64 디코딩
+                const dataString = decodeURIComponent(atob(encodedData));
+                const data = JSON.parse(dataString);
+                
+                // 후원 데이터 설정
+                if (data.donations && Array.isArray(data.donations)) {
+                    donations = data.donations.map(d => ({
+                        ...d,
+                        time: new Date(d.time),
+                        amount: parseFloat(d.amount) || 0
+                    }));
+                }
+                
+                // 설정 데이터 적용
+                if (data.settings) {
+                    Object.entries(data.settings).forEach(([key, value]) => {
+                        if (value !== null && value !== undefined) {
+                            localStorage.setItem(key, value);
+                        }
+                    });
+                }
+                
+                console.log('✅ URL 파라미터에서 데이터 로드 성공:', donations.length + '개 후원');
+                dataLoaded = true;
+            } catch (urlError) {
+                console.error('URL 파라미터 데이터 파싱 실패:', urlError);
+            }
+        }
+        
+        // 2. URL 파라미터 실패 시 로컬스토리지에서 시도
+        if (!dataLoaded) {
+            const savedDonations = localStorage.getItem('donation_data');
+            
+            if (savedDonations) {
+                donations = JSON.parse(savedDonations).map(d => ({
+                    ...d,
+                    time: new Date(d.time),
+                    amount: parseFloat(d.amount) || 0
+                }));
+                console.log('✅ 로컬스토리지에서 데이터 로드:', donations.length + '개 후원');
+                dataLoaded = true;
+            }
+        }
+        
+        // 3. 데이터 없으면 빈 배열
+        if (!dataLoaded) {
             donations = [];
+            console.log('ℹ️ 데이터 없음, 빈 상태로 시작');
         }
 
         updateDisplay();
     } catch (error) {
         console.error('데이터 로드 실패:', error);
         document.getElementById('donor-content').innerHTML = 
-            '<div class="no-data" style="white-space: pre-line;">❌ 데이터 로드 실패\n메인 페이지에서 후원 데이터를 먼저 등록하세요</div>';
+            '<div class="no-data" style="white-space: pre-line;">❌ 데이터 로드 실패\n다른 PC용 링크를 다시 생성해보세요</div>';
         applySettings();
     }
 }

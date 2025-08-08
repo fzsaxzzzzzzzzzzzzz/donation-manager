@@ -313,33 +313,103 @@ function formatAmount(num) {
     return parseFloat(number.toFixed(1)).toString();
 }
 
-// 메인 후원 관리 페이지에서 데이터 가져오기
+// URL 파라미터 또는 로컬스토리지에서 데이터 가져오기
 function loadData() {
     try {
-        const savedDonations = localStorage.getItem('donation_data');
-        const savedStreamers = localStorage.getItem('streamer_config');
-        const savedEmojis = localStorage.getItem('streamer_emojis');
+        let dataLoaded = false;
         
-        if (savedDonations) {
-            donations = JSON.parse(savedDonations).map(d => ({
-                ...d,
-                time: new Date(d.time),
-                amount: parseFloat(d.amount) || 0
-            }));
-        } else {
+        // 1. URL 파라미터에서 데이터 시도
+        const urlParams = new URLSearchParams(window.location.search);
+        const encodedData = urlParams.get('data');
+        
+        if (encodedData) {
+            try {
+                // Base64 디코딩
+                const dataString = decodeURIComponent(atob(encodedData));
+                const data = JSON.parse(dataString);
+                
+                // 후원 데이터 설정
+                if (data.donations && Array.isArray(data.donations)) {
+                    donations = data.donations.map(d => ({
+                        ...d,
+                        time: new Date(d.time),
+                        amount: parseFloat(d.amount) || 0
+                    }));
+                }
+                
+                // 스트리머 데이터 설정
+                if (data.streamers && Array.isArray(data.streamers)) {
+                    streamers = data.streamers;
+                }
+                
+                // 이모지 데이터 설정
+                if (data.emojis && typeof data.emojis === 'object') {
+                    emojis = data.emojis;
+                }
+                
+                // 설정 데이터 적용
+                if (data.settings) {
+                    Object.entries(data.settings).forEach(([key, value]) => {
+                        if (value !== null && value !== undefined) {
+                            localStorage.setItem(key, value);
+                        }
+                    });
+                }
+                
+                console.log('✅ URL 파라미터에서 데이터 로드 성공:', {
+                    donations: donations.length + '개',
+                    streamers: streamers.length + '명',
+                    emojis: Object.keys(emojis).length + '개'
+                });
+                dataLoaded = true;
+            } catch (urlError) {
+                console.error('URL 파라미터 데이터 파싱 실패:', urlError);
+            }
+        }
+        
+        // 2. URL 파라미터 실패 시 로컬스토리지에서 시도
+        if (!dataLoaded) {
+            const savedDonations = localStorage.getItem('donation_data');
+            const savedStreamers = localStorage.getItem('streamer_config');
+            const savedEmojis = localStorage.getItem('streamer_emojis');
+            
+            if (savedDonations) {
+                donations = JSON.parse(savedDonations).map(d => ({
+                    ...d,
+                    time: new Date(d.time),
+                    amount: parseFloat(d.amount) || 0
+                }));
+                dataLoaded = true;
+            } else {
+                donations = [];
+            }
+
+            if (savedStreamers) {
+                streamers = JSON.parse(savedStreamers);
+            } else {
+                streamers = [];
+            }
+
+            if (savedEmojis) {
+                emojis = JSON.parse(savedEmojis);
+            } else {
+                emojis = {};
+            }
+            
+            if (dataLoaded) {
+                console.log('✅ 로컬스토리지에서 데이터 로드:', {
+                    donations: donations.length + '개',
+                    streamers: streamers.length + '명'
+                });
+            }
+        }
+        
+        // 3. 데이터 없으면 빈 상태
+        if (!dataLoaded) {
             donations = [];
-        }
-
-        if (savedStreamers) {
-            streamers = JSON.parse(savedStreamers);
-        } else {
             streamers = [];
-        }
-
-        if (savedEmojis) {
-            emojis = JSON.parse(savedEmojis);
-        } else {
             emojis = {};
+            console.log('ℹ️ 데이터 없음, 빈 상태로 시작');
         }
 
         updateTable();
@@ -347,7 +417,7 @@ function loadData() {
         console.error('데이터 로드 실패:', error);
         const savedTextAlign = localStorage.getItem('overlay-text-align') || 'center';
         document.getElementById('streamer-tbody').innerHTML = 
-            `<tr><td colspan="5" class="no-data" style="text-align: ${savedTextAlign};">❌ 데이터 로드 실패<br>메인 페이지에서 후원 데이터를 먼저 등록하세요</td></tr>`;
+            `<tr><td colspan="5" class="no-data" style="text-align: ${savedTextAlign};">❌ 데이터 로드 실패<br>다른 PC용 링크를 다시 생성해보세요</td></tr>`;
         applyTableSettings();
     }
 }

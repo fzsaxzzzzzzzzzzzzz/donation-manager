@@ -116,9 +116,24 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="openOverlay('donor')" class="btn btn-primary">💝 후원자별 총액 열기</button>
 <button onclick="openOverlay('table')" class="btn btn-primary">🏆 스트리머 테이블 열기</button>
 </div>
+<div style="display: flex; gap: 10px; margin-bottom: 15px;">
+<button onclick="generateOverlayLink('donor')" class="btn btn-success">🔗 후원자별 링크 생성</button>
+<button onclick="generateOverlayLink('table')" class="btn btn-success">🔗 스트리머 테이블 링크 생성</button>
+</div>
 <p style="font-size: 13px; color: #666; margin-bottom: 20px;">
-💡 OBS에서 브라우저 소스로 추가하여 사용하세요
+💡 같은 PC: 위 버튼으로 오버레이 열기<br>
+💡 다른 PC: 링크 생성으로 URL 복사 후 다른 PC에서 열기
 </p>
+<div id="overlay-link-result" style="display: none; margin-bottom: 15px;">
+<label class="form-label">다른 PC용 오버레이 링크:</label>
+<div style="display: flex; gap: 5px;">
+<input type="text" id="overlay-link-text" readonly class="form-input" style="flex: 1;">
+<button onclick="copyOverlayLink()" class="btn btn-secondary">📋 복사</button>
+</div>
+<p style="font-size: 12px; color: #666; margin-top: 5px;">
+이 링크를 방송 PC의 OBS 브라우저 소스에 붙여넣기하세요
+</p>
+</div>
 </div>
 
 <div style="border-top: 1px solid #ddd; padding-top: 20px;">
@@ -2920,6 +2935,78 @@ function openOverlay(type) {
     
     if (overlayUrl) {
         window.open(overlayUrl, '_blank', 'width=800,height=600');
+    }
+}
+
+// 다른 PC용 오버레이 링크 생성
+function generateOverlayLink(type) {
+    try {
+        // 현재 데이터 수집
+        const data = {
+            donations: donations,
+            streamers: streamers,
+            emojis: emojis,
+            settings: {
+                'overlay-font-size': localStorage.getItem('overlay-font-size') || '16',
+                'overlay-stroke-width': localStorage.getItem('overlay-stroke-width') || '2',
+                'overlay-text-align': localStorage.getItem('overlay-text-align') || 'left',
+                'table-opacity': localStorage.getItem('table-opacity') || '85',
+                'table-number-size': localStorage.getItem('table-number-size') || '16',
+                'table-font-size': localStorage.getItem('table-font-size') || '14',
+                'table-text-color': localStorage.getItem('table-text-color') || 'white',
+                'hidden-streamers': localStorage.getItem('hidden-streamers') || '[]',
+                'group-threshold': localStorage.getItem('group-threshold') || '1',
+                'show-total-row': localStorage.getItem('show-total-row') || 'true',
+                'show-update-time': localStorage.getItem('show-update-time') || 'false',
+                'table-title': localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆'
+            }
+        };
+        
+        // 데이터를 Base64로 인코딩 (URL 안전)
+        const dataString = JSON.stringify(data);
+        const encodedData = btoa(encodeURIComponent(dataString));
+        
+        // 오버레이 URL 생성
+        const baseUrl = window.location.origin + window.location.pathname.replace('donation-manager.html', '');
+        let overlayUrl = '';
+        
+        if (type === 'donor') {
+            overlayUrl = baseUrl + 'donor-overlay.html?data=' + encodedData;
+        } else if (type === 'table') {
+            overlayUrl = baseUrl + 'streamer-table-overlay.html?data=' + encodedData;
+        }
+        
+        if (overlayUrl) {
+            // 링크 표시
+            document.getElementById('overlay-link-text').value = overlayUrl;
+            document.getElementById('overlay-link-result').style.display = 'block';
+            showStatus('오버레이 링크가 생성되었습니다! 다른 PC에서 사용하세요.', 'success');
+        }
+        
+    } catch (error) {
+        console.error('링크 생성 실패:', error);
+        showStatus('링크 생성에 실패했습니다.', 'error');
+    }
+}
+
+// 오버레이 링크 복사
+function copyOverlayLink() {
+    const linkText = document.getElementById('overlay-link-text');
+    if (linkText && linkText.value) {
+        navigator.clipboard.writeText(linkText.value).then(() => {
+            showStatus('링크가 클립보드에 복사되었습니다!', 'success');
+        }).catch(err => {
+            console.error('복사 실패:', err);
+            // 폴백: 텍스트 선택
+            linkText.select();
+            linkText.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showStatus('링크가 클립보드에 복사되었습니다!', 'success');
+            } catch (e) {
+                showStatus('수동으로 링크를 복사해주세요.', 'warning');
+            }
+        });
     }
 }
 
