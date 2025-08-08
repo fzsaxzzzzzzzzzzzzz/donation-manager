@@ -1028,8 +1028,17 @@ function handleNewDonations(newDonations) {
     updateAllUI();
     
     // 🤖 후원시 챗봇 자동 알림
-    if (document.getElementById('auto-chat-notify').checked) {
+    const autoChatElement = document.getElementById('auto-chat-notify');
+    const isChecked = autoChatElement ? autoChatElement.checked : false;
+    console.log('자동 챗봇 알림 체크:', isChecked, '/ 새 후원 개수:', newDonations.length);
+    
+    if (isChecked && newDonations.length > 0) {
+        console.log('자동 챗봇 알림 실행...');
         sendDonationNotification(newDonations);
+    } else if (!isChecked) {
+        console.log('자동 챗봇 알림이 비활성화됨');
+    } else if (newDonations.length === 0) {
+        console.log('새 후원이 없어서 알림 스킵');
     }
 }
 
@@ -1849,25 +1858,30 @@ function handleFileImport(event) {
 
 // --- 후원 알림 관련 함수 ---
 async function sendDonationNotification(newDonations) {
+    console.log('=== 후원 자동 알림 시작 ===');
+    console.log('- newDonations:', newDonations);
+    console.log('- isOAuthSignedIn:', isOAuthSignedIn);
+    console.log('- liveChatId:', liveChatId);
+    console.log('- hasWritePermission function exists:', typeof hasWritePermission === 'function');
+    
     // 권한 체크: 관리자이거나 비밀번호가 입력된 경우만 자동 알림 허용
-    if (!hasWritePermission()) {
+    if (typeof hasWritePermission === 'function' && !hasWritePermission()) {
         console.log('챗봇 자동 알림 권한이 없습니다. (관리자이거나 비밀번호 입력 필요)');
         showStatus('🔒 챗봇 자동 알림은 관리자 권한이 필요합니다. 비밀번호를 입력하세요.', 'warning', 5000);
         return;
     }
     
-    // OAuth 연결 확인 (우선)
-    if (isOAuthSignedIn && !liveChatId) {
-        console.log('OAuth는 연결되었지만 라이브 채팅 ID가 없습니다. 영상에 연결하세요.');
-        showStatus('🔗 먼저 YouTube 영상에 연결하세요 (OAuth 로그인됨)', 'warning', 3000);
+    // 연결 상태 확인 (OAuth 또는 API 키 중 하나라도 가능하면 진행)
+    if (!isOAuthSignedIn && !liveChatId) {
+        console.log('라이브 채팅이 연결되지 않아 알림을 보낼 수 없습니다.');
+        showStatus('🔗 먼저 OAuth 로그인하거나 API 키로 라이브 채팅에 연결하세요', 'warning', 3000);
         return;
     }
     
-    // API 키 방식 연결 확인
-    if (!isOAuthSignedIn && !liveChatId) {
-        console.log('라이브 채팅이 연결되지 않아 알림을 보낼 수 없습니다.');
-        showStatus('🔗 먼저 라이브 채팅에 연결하거나 OAuth 로그인하세요', 'warning', 3000);
-        return;
+    // OAuth는 로그인되었지만 liveChatId가 없는 경우 경고만 표시하고 계속 진행
+    if (isOAuthSignedIn && !liveChatId) {
+        console.log('OAuth는 연결되었지만 라이브 채팅 ID가 없습니다. 연결 후 더 안정적인 전송이 가능합니다.');
+        showStatus('💡 YouTube 영상에 연결하면 더 안정적인 전송이 가능합니다', 'info', 2000);
     }
     
     try {
