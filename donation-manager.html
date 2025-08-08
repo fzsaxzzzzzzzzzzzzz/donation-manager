@@ -1853,8 +1853,17 @@ async function sendDonationNotification(newDonations) {
         return;
     }
     
-    if (!liveChatId) {
+    // OAuth 연결 확인 (우선)
+    if (isOAuthSignedIn && !liveChatId) {
+        console.log('OAuth는 연결되었지만 라이브 채팅 ID가 없습니다. 영상에 연결하세요.');
+        showStatus('🔗 먼저 YouTube 영상에 연결하세요 (OAuth 로그인됨)', 'warning', 3000);
+        return;
+    }
+    
+    // API 키 방식 연결 확인
+    if (!isOAuthSignedIn && !liveChatId) {
         console.log('라이브 채팅이 연결되지 않아 알림을 보낼 수 없습니다.');
+        showStatus('🔗 먼저 라이브 채팅에 연결하거나 OAuth 로그인하세요', 'warning', 3000);
         return;
     }
     
@@ -1886,8 +1895,12 @@ async function sendDonationNotification(newDonations) {
         for (let i = 0; i < notificationMessages.length; i++) {
             const message = notificationMessages[i];
             
-            // 메시지 전송
-            await sendMessageToYouTube(message);
+            // 메시지 전송 (OAuth 방식 우선)
+            if (isOAuthSignedIn) {
+                await sendToYouTubeOAuth(message);
+            } else {
+                await sendMessageToYouTube(message);
+            }
             
             // 다음 메시지 전송까지 약간의 지연 (API 제한 방지)
             if (i < notificationMessages.length - 1) {
@@ -2622,6 +2635,20 @@ async function sendToYouTube() {
         return;
     }
     
+    // OAuth 방식 우선 시도
+    if (isOAuthSignedIn && liveChatId) {
+        try {
+            const success = await sendToYouTubeOAuth(message);
+            if (success) {
+                document.getElementById('manual-message').value = '';
+                return;
+            }
+        } catch (error) {
+            console.error('OAuth 전송 실패:', error);
+        }
+    }
+    
+    // API 키 방식 대안
     if (!liveChatId) {
         showStatus('먼저 라이브 채팅에 연결하세요', 'error');
         return;
@@ -2635,16 +2662,22 @@ async function sendToYouTube() {
         
     } catch (error) {
         showStatus(`❌ 전송 실패: ${error.message}`, 'error');
-        // OAuth 인증이 필요한 경우 안내
         if (error.message.includes('authentication') || error.message.includes('unauthorized')) {
-            showStatus('⚠️ OAuth 인증이 필요합니다. 현재는 복사 기능을 이용해주세요.', 'warning', 8000);
+            showStatus('⚠️ OAuth 로그인이 필요하거나 API 키를 확인하세요.', 'warning', 8000);
         }
     }
 }
 
 function startAutoSend() {
-    if (!liveChatId) {
-        showStatus('먼저 라이브 채팅에 연결하세요', 'error');
+    // OAuth 또는 API 키 연결 확인
+    if (!isOAuthSignedIn && !liveChatId) {
+        showStatus('먼저 OAuth 로그인하거나 API 키로 라이브 채팅에 연결하세요', 'error');
+        return;
+    }
+    
+    // OAuth만 연결된 경우 liveChatId 확인
+    if (isOAuthSignedIn && !liveChatId) {
+        showStatus('먼저 YouTube 영상에 연결하세요 (OAuth 로그인됨)', 'error');
         return;
     }
     
@@ -2658,11 +2691,22 @@ function startAutoSend() {
     document.getElementById('auto-start-btn').disabled = true;
     document.getElementById('auto-stop-btn').disabled = false;
     
-    autoSendInterval = setInterval(() => {
-        updateLiveSummary();
-        const summaryMessage = document.getElementById('live-summary').textContent;
-        document.getElementById('manual-message').value = summaryMessage;
-        sendToYouTube();
+    autoSendInterval = setInterval(async () => {
+        try {
+            updateLiveSummary();
+            const summaryMessage = document.getElementById('live-summary').textContent;
+            
+            if (summaryMessage.trim()) {
+                document.getElementById('manual-message').value = summaryMessage;
+                await sendToYouTube();
+                console.log('자동 메시지 전송 완료:', summaryMessage.substring(0, 50) + '...');
+            } else {
+                console.log('자동 전송: 메시지가 비어있음');
+            }
+        } catch (error) {
+            console.error('자동 전송 오류:', error);
+            showStatus('자동 전송 오류 발생', 'warning');
+        }
     }, interval);
     
     showStatus(`✅ 자동 전송이 시작되었습니다 (${interval/1000}초 간격)`, 'success');
@@ -2747,6 +2791,40 @@ function copyMessageToClipboard() {
 function clearMessage() {
     document.getElementById('manual-message').value = '';
     showStatus('메시지가 지워졌습니다', 'info');
+}
+
+// 챗봇 상태 디버깅 함수
+function debugChatbotStatus() {
+    console.log('=== 챗봇 상태 디버깅 ===');
+    console.log('- isOAuthSignedIn:', isOAuthSignedIn);
+    console.log('- accessToken:', accessToken ? accessToken.substring(0, 20) + '...' : 'NONE');
+    console.log('- liveChatId:', liveChatId || 'NONE');
+    console.log('- tokenClient:', !!tokenClient);
+    console.log('- gapi ready:', typeof gapi !== 'undefined');
+    console.log('- google.accounts:', !!window.google?.accounts);
+    
+    const sendBtn = document.getElementById('youtube-send-btn');
+    console.log('- send button disabled:', sendBtn?.disabled);
+    console.log('- send button text:', sendBtn?.textContent);
+    
+    const statusElement = document.getElementById('google-auth-status');
+    console.log('- auth status element found:', !!statusElement);
+    
+    // 상태 메시지도 보여주기
+    const statusMsg = [
+        `OAuth: ${isOAuthSignedIn ? '✅' : '❌'}`,
+        `채팅ID: ${liveChatId ? '✅' : '❌'}`,
+        `버튼: ${sendBtn?.disabled ? '비활성' : '활성'}`
+    ].join(' | ');
+    
+    showStatus(`🔍 디버그: ${statusMsg}`, 'info', 8000);
+    
+    return {
+        isOAuthSignedIn,
+        liveChatId,
+        accessToken: !!accessToken,
+        tokenClient: !!tokenClient
+    };
 }
 
 // --- 권한 관리 함수 ---
@@ -3227,9 +3305,23 @@ function updateGoogleAuthStatus() {
         if (isOAuthSignedIn) {
             statusElement.className = 'status status-success';
             statusElement.innerHTML = '✅ <strong>Google OAuth 로그인됨</strong>: YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogleOAuth()" class="btn btn-secondary" style="margin-left:10px;">로그아웃</button>';
+            
+            // OAuth 로그인 성공 시 버튼 대기 상태로 변경 (연결이 필요하다는 것을 사용자에게 알려주기)
+            const sendBtn = document.getElementById('youtube-send-btn');
+            if (sendBtn && !liveChatId) {
+                sendBtn.disabled = true;
+                sendBtn.textContent = '🔗 영상 연결 후 사용 가능';
+            }
         } else {
             statusElement.className = 'status status-warning';
             statusElement.innerHTML = '🔐 <strong>Google OAuth 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. <button onclick="signInGoogleOAuth()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
+            
+            // 로그아웃 시 버튼 비활성화
+            const sendBtn = document.getElementById('youtube-send-btn');
+            if (sendBtn) {
+                sendBtn.disabled = true;
+                sendBtn.textContent = '🚀 유튜브 전송';
+            }
         }
     } catch (error) {
         console.error('Google Auth 상태 업데이트 실패:', error);
@@ -3351,6 +3443,14 @@ async function connectToLiveChatOAuth() {
         
         localStorage.setItem('youtube_video_id', videoId);
         showStatus('✅ OAuth 방식으로 라이브 채팅에 연결되었습니다!', 'success');
+        console.log('라이브 채팅 ID:', liveChatId);
+        
+        // 버튼 활성화 및 UI 업데이트
+        const sendBtn = document.getElementById('youtube-send-btn');
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = '🚀 유튜브 전송 (OAuth 연결됨)';
+        }
         updateChatbotPermissionUI();
         
     } catch (error) {
