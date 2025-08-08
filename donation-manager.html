@@ -2470,22 +2470,41 @@ function loadYouTubeSettings() {
 }
 
 function updateYouTubeUI() {
-    const hasApiKey = youtubeApiKey.length > 0;
-    const hasLiveChat = liveChatId.length > 0;
+    // 안전한 변수 접근
+    const hasApiKey = (typeof youtubeApiKey !== 'undefined' && youtubeApiKey && youtubeApiKey.length > 0);
+    const hasLiveChat = (typeof liveChatId !== 'undefined' && liveChatId && liveChatId.length > 0);
     
-    document.getElementById('youtube-send-btn').disabled = !hasLiveChat;
-    document.getElementById('auto-start-btn').disabled = !hasLiveChat;
-    
+    // 안전한 DOM 요소 접근
+    const sendBtn = document.getElementById('youtube-send-btn');
+    const autoStartBtn = document.getElementById('auto-start-btn');
     const statusEl = document.getElementById('chatbot-status');
-    if (hasLiveChat) {
-        statusEl.className = 'status status-success';
-        statusEl.innerHTML = '✅ <strong>연결됨</strong>: 유튜브 라이브 채팅에 메시지를 전송할 수 있습니다!';
-    } else if (hasApiKey) {
-        statusEl.className = 'status status-warning';
-        statusEl.innerHTML = '⚠️ <strong>API 키 설정됨</strong>: 영상 ID를 입력하고 라이브 연결을 해주세요.';
-    } else {
-        statusEl.className = 'status status-warning';
-        statusEl.innerHTML = '🤖 <strong>설정 필요</strong>: API 키를 입력하면 자동 전송이 가능합니다!';
+    
+    // 버튼 상태 업데이트 (요소가 존재할 때만)
+    if (sendBtn) {
+        sendBtn.disabled = !hasLiveChat && !isOAuthSignedIn;
+    }
+    if (autoStartBtn) {
+        autoStartBtn.disabled = !hasLiveChat && !isOAuthSignedIn;
+    }
+    
+    // 상태 업데이트 (요소가 존재할 때만)
+    if (statusEl) {
+        if (isOAuthSignedIn && hasLiveChat) {
+            statusEl.className = 'status status-success';
+            statusEl.innerHTML = '✅ <strong>OAuth 연결됨</strong>: 유튜브 라이브 채팅에 메시지를 전송할 수 있습니다!';
+        } else if (isOAuthSignedIn) {
+            statusEl.className = 'status status-warning';
+            statusEl.innerHTML = '⚠️ <strong>OAuth 로그인됨</strong>: 영상에 연결하면 메시지 전송 가능합니다.';
+        } else if (hasLiveChat) {
+            statusEl.className = 'status status-info';
+            statusEl.innerHTML = '📖 <strong>API 키 연결됨</strong>: 읽기만 가능, 메시지 전송은 OAuth 필요';
+        } else if (hasApiKey) {
+            statusEl.className = 'status status-warning';
+            statusEl.innerHTML = '⚠️ <strong>API 키 설정됨</strong>: 영상 ID를 입력하고 연결하세요 (읽기 전용)';
+        } else {
+            statusEl.className = 'status status-warning';
+            statusEl.innerHTML = '🔐 <strong>설정 필요</strong>: OAuth 로그인 또는 API 키를 설정하세요!';
+        }
     }
 }
 
