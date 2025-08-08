@@ -47,8 +47,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .management-nav { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; border-bottom: 1px solid #e0e0e0; padding-bottom: 10px;}
 .tab-button { padding: 8px 12px; border: none; background: transparent; border-bottom: 2px solid transparent; border-radius: 0; cursor: pointer; font-size: 14px; font-weight: 600; color: #606770; }
 .tab-button.active { color: #1877f2; border-bottom-color: #1877f2; }
-.tab-content { display: none; padding-top: 15px;}
-.tab-content.active { display: block; }
+.tab-content { 
+    display: none !important; 
+    padding-top: 15px;
+}
+.tab-content.active { 
+    display: block !important; 
+}
 .summary-tab-content { display: none; }
 .summary-tab-content.active { display: block; }
 .streamer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; }
@@ -862,6 +867,23 @@ async function initializeApp() {
         
         console.log('🛠️ 콘솔에서 checkTabStructure() 함수도 실행해보세요!');
         try { updateTabVisibility(); } catch (e) { console.error('탭 가시성 업데이트 실패:', e); }
+        
+        // 초기 탭 설정 (후원등록 탭 활성화)
+        setTimeout(() => {
+            console.log('초기 탭 설정 시작...');
+            const donationTab = document.getElementById('donation-tab');
+            if (donationTab) {
+                // 모든 탭 숨기기
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.style.display = 'none';
+                    tab.classList.remove('active');
+                });
+                // 후원등록 탭만 보이기
+                donationTab.style.display = 'block';
+                donationTab.classList.add('active');
+                console.log('✅ 초기 탭 설정 완료');
+            }
+        }, 100);
         
         // 조정 모드 기본값 설정 (안전하게)
         setTimeout(() => {
@@ -1915,49 +1937,32 @@ function makeCellEditable(cell, index) {
 }
 
 function switchTab(event, tabName) {
-    try {
-        console.log('🔄 탭 전환 요청:', tabName);
-        console.log('🎯 이벤트 타겟:', event.currentTarget);
-        
-        // 모든 탭 버튼에서 active 클래스 제거
-        const allButtons = document.querySelectorAll('#main-content .tab-button');
-        console.log('📋 총 탭 버튼 개수:', allButtons.length);
-        allButtons.forEach((btn, index) => {
-            btn.classList.remove('active');
-            console.log(`  버튼 ${index}: ${btn.textContent.trim()} - active 제거`);
-        });
-        
-        // 클릭된 탭 버튼에 active 클래스 추가
+    console.log('탭 전환:', tabName);
+    
+    // 모든 탭 버튼 비활성화
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // 클릭된 버튼 활성화
+    if (event && event.currentTarget) {
         event.currentTarget.classList.add('active');
-        console.log('✨ active 클래스 추가됨:', event.currentTarget.textContent.trim());
-        
-        // 모든 탭 콘텐츠에서 active 클래스 제거
-        const allContents = document.querySelectorAll('#main-content .tab-content');
-        console.log('📄 총 탭 콘텐츠 개수:', allContents.length);
-        allContents.forEach((content, index) => {
-            content.classList.remove('active');
-            console.log(`  콘텐츠 ${index}: ${content.id} - active 제거`);
-        });
-        
-        // 선택된 탭 콘텐츠에 active 클래스 추가
-        const targetTabId = tabName + '-tab';
-        const targetTab = document.getElementById(targetTabId);
-        console.log('🎯 찾는 탭 ID:', targetTabId);
-        console.log('🔍 탭 발견됨:', !!targetTab);
-        
-        if (targetTab) {
-            targetTab.classList.add('active');
-            console.log('✅ 탭 전환 완료:', tabName);
-            console.log('👁️ 탭 표시 상태:', window.getComputedStyle(targetTab).display);
-        } else {
-            console.error('❌ 탭을 찾을 수 없음:', targetTabId);
-            console.log('🔍 현재 존재하는 탭들:');
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                console.log(`  - ${tab.id}`);
-            });
-        }
-    } catch (error) {
-        console.error('💥 탭 전환 오류:', error);
+    }
+    
+    // 모든 탭 콘텐츠 숨기기
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+        content.classList.remove('active');
+    });
+    
+    // 선택된 탭 보이기
+    const targetTab = document.getElementById(tabName + '-tab');
+    if (targetTab) {
+        targetTab.style.display = 'block';
+        targetTab.classList.add('active');
+        console.log('탭 전환 성공:', tabName);
+    } else {
+        console.error('탭을 찾을 수 없음:', tabName + '-tab');
     }
 }
 function switchSummaryTab(event, tabName) {
