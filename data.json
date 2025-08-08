@@ -1,6 +1,13 @@
 {
   "donations": [
     {
+      "donor": "A",
+      "streamer": "주옥",
+      "type": "계좌",
+      "amount": 111,
+      "time": "2025-08-08T22:39:41.235Z"
+    },
+    {
       "donor": "QQQQQ",
       "streamer": "엄삼용",
       "type": "계좌",
@@ -67,5 +74,5 @@
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆"
   },
-  "lastUpdated": "2025-08-08T22:39:04.180Z"
+  "lastUpdated": "2025-08-08T22:39:41.747Z"
 }
