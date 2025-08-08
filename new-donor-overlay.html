@@ -104,8 +104,19 @@ async function loadData() {
                 donations = [];
             }
             
+            // GitHub 설정은 localStorage에 기존 설정이 없을 때만 적용
+            if (data.settings && typeof data.settings === 'object') {
+                Object.entries(data.settings).forEach(([key, value]) => {
+                    // localStorage에 이미 설정이 있으면 GitHub 설정 무시
+                    if (localStorage.getItem(key) === null && value !== null && value !== undefined) {
+                        localStorage.setItem(key, value);
+                        console.log('GitHub 기본 설정 적용:', key, '=', value);
+                    }
+                });
+            }
+            
             updateDisplay();
-            applyOverlaySettings(); // GitHub 데이터 로드 후 설정 적용
+            applyOverlaySettings(); // 설정 적용
             return;
         }
     } catch (error) {
