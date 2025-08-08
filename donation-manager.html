@@ -1017,6 +1017,23 @@ async function loadOverlayData() {
                     overlayEmojis = data.emojis;
                 }
                 
+                // 설정 데이터가 있으면 localStorage에 적용
+                if (data.settings && typeof data.settings === 'object') {
+                    Object.keys(data.settings).forEach(key => {
+                        localStorage.setItem(key, data.settings[key]);
+                    });
+                    console.log('✅ GitHub에서 설정 데이터 동기화 완료');
+                    
+                    // 설정이 동기화된 후 UI에 즉시 적용 (메인 페이지인 경우)
+                    if (typeof loadOverlaySettings === 'function') {
+                        try {
+                            loadOverlaySettings();
+                        } catch (e) {
+                            console.log('설정 UI 적용 중 오류:', e);
+                        }
+                    }
+                }
+                
                 console.log('✅ GitHub에서 오버레이 데이터 로드:', overlayDonations.length + '개 후원');
                 dataLoaded = true;
             }
@@ -1684,6 +1701,7 @@ function toggleStreamerVisibility(streamerName) {
     }
     
     localStorage.setItem('hidden-streamers', JSON.stringify(hiddenStreamers));
+    saveToServer();
     updateStreamerList();
     updateAllUI(); // 모든 UI 업데이트
 }
@@ -3630,11 +3648,13 @@ function loadAutoSyncSettings() {
 function updateOverlayFontSize(value) {
     document.getElementById('overlay-font-size-value').textContent = value + 'px';
     localStorage.setItem('overlay-font-size', value);
+    saveToServer();
 }
 
 function updateOverlayStrokeWidth(value) {
     document.getElementById('overlay-stroke-width-value').textContent = value + 'px';
     localStorage.setItem('overlay-stroke-width', value);
+    saveToServer();
 }
 
 function setOverlayTextAlign(align) {
@@ -3649,25 +3669,30 @@ function setOverlayTextAlign(align) {
     
     // 실시간 적용
     localStorage.setItem('overlay-text-align', align);
+    saveToServer();
 }
 
 function updateTableOpacity(value) {
     document.getElementById('table-opacity-value').textContent = value + '%';
     localStorage.setItem('table-opacity', value);
+    saveToServer();
 }
 
 function updateTableNumberSize(value) {
     document.getElementById('table-number-size-value').textContent = value + 'px';
     localStorage.setItem('table-number-size', value);
+    saveToServer();
 }
 
 function updateTableFontSize(value) {
     document.getElementById('table-font-size-value').textContent = value + 'px';
     localStorage.setItem('table-font-size', value);
+    saveToServer();
 }
 
 function setTableTextColor(color) {
     localStorage.setItem('table-text-color', color);
+    saveToServer();
     showStatus(`테이블 글자 색상이 변경되었습니다`, 'success');
 }
 
@@ -3692,6 +3717,7 @@ function resetOverlaySettings() {
 
 function setTableColorPreset(preset) {
     localStorage.setItem('table-color-preset', preset);
+    saveToServer();
     showStatus(`테이블 색상이 ${preset}로 설정되었습니다`, 'success');
 }
 
@@ -3866,6 +3892,8 @@ function saveTableSettings() {
     localStorage.setItem('show-total-row', showTotalRow.toString());
     localStorage.setItem('show-update-time', showUpdateTime.toString());
     localStorage.setItem('rank-count', rankCount.toString());
+    
+    saveToServer();
     
     // 모든 순번명 저장
     for (let i = 1; i <= rankCount; i++) {
