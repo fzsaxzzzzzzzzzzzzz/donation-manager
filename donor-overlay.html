@@ -83,12 +83,14 @@ let isTransparentMode = false;
 let currentDonorText = '';
 let settingsSyncedFromServer = false; // 설정 동기화 플래그
 
-// localStorage 변경 추적을 위한 감시자
+// localStorage 변경 추적을 위한 감시자 (더 강화됨)
 const originalSetItem = localStorage.setItem;
 localStorage.setItem = function(key, value) {
-    if (key.startsWith('overlay-') || key.startsWith('table-')) {
-        console.log(`🔧 localStorage 변경: ${key} = ${value} (이전: ${localStorage.getItem(key)})`);
-        console.trace('호출 스택:'); // 어디서 호출되었는지 추적
+    const oldValue = localStorage.getItem(key);
+    if (key.includes('overlay') || key.includes('table') || key.includes('font') || key.includes('stroke') || key.includes('align')) {
+        console.log(`🔧🔧🔧 localStorage 변경 감지: ${key} = ${value} (이전: ${oldValue})`);
+        console.log('🔧🔧🔧 변경 시점:', new Date().toLocaleTimeString());
+        console.trace('🔧🔧🔧 호출 스택:');
     }
     return originalSetItem.call(this, key, value);
 };

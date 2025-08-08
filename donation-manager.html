@@ -3706,6 +3706,8 @@ function applyOverlaySettings() {
 }
 
 function resetOverlaySettings() {
+    console.log('🚨🚨🚨 resetOverlaySettings() 함수 실행됨!');
+    console.trace('🚨🚨🚨 resetOverlaySettings 호출 스택:');
     document.getElementById('overlay-font-size-range').value = '16';
     document.getElementById('overlay-stroke-width-range').value = '2';
     updateOverlayFontSize('16');
