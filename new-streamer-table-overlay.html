@@ -362,6 +362,9 @@ function updateTable() {
     
     tbody.innerHTML = html;
     console.log('테이블 업데이트 완료:', sortedStreamers.length + '명');
+    
+    // 설정 적용
+    applyOverlaySettings();
 }
 
 // 크로마키 모드 토글
@@ -389,9 +392,47 @@ document.addEventListener('keydown', (e) => {
 // 자동 새로고침 (3초마다)
 setInterval(loadData, 3000);
 
+// 설정 적용 함수
+function applyOverlaySettings() {
+    try {
+        // localStorage에서 설정 로드
+        const tableOpacity = localStorage.getItem('table-opacity') || '85';
+        const tableNumberSize = localStorage.getItem('table-number-size') || '16';
+        const tableFontSize = localStorage.getItem('table-font-size') || '14';
+        const tableTextColor = localStorage.getItem('table-text-color') || 'white';
+        const tableTitle = localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆';
+        
+        console.log('테이블 설정 적용:', { tableOpacity, tableNumberSize, tableFontSize, tableTextColor });
+        
+        // 오버레이 컨테이너 투명도 적용
+        const overlayContainer = document.querySelector('.overlay-container');
+        if (overlayContainer) {
+            const opacity = parseInt(tableOpacity) / 100;
+            overlayContainer.style.opacity = opacity;
+        }
+        
+        // 제목 적용
+        const titleEl = document.querySelector('.section-title');
+        if (titleEl) {
+            titleEl.textContent = tableTitle;
+        }
+        
+        // CSS 변수로 폰트 크기와 색상 적용
+        document.documentElement.style.setProperty('--table-number-size', tableNumberSize + 'px');
+        document.documentElement.style.setProperty('--table-font-size', tableFontSize + 'px');
+        document.documentElement.style.setProperty('--table-text-color', tableTextColor);
+        
+    } catch (error) {
+        console.error('테이블 설정 적용 실패:', error);
+    }
+}
+
 // 초기 로드
 console.log('스트리머 테이블 오버레이 시작...');
 loadData();
+
+// 설정을 주기적으로 확인하고 적용 (실시간 반영)
+setInterval(applyOverlaySettings, 1000);
 </script>
 
 </body>
