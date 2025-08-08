@@ -1,0 +1,139 @@
+name: Sync Donation Data
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'data.json'
+  workflow_dispatch:
+
+jobs:
+  sync-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Validate data.json
+      run: |
+        echo "🔍 Validating data.json structure..."
+        python3 -m json.tool data.json > /dev/null
+        echo "✅ data.json is valid JSON"
+        
+        # 기본 구조 검증
+        python3 -c "
+        import json
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        required_keys = ['donations', 'streamers', 'emojis', 'settings', 'lastUpdated']
+        for key in required_keys:
+            assert key in data, f'Missing required key: {key}'
+        
+        assert isinstance(data['donations'], list), 'donations must be a list'
+        assert isinstance(data['streamers'], list), 'streamers must be a list'  
+        assert isinstance(data['emojis'], dict), 'emojis must be a dict'
+        assert isinstance(data['settings'], dict), 'settings must be a dict'
+        
+        print(f'✅ Data validation passed:')
+        print(f'   - Donations: {len(data[\"donations\"])} entries')
+        print(f'   - Streamers: {len(data[\"streamers\"])} entries')
+        print(f'   - Last updated: {data[\"lastUpdated\"]}')
+        "
+        
+    - name: Update timestamp
+      run: |
+        echo "⏰ Updating lastUpdated timestamp..."
+        python3 -c "
+        import json
+        from datetime import datetime
+        
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        data['lastUpdated'] = datetime.utcnow().isoformat() + 'Z'
+        
+        with open('data.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        
+        print(f'✅ Updated timestamp: {data[\"lastUpdated\"]}')
+        "
+        
+    - name: Commit updated timestamp
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        if git diff --quiet data.json; then
+          echo "ℹ️ No timestamp changes to commit"
+        else
+          git add data.json
+          git commit -m "chore: update data.json timestamp [skip ci]" || echo "Nothing to commit"
+          git push || echo "Nothing to push"
+        fi
+        
+    - name: Generate deployment info
+      run: |
+        echo "📋 Generating deployment information..."
+        python3 -c "
+        import json
+        from datetime import datetime
+        
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        # 통계 생성
+        stats = {
+            'total_donations': len(data['donations']),
+            'total_streamers': len(data['streamers']),
+            'total_amount': sum(float(d.get('amount', 0)) for d in data['donations']),
+            'latest_donation': max(data['donations'], key=lambda x: x['time'])['time'] if data['donations'] else None,
+            'deployment_time': datetime.utcnow().isoformat() + 'Z'
+        }
+        
+        print('📊 Deployment Statistics:')
+        for key, value in stats.items():
+            print(f'   - {key}: {value}')
+        
+        # GitHub Pages URL 정보
+        repo_name = '${{ github.repository }}'.split('/')[1]
+        base_url = f'https://${{ github.repository_owner }}.github.io/{repo_name}/'
+        
+        print('')
+        print('🌐 GitHub Pages URLs:')
+        print(f'   - Donor Overlay: {base_url}donor-overlay.html')
+        print(f'   - Table Overlay: {base_url}streamer-table-overlay.html')
+        print(f'   - Manager: {base_url}donation-manager.html')
+        print(f'   - Sync Helper: {base_url}sync-helper.html')
+        "
+        
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      run: |
+        echo "🚀 Files are ready for GitHub Pages deployment"
+        echo "GitHub Pages will automatically serve the updated files"
+        
+    - name: Create deployment summary
+      run: |
+        echo "## 📊 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        python3 -c "
+        import json
+        
+        with open('data.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        print(f'- **Total Donations**: {len(data[\"donations\"])}')
+        print(f'- **Total Streamers**: {len(data[\"streamers\"])}')
+        print(f'- **Last Updated**: {data[\"lastUpdated\"]}')
+        print('')
+        print('### 🌐 Access URLs')
+        repo_name = '${{ github.repository }}'.split('/')[1]
+        base_url = f'https://${{ github.repository_owner }}.github.io/{repo_name}/'
+        print(f'- [Donor Overlay]({base_url}donor-overlay.html)')
+        print(f'- [Streamer Table]({base_url}streamer-table-overlay.html)')
+        print(f'- [Donation Manager]({base_url}donation-manager.html)')
+        print(f'- [Sync Helper]({base_url}sync-helper.html)')
+        " >> $GITHUB_STEP_SUMMARY
