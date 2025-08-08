@@ -988,6 +988,9 @@ async function initializeOverlayMode(mode) {
 }
 
 // 오버레이용 데이터 로딩 (우선순위: GitHub → localStorage)
+// 설정 동기화 플래그 (한 번만 실행)
+let settingsSyncedFromServer = false;
+
 async function loadOverlayData() {
     try {
         let dataLoaded = false;
@@ -1017,12 +1020,13 @@ async function loadOverlayData() {
                     overlayEmojis = data.emojis;
                 }
                 
-                // 설정 데이터가 있으면 localStorage에 적용
-                if (data.settings && typeof data.settings === 'object') {
+                // 설정 데이터가 있으면 localStorage에 적용 (최초 1회만)
+                if (data.settings && typeof data.settings === 'object' && !settingsSyncedFromServer) {
                     Object.keys(data.settings).forEach(key => {
                         localStorage.setItem(key, data.settings[key]);
                     });
-                    console.log('✅ GitHub에서 설정 데이터 동기화 완료');
+                    settingsSyncedFromServer = true; // 플래그 설정으로 재실행 방지
+                    console.log('✅ GitHub에서 설정 데이터 동기화 완료 (최초 1회)');
                     
                     // 설정이 동기화된 후 UI에 즉시 적용 (메인 페이지인 경우)
                     if (typeof loadOverlaySettings === 'function') {
@@ -3777,6 +3781,13 @@ function loadOverlaySettings() {
     
     // 테이블 설정 로드
     loadTableSettings();
+}
+
+// 설정 강제 동기화 함수
+function forceSyncSettings() {
+    settingsSyncedFromServer = false; // 플래그 재설정
+    loadOverlayData(); // 설정 다시 동기화
+    showStatus('설정 동기화를 강제로 실행했습니다', 'info');
 }
 
 // --- 스트리머 총액 설정 관련 함수 ---
