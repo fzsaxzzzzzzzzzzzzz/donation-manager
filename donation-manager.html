@@ -67,9 +67,61 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .summary-actions .btn { font-size:12px; padding:4px 8px; margin-left: 5px; }
 @media (max-width: 1200px) { .container { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 900px) { .container { grid-template-columns: 1fr !important; } .panel { min-height: auto !important; resize: none !important; } }
+
+/* 오버레이 모드 전용 CSS */
+#overlay-mode { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10000; background: transparent; }
+#overlay-mode .overlay-container { margin: 20px; background: rgba(0,0,0,0.85); border-radius: 12px; padding: 20px; color: white; }
+#overlay-mode .donor-content { font-size: 16px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000000, -2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000; line-height: 1.4; white-space: pre-line; }
+#overlay-mode .no-data { font-size: 16px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000000; text-align: center; padding: 20px 0; }
+#overlay-mode .section-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #FFD700; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); border-bottom: 2px solid #FFD700; padding-bottom: 8px; text-align: center; }
+#overlay-mode .streamer-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+#overlay-mode .streamer-table th { background: rgba(255,215,0,0.2); color: #FFD700; padding: 12px 8px; text-align: center; font-weight: bold; border-bottom: 2px solid #FFD700; font-size: 14px; }
+#overlay-mode .streamer-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; color: white; }
+#overlay-mode .streamer-table tr:nth-child(even) { background: rgba(255,255,255,0.05); }
+#overlay-mode .total-summary { text-align: center; font-size: 16px; font-weight: bold; color: #FFD700; background: rgba(255,215,0,0.1); padding: 10px; border-radius: 8px; border: 2px solid #FFD700; margin-bottom: 15px; }
+#overlay-mode .info-text { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 10px; text-align: center; }
+#overlay-mode .update-time { text-align: center; font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
 </style>
 </head>
 <body>
+<!-- 오버레이 모드 전용 HTML -->
+<div id="overlay-mode" style="display: none;">
+  <!-- 후원자별 총액 오버레이 -->
+  <div id="donor-overlay" style="display: none;">
+    <div class="overlay-container">
+      <div class="donor-content" id="overlay-donor-content">
+        <div class="no-data">데이터를 불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 스트리머 테이블 오버레이 -->
+  <div id="table-overlay" style="display: none;">
+    <div class="overlay-container">
+      <h2 class="section-title" id="overlay-table-title">🏆 스트리머별 후원 현황 🏆</h2>
+      <div class="update-time" id="overlay-update-time" style="display: none;">마지막 업데이트: --:--</div>
+      <div id="overlay-total-summary" class="total-summary" style="display: none;">총 후원금: 0원</div>
+      <div style="overflow-x: auto;">
+        <p class="info-text">※ 슈퍼챗(국고)을 제외한 후원 내역입니다.</p>
+        <table class="streamer-table">
+          <thead>
+            <tr>
+              <th>순위</th>
+              <th>스트리머</th>
+              <th>계좌후원</th>
+              <th>투네후원</th>
+              <th>총 후원</th>
+            </tr>
+          </thead>
+          <tbody id="overlay-streamer-tbody">
+            <tr><td colspan="5" class="no-data">데이터를 불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="app-loader">
 <div class="spinner"></div>
 <p>애플리케이션을 불러오는 중...</p>
@@ -122,26 +174,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 <p style="font-size: 13px; color: #666; margin-bottom: 20px;">
 💡 같은 PC: 위 오버레이 열기 버튼 사용<br>
-💡 다른 PC: 데이터 파일 내보내기 → data.json을 GitHub에 업로드 → 간단 링크 사용
+💡 다른 PC: 데이터 파일 내보내기 → GitHub에 data.json 업로드 → 아래 간단 링크 사용
 </p>
 <div id="simple-overlay-urls" style="display: none; margin-bottom: 15px;">
 <label class="form-label">다른 PC용 간단한 오버레이 링크:</label>
 <div style="margin-bottom: 10px;">
 <label style="font-size: 12px; color: #666;">💝 후원자별 총액:</label>
 <div style="display: flex; gap: 5px;">
-<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/donor-overlay.html">
+<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/donation-manager.html?mode=donor">
 <button onclick="copyText(this.previousElementSibling.value)" class="btn btn-secondary">📋</button>
 </div>
 </div>
 <div>
 <label style="font-size: 12px; color: #666;">🏆 스트리머 테이블:</label>
 <div style="display: flex; gap: 5px;">
-<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/streamer-table-overlay.html">
+<input type="text" readonly class="form-input" style="flex: 1;" value="https://fzsaxzzzzzzzzzzzzz.github.io/donation-manager/donation-manager.html?mode=table">
 <button onclick="copyText(this.previousElementSibling.value)" class="btn btn-secondary">📋</button>
 </div>
 </div>
 <p style="font-size: 12px; color: #666; margin-top: 5px;">
-먼저 데이터 파일을 내보내고 data.json을 GitHub에 업로드한 후 위 링크 사용
+간단한 URL로 어디서든 접속 가능! (data.json을 GitHub에 업로드하면 실시간 반영)
 </p>
 </div>
 </div>
@@ -690,6 +742,16 @@ function safeAddClass(element, className) {
 
 // --- 핵심 로직 (초기화 및 동기화 제어) ---
 async function initializeApp() {
+    // 오버레이 모드 확인 (URL 파라미터)
+    const urlParams = new URLSearchParams(window.location.search);
+    const overlayMode = urlParams.get('mode');
+    
+    if (overlayMode === 'donor' || overlayMode === 'table') {
+        console.log(`오버레이 모드 활성화: ${overlayMode}`);
+        await initializeOverlayMode(overlayMode);
+        return;
+    }
+    
     const loader = safeGetElement('app-loader');
     
     try {
@@ -778,6 +840,202 @@ async function initializeApp() {
             console.error("Even fallback failed:", fallbackError);
         }
     }
+}
+
+// --- 오버레이 모드 초기화 ---
+async function initializeOverlayMode(mode) {
+    try {
+        console.log(`오버레이 모드 (${mode}) 초기화 중...`);
+        
+        // 메인 앱 숨기고 오버레이 표시
+        document.getElementById('app-loader').style.display = 'none';
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('overlay-mode').style.display = 'block';
+        
+        if (mode === 'donor') {
+            document.getElementById('donor-overlay').style.display = 'block';
+        } else if (mode === 'table') {
+            document.getElementById('table-overlay').style.display = 'block';
+        }
+        
+        // 데이터 로드
+        await loadOverlayData();
+        
+        // 주기적 업데이트 (3초마다)
+        setInterval(async () => {
+            await loadOverlayData();
+        }, 3000);
+        
+        console.log('오버레이 모드 초기화 완료');
+        
+    } catch (error) {
+        console.error('오버레이 모드 초기화 실패:', error);
+        document.getElementById('overlay-donor-content').innerHTML = 
+            '<div class="no-data">오버레이 초기화 실패</div>';
+    }
+}
+
+// 오버레이용 데이터 로딩 (우선순위: GitHub → localStorage)
+async function loadOverlayData() {
+    try {
+        let dataLoaded = false;
+        let overlayDonations = [];
+        let overlayStreamers = [];
+        let overlayEmojis = {};
+        
+        // 1. GitHub raw 파일에서 데이터 시도
+        try {
+            const response = await fetch('https://raw.githubusercontent.com/fzsaxzzzzzzzzzzzzz/donation-manager/main/data.json?t=' + Date.now());
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.donations && Array.isArray(data.donations)) {
+                    overlayDonations = data.donations.map(d => ({
+                        ...d,
+                        time: new Date(d.time),
+                        amount: parseFloat(d.amount) || 0
+                    }));
+                }
+                
+                if (data.streamers && Array.isArray(data.streamers)) {
+                    overlayStreamers = data.streamers;
+                }
+                
+                if (data.emojis && typeof data.emojis === 'object') {
+                    overlayEmojis = data.emojis;
+                }
+                
+                console.log('✅ GitHub에서 오버레이 데이터 로드:', overlayDonations.length + '개 후원');
+                dataLoaded = true;
+            }
+        } catch (githubError) {
+            console.log('ℹ️ GitHub 데이터 로드 실패, localStorage 시도...');
+        }
+        
+        // 2. GitHub 실패 시 localStorage에서 시도
+        if (!dataLoaded) {
+            try {
+                const savedDonations = localStorage.getItem('donation_data');
+                const savedStreamers = localStorage.getItem('streamer_config');
+                const savedEmojis = localStorage.getItem('streamer_emojis');
+                
+                if (savedDonations) {
+                    overlayDonations = JSON.parse(savedDonations).map(d => ({
+                        ...d,
+                        time: new Date(d.time),
+                        amount: parseFloat(d.amount) || 0
+                    }));
+                }
+                if (savedStreamers) {
+                    overlayStreamers = JSON.parse(savedStreamers);
+                }
+                if (savedEmojis) {
+                    overlayEmojis = JSON.parse(savedEmojis);
+                }
+                
+                if (overlayDonations.length > 0) {
+                    console.log('✅ localStorage에서 오버레이 데이터 로드:', overlayDonations.length + '개 후원');
+                    dataLoaded = true;
+                }
+            } catch (localError) {
+                console.log('ℹ️ localStorage 데이터 로드도 실패');
+            }
+        }
+        
+        // 현재 활성 모드에 따라 업데이트
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        
+        if (mode === 'donor') {
+            updateOverlayDonorDisplay(overlayDonations);
+        } else if (mode === 'table') {
+            updateOverlayTableDisplay(overlayDonations, overlayStreamers, overlayEmojis);
+        }
+        
+    } catch (error) {
+        console.error('오버레이 데이터 로드 실패:', error);
+    }
+}
+
+// 후원자별 총액 오버레이 업데이트
+function updateOverlayDonorDisplay(donations) {
+    const contentEl = document.getElementById('overlay-donor-content');
+    
+    if (!donations || donations.length === 0) {
+        contentEl.innerHTML = '<div class="no-data">사랑해요♡</div>';
+        return;
+    }
+    
+    // 후원자별 계좌 후원 총액 계산
+    const donorTotals = {};
+    donations.forEach(d => {
+        if (d.type === '계좌') {
+            let cleanDonorName = d.donor;
+            if (cleanDonorName.includes('(조정')) {
+                cleanDonorName = cleanDonorName.replace(/\(조정[^)]*\)/g, '');
+            }
+            const amount = parseFloat(d.amount) || 0;
+            donorTotals[cleanDonorName] = (donorTotals[cleanDonorName] || 0) + amount;
+        }
+    });
+    
+    const sortedDonors = Object.entries(donorTotals)
+        .filter(([name, amount]) => amount > 0)
+        .sort(([,a], [,b]) => b - a);
+    
+    let displayText = "사랑해요♡\n";
+    if (sortedDonors.length > 0) {
+        displayText += sortedDonors.map(([name, amount]) => 
+            `${name}님 ${parseFloat(amount.toFixed(1))}만`
+        ).join('\n');
+    }
+    
+    contentEl.innerHTML = `<div class="donor-content">${displayText}</div>`;
+}
+
+// 스트리머 테이블 오버레이 업데이트
+function updateOverlayTableDisplay(donations, streamers, emojis) {
+    const tbody = document.getElementById('overlay-streamer-tbody');
+    
+    if (!donations || donations.length === 0 || !streamers || streamers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="no-data">사랑해요♡</td></tr>';
+        return;
+    }
+    
+    const summaryStreamers = streamers.filter(s => s !== '국고' && s !== '후원자조정');
+    const streamerData = {};
+    
+    summaryStreamers.forEach(s => { 
+        streamerData[s] = { name: s, account: 0, toonation: 0, total: 0 }; 
+    });
+    
+    donations.forEach(d => {
+        if (streamerData.hasOwnProperty(d.streamer)) {
+            const amountInWon = (parseFloat(d.amount) || 0) * 10000;
+            if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
+            else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
+        }
+    });
+    
+    const sortedStreamers = Object.values(streamerData).map(data => { 
+        data.total = data.account + data.toonation; 
+        return data; 
+    }).sort((a, b) => b.total - a.total);
+    
+    let html = '';
+    sortedStreamers.forEach((data, index) => {
+        html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${emojis[data.name] || ''} ${data.name}</td>
+                <td>${data.account.toLocaleString('ko-KR')}</td>
+                <td>${data.toonation.toLocaleString('ko-KR')}</td>
+                <td>${data.total.toLocaleString('ko-KR')}</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
 }
 
 // --- 로컬 스토리지 관리 ---
