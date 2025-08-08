@@ -1,0 +1,21 @@
+# Git LFS 설정 파일
+# 대용량 데이터 파일들을 LFS로 관리
+
+# JSON 데이터 파일 (크기가 큰 경우)
+# *.json filter=lfs diff=lfs merge=lfs -text
+
+# 백업 파일들
+backup/*.json filter=lfs diff=lfs merge=lfs -text
+
+# 로그 파일들
+logs/*.log filter=lfs diff=lfs merge=lfs -text
+
+# 미디어 파일들
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+
+# 압축 파일들
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.tar.gz filter=lfs diff=lfs merge=lfs -text
