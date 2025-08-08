@@ -305,6 +305,7 @@ let streamers = [];
 let emojis = {};
 let isTransparentMode = false;
 let currentTableHTML = '';
+let settingsSyncedFromServer = false; // 설정 동기화 플래그
 
 // 정산요약과 동일한 금액 포맷팅
 function formatAmount(num) {
@@ -343,13 +344,15 @@ async function loadData() {
                     emojis = data.emojis;
                 }
                 
-                // 설정 데이터 적용
-                if (data.settings) {
+                // 설정 데이터 적용 (최초 1회만)
+                if (data.settings && !settingsSyncedFromServer) {
                     Object.entries(data.settings).forEach(([key, value]) => {
                         if (value !== null && value !== undefined) {
                             localStorage.setItem(key, value);
                         }
                     });
+                    settingsSyncedFromServer = true;
+                    console.log('✅ GitHub에서 설정 동기화 완료 (최초 1회)');
                 }
                 
                 console.log('✅ GitHub에서 데이터 로드 성공:', {
@@ -389,12 +392,15 @@ async function loadData() {
                         emojis = data.emojis;
                     }
                     
-                    if (data.settings) {
+                    // 설정 데이터 적용 (최초 1회만)
+                    if (data.settings && !settingsSyncedFromServer) {
                         Object.entries(data.settings).forEach(([key, value]) => {
                             if (value !== null && value !== undefined) {
                                 localStorage.setItem(key, value);
                             }
                         });
+                        settingsSyncedFromServer = true;
+                        console.log('✅ URL 파라미터에서 설정 동기화 완료 (최초 1회)');
                     }
                     
                     console.log('✅ URL 파라미터에서 데이터 로드:', {
