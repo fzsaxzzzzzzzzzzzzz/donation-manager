@@ -134,7 +134,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button class="tab-button active" onclick="switchTab(event, 'donation')">후원등록</button>
 <button class="tab-button" onclick="switchTab(event, 'streamer')">스트리머</button>
 <button class="tab-button" onclick="switchTab(event, 'mission')">🎄 퇴근미션</button>
-<button class="tab-button" onclick="switchTab(event, 'overlay')">🎨 오버레이</button>
+<button class="tab-button" onclick="switchTab(event, 'overlay'); console.log('오버레이 탭 버튼 클릭됨');">🎨 오버레이</button>
 <button class="tab-button" onclick="switchTab(event, 'password')" id="password-tab-btn" style="display: none;">비밀번호</button>
 <button class="tab-button" onclick="switchTab(event, 'data')">데이터</button>
 <button class="tab-button" onclick="switchTab(event, 'chatbot')">🤖 챗봇</button>
@@ -796,6 +796,22 @@ async function initializeApp() {
         
         try { updateAllUI(); } catch (e) { console.error('UI 업데이트 실패:', e); }
         try { updateAdminElements(); } catch (e) { console.error('관리자 요소 업데이트 실패:', e); }
+        
+        // 탭 시스템 디버깅
+        console.log('=== 탭 시스템 디버깅 ===');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        console.log(`탭 버튼 개수: ${tabButtons.length}`);
+        console.log(`탭 콘텐츠 개수: ${tabContents.length}`);
+        
+        tabButtons.forEach((btn, index) => {
+            console.log(`탭 버튼 ${index}: ${btn.textContent.trim()} - onclick: ${btn.onclick ? 'O' : 'X'}`);
+        });
+        
+        tabContents.forEach((content, index) => {
+            console.log(`탭 콘텐츠 ${index}: ${content.id} - display: ${window.getComputedStyle(content).display}`);
+        });
+        console.log('=== 탭 시스템 디버깅 완료 ===');
         try { updateTabVisibility(); } catch (e) { console.error('탭 가시성 업데이트 실패:', e); }
         
         // 조정 모드 기본값 설정 (안전하게)
@@ -1851,31 +1867,48 @@ function makeCellEditable(cell, index) {
 
 function switchTab(event, tabName) {
     try {
-        console.log('탭 전환:', tabName);
+        console.log('🔄 탭 전환 요청:', tabName);
+        console.log('🎯 이벤트 타겟:', event.currentTarget);
         
         // 모든 탭 버튼에서 active 클래스 제거
-        document.querySelectorAll('#main-content .tab-button').forEach(btn => {
+        const allButtons = document.querySelectorAll('#main-content .tab-button');
+        console.log('📋 총 탭 버튼 개수:', allButtons.length);
+        allButtons.forEach((btn, index) => {
             btn.classList.remove('active');
+            console.log(`  버튼 ${index}: ${btn.textContent.trim()} - active 제거`);
         });
         
         // 클릭된 탭 버튼에 active 클래스 추가
         event.currentTarget.classList.add('active');
+        console.log('✨ active 클래스 추가됨:', event.currentTarget.textContent.trim());
         
         // 모든 탭 콘텐츠에서 active 클래스 제거
-        document.querySelectorAll('#main-content .tab-content').forEach(content => {
+        const allContents = document.querySelectorAll('#main-content .tab-content');
+        console.log('📄 총 탭 콘텐츠 개수:', allContents.length);
+        allContents.forEach((content, index) => {
             content.classList.remove('active');
+            console.log(`  콘텐츠 ${index}: ${content.id} - active 제거`);
         });
         
         // 선택된 탭 콘텐츠에 active 클래스 추가
-        const targetTab = document.getElementById(tabName + '-tab');
+        const targetTabId = tabName + '-tab';
+        const targetTab = document.getElementById(targetTabId);
+        console.log('🎯 찾는 탭 ID:', targetTabId);
+        console.log('🔍 탭 발견됨:', !!targetTab);
+        
         if (targetTab) {
             targetTab.classList.add('active');
             console.log('✅ 탭 전환 완료:', tabName);
+            console.log('👁️ 탭 표시 상태:', window.getComputedStyle(targetTab).display);
         } else {
-            console.error('❌ 탭을 찾을 수 없음:', tabName + '-tab');
+            console.error('❌ 탭을 찾을 수 없음:', targetTabId);
+            console.log('🔍 현재 존재하는 탭들:');
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                console.log(`  - ${tab.id}`);
+            });
         }
     } catch (error) {
-        console.error('탭 전환 오류:', error);
+        console.error('💥 탭 전환 오류:', error);
     }
 }
 function switchSummaryTab(event, tabName) {
