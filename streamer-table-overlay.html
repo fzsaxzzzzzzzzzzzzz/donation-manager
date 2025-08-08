@@ -660,10 +660,29 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// 설정 변경 감지 (실시간 적용)
+// 테이블 설정 적용 함수 (변경 시에만 호출)
+let lastAppliedTableSettings = {};
+
+function applyTableSettingsIfChanged() {
+    const currentSettings = {
+        opacity: localStorage.getItem('table-opacity') || '85',
+        colorPreset: localStorage.getItem('table-color-preset') || 'dark',
+        fontSize: localStorage.getItem('table-font-size') || '14',
+        textColor: localStorage.getItem('table-text-color') || 'white'
+    };
+    
+    // 설정이 변경된 경우에만 적용
+    if (JSON.stringify(currentSettings) !== JSON.stringify(lastAppliedTableSettings)) {
+        applyTableSettings();
+        lastAppliedTableSettings = currentSettings;
+        console.log('🔄 테이블 오버레이 설정 변경 감지 및 적용');
+    }
+}
+
+// 설정 변경 감지 (5초마다, 빈도 감소)
 setInterval(() => {
-    applyTableSettings();
-}, 500);
+    applyTableSettingsIfChanged();
+}, 5000);
 
 // 자동 새로고침 (3초마다)
 setInterval(() => {
@@ -678,9 +697,21 @@ setInterval(() => {
 document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(() => {
         console.log('Streamer table overlay initializing...');
-        applyTableSettings();
-        loadData();
-        console.log('Streamer table overlay initialized successfully');
+        loadData().then(() => {
+            // 데이터 로드 완료 후 설정 적용
+            setTimeout(() => {
+                applyTableSettings();
+                applyTableSettingsIfChanged(); // 초기 설정 저장
+                console.log('Streamer table overlay initialized successfully');
+            }, 1000);
+        }).catch(() => {
+            // 로드 실패 시에도 설정 적용
+            setTimeout(() => {
+                applyTableSettings();
+                applyTableSettingsIfChanged();
+                console.log('Streamer table overlay initialized with default settings');
+            }, 1000);
+        });
     });
 });
 </script>

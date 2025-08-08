@@ -112,13 +112,17 @@ async function loadDonationData() {
                 
                 // 설정 데이터 적용 (최초 1회만)
                 if (data.settings && !settingsSyncedFromServer) {
+                    console.log('🔄 GitHub에서 설정 동기화 시작:', data.settings);
                     Object.entries(data.settings).forEach(([key, value]) => {
                         if (value !== null && value !== undefined) {
+                            console.log(`  설정 적용: ${key} = ${value} (기존: ${localStorage.getItem(key)})`);
                             localStorage.setItem(key, value);
                         }
                     });
                     settingsSyncedFromServer = true;
                     console.log('✅ GitHub에서 설정 동기화 완료 (최초 1회)');
+                } else if (data.settings && settingsSyncedFromServer) {
+                    console.log('⏸️ GitHub 설정 동기화 스킵됨 (이미 동기화됨)');
                 }
                 
                 console.log('✅ GitHub에서 데이터 로드 성공:', donations.length + '개 후원');
@@ -292,6 +296,12 @@ function applySettings() {
     const savedStrokeWidth = localStorage.getItem('overlay-stroke-width') || '2';
     const savedTextAlign = localStorage.getItem('overlay-text-align') || 'left';
     
+    console.log('📋 설정 적용 중:', {
+        fontSize: `${savedFontSize}px (localStorage: ${localStorage.getItem('overlay-font-size')})`,
+        strokeWidth: `${savedStrokeWidth}px (localStorage: ${localStorage.getItem('overlay-stroke-width')})`,
+        textAlign: `${savedTextAlign} (localStorage: ${localStorage.getItem('overlay-text-align')})`
+    });
+    
     const overlayContainer = document.getElementById('overlay-container');
     const allTextElements = document.querySelectorAll('.donor-content, .no-data');
     
@@ -369,10 +379,28 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// 설정 변경 감지 (실시간 적용)
+// 설정 적용 함수 (변경 시에만 호출)
+let lastAppliedSettings = {};
+
+function applySettingsIfChanged() {
+    const currentSettings = {
+        fontSize: localStorage.getItem('overlay-font-size') || '16',
+        strokeWidth: localStorage.getItem('overlay-stroke-width') || '2',
+        textAlign: localStorage.getItem('overlay-text-align') || 'left'
+    };
+    
+    // 설정이 변경된 경우에만 적용
+    if (JSON.stringify(currentSettings) !== JSON.stringify(lastAppliedSettings)) {
+        applySettings();
+        lastAppliedSettings = currentSettings;
+        console.log('🔄 오버레이 설정 변경 감지 및 적용');
+    }
+}
+
+// 설정 변경 감지 (5초마다, 빈도 감소)
 setInterval(() => {
-    applySettings();
-}, 500);
+    applySettingsIfChanged();
+}, 5000);
 
 // 자동 새로고침 (3초마다)
 setInterval(() => {
@@ -386,9 +414,14 @@ setInterval(() => {
 // 초기 로드
 try {
     console.log('Donor overlay initializing...');
-    applySettings();
-    loadDonationData();
-    console.log('Donor overlay initialized successfully');
+    loadDonationData().then(() => {
+        // 데이터 로드 완료 후 설정 적용
+        setTimeout(() => {
+            applySettings();
+            applySettingsIfChanged(); // 초기 설정 저장
+            console.log('Donor overlay initialized successfully');
+        }, 1000);
+    });
 } catch (error) {
     console.error('Donor overlay initialization failed:', error);
     document.getElementById('donor-content').innerHTML = 
