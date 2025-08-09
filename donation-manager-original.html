@@ -3,14 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>🔴 실시간 방송 후원 정산 시스템</title>
+<title>방송 후원 정산 챗봇</title>
 
 <!-- Google Drive API -->
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
-
-<!-- Socket.IO for Real-time -->
-<script src="/socket.io/socket.io.js"></script>
 
 <style>
 /* CSS는 이전과 동일합니다. */
@@ -594,47 +591,6 @@ let currentlyEditing = null;
 let isBusy = false;
 let autoRefreshInterval = null;
 
-// 🔴 실시간 Socket.io 연결
-let socket = null;
-let isSocketConnected = false;
-
-function initializeRealtimeConnection() {
-    try {
-        socket = io();
-        
-        socket.on('connect', () => {
-            isSocketConnected = true;
-            console.log('🔗 실시간 서버 연결됨');
-            showStatus('🔴 실시간 서버 연결됨', 'success');
-        });
-        
-        socket.on('disconnect', () => {
-            isSocketConnected = false;
-            console.log('❌ 실시간 서버 연결 끊어짐');
-            showStatus('⚠️ 실시간 연결 끊어짐', 'warning');
-        });
-        
-        socket.on('initialData', (data) => {
-            console.log('📊 초기 데이터 수신:', data);
-            donations = data.donations || [];
-            streamers = data.streamers || streamers;
-            emojis = data.emojis || emojis;
-            updateAll();
-        });
-        
-        socket.on('dataUpdate', (data) => {
-            console.log('🔄 실시간 데이터 업데이트:', data);
-            donations = data.donations || [];
-            updateAll();
-            showStatus('✨ 새 후원 데이터 동기화!', 'success', 2000);
-        });
-        
-    } catch (error) {
-        console.error('Socket.io 초기화 실패:', error);
-        showStatus('❌ 실시간 연결 실패 - 로컬 모드로 동작', 'warning');
-    }
-}
-
 // YouTube API 관련 변수
 let youtubeApiKey = '';
 let liveChatId = '';
@@ -720,14 +676,7 @@ async function initializeApp() {
         try { 
             await updateUserInfo(); 
         } catch (e) { 
-            console.error('사용자 정보 업데이트 실패:', e);
-        }
-        
-        // 🔴 실시간 Socket.io 연결 초기화
-        try {
-            initializeRealtimeConnection();
-        } catch (e) {
-            console.error('실시간 연결 초기화 실패:', e); 
+            console.error('사용자 정보 업데이트 실패:', e); 
         }
         
         try { updateAllUI(); } catch (e) { console.error('UI 업데이트 실패:', e); }
@@ -1061,47 +1010,16 @@ function quickAddDonation() {
     d.select();
 }
 
-async function handleNewDonations(newDonations) {
+function handleNewDonations(newDonations) {
     if (!newDonations || newDonations.length === 0) return;
 
     donations.unshift(...newDonations);
     donations.sort((a, b) => b.time - a.time);
     newDonations.forEach(d => todayDonors.add(d.donor));
     
-    // 🔴 실시간 서버로 데이터 전송
-    if (isSocketConnected && socket) {
-        try {
-            for (const donation of newDonations) {
-                const response = await fetch('/api/donations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        donor: donation.donor,
-                        streamer: donation.streamer,
-                        type: donation.type,
-                        amount: donation.amount
-                    })
-                });
-                
-                if (response.ok) {
-                    console.log('✅ 실시간 서버로 후원 전송 성공:', donation);
-                } else {
-                    console.error('❌ 실시간 서버 전송 실패:', response.statusText);
-                }
-            }
-            showSaveStatus('🔴 실시간 동기화 완료', 'saved');
-        } catch (error) {
-            console.error('실시간 전송 오류:', error);
-            showSaveStatus('⚠️ 실시간 동기화 실패', 'error');
-        }
-    }
-    
-    // 로컬 저장 (백업용)
     if (autoSaveEnabled) {
         saveToLocalStorage();
-        if (!isSocketConnected) {
-            showSaveStatus('💾 로컬 저장 완료', 'saved');
-        }
+        showSaveStatus('저장 완료', 'saved');
     }
     
     updateAllUI();

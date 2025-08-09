@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>후원자별 총액 오버레이</title>
+<title>🔴 실시간 후원자별 총액 오버레이</title>
+
+<!-- Socket.IO for Real-time -->
+<script src="/socket.io/socket.io.js"></script>
 <style>
 body {
     margin: 0;
@@ -75,9 +78,50 @@ body {
 <script>
 let donations = [];
 let isTransparentMode = false;
+let socket = null;
+let isSocketConnected = false;
 
-// GitHub에서 데이터 로드
-async function loadData() {
+// 🔴 실시간 Socket.io 연결 초기화
+function initializeRealtimeConnection() {
+    try {
+        socket = io();
+        
+        socket.on('connect', () => {
+            isSocketConnected = true;
+            console.log('🔗 실시간 서버 연결됨');
+        });
+        
+        socket.on('disconnect', () => {
+            isSocketConnected = false;
+            console.log('❌ 실시간 서버 연결 끊어짐');
+        });
+        
+        socket.on('initialData', (data) => {
+            console.log('📊 초기 데이터 수신:', data);
+            donations = data.donations || [];
+            updateDonorDisplay();
+        });
+        
+        socket.on('dataUpdate', (data) => {
+            console.log('🔄 실시간 데이터 업데이트:', data);
+            donations = data.donations || [];
+            updateDonorDisplay();
+        });
+        
+        socket.on('settingsUpdate', (settings) => {
+            console.log('⚙️ 설정 업데이트:', settings);
+            applySettings(settings);
+            updateDonorDisplay();
+        });
+        
+    } catch (error) {
+        console.error('Socket.io 초기화 실패, GitHub 백업 모드:', error);
+        loadDataFromGitHub(); // 실패 시 GitHub 백업
+    }
+}
+
+// GitHub에서 데이터 로드 (백업용)
+async function loadDataFromGitHub() {
     try {
         console.log('GitHub에서 데이터 로드 시도...');
         
@@ -271,12 +315,17 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// 자동 새로고침 (3초마다)
-setInterval(loadData, 3000);
+// 🔴 실시간 시스템 시작
+console.log('🔴 실시간 후원자 오버레이 시작...');
+initializeRealtimeConnection();
 
-// 초기 로드
-console.log('후원자 오버레이 시작...');
-loadData();
+// 백업용 자동 새로고침 (실시간 연결 실패 시에만)
+setInterval(() => {
+    if (!isSocketConnected) {
+        console.log('실시간 연결 없음, GitHub 백업 로드');
+        loadDataFromGitHub();
+    }
+}, 10000); // 10초마다
 
 // 설정을 주기적으로 확인하고 적용 (실시간 반영)
 setInterval(() => {
