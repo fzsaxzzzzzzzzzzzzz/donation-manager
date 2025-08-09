@@ -363,6 +363,23 @@ io.on('connection', (socket) => {
 async function startServer() {
   await loadExistingData();
   
+  // 이모지 강제 확인 및 설정
+  console.log('🔍 이모지 데이터 확인 중...');
+  console.log('현재 이모지 수:', Object.keys(currentData.emojis).length);
+  
+  if (Object.keys(currentData.emojis).length === 0) {
+    console.log('⚠️ 이모지 데이터 없음, 강제 설정 중...');
+    currentData.emojis = {
+      "엄삼용": "🫅", "손덕배": "🌺", "연기": "🐧", "동동": "😎", 
+      "주옥": "👺", "불곰": "🎬", "이효팔": "🏝", "남붕": "🤠", 
+      "옥긔": "🦆", "국고": "🏦"
+    };
+    await saveData();
+    console.log('✅ 이모지 데이터 강제 설정 완료');
+  } else {
+    console.log('✅ 이모지 데이터 존재함:', Object.keys(currentData.emojis));
+  }
+  
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 실시간 후원 서버 부팅 완료! (포트: ${PORT})`);
     console.log(`📱 관리자 페이지: http://localhost:${PORT}/donation-manager-realtime.html`);
@@ -371,7 +388,7 @@ async function startServer() {
     console.log(`📊 테이블: http://localhost:${PORT}/table-realtime.html`);
     console.log(`💾 현재 후원 데이터: ${currentData.donations.length}건`);
     console.log(`🕒 서버 부팅 시간: ${new Date().toISOString()}`);
-    console.log(`🌐 Render 배포 상태: 정상 작동 - 스트리머 추가 기능 활성화됨`);
+    console.log(`🌐 Render 배포 상태: 정상 작동 - 이모지 강제 로드됨`);
     console.log(`🔄 자동 재배포 트리거 성공`);
   });
 }
