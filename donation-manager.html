@@ -105,20 +105,48 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div class="tab-content" id="streamer-tab">
 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
 <h4 style="margin: 0 0 15px 0; color: #495057;">👤 새 스트리머 추가</h4>
-<div style="display: flex; gap: 10px; align-items: center;">
-<div style="flex: 2;">
-<label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 5px;">스트리머 이름</label>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 15px; align-items: end;">
+<div>
+<label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 5px; font-weight: bold;">스트리머 이름</label>
 <input type="text" id="new-streamer-name" placeholder="예: 엄삼용" class="form-input" style="width: 100%;">
 </div>
-<div style="flex: 1;">
-<label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 5px;">이모지</label>
+
+<div>
+<label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 5px; font-weight: bold;">이모지</label>
 <input type="text" id="new-streamer-emoji" placeholder="🫅" class="form-input" style="width: 100%; text-align: center;">
 </div>
-<div>
-<button onclick="addStreamer()" class="btn btn-success" id="add-streamer-btn" style="margin-top: 18px; padding: 10px 20px; font-weight: bold;">
+
+<button onclick="addStreamer()" class="btn btn-success" id="add-streamer-btn" 
+        style="height: 40px; padding: 0 20px; font-weight: bold; font-size: 16px; white-space: nowrap; min-width: 100px;">
 ✨ 추가
 </button>
 </div>
+
+<!-- 간단한 백업 레이아웃 (항상 보이는 추가 버튼) -->
+<div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #dee2e6;">
+<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+<input type="text" id="backup-streamer-name" placeholder="스트리머 이름" class="form-input" style="flex: 1; min-width: 120px;">
+<input type="text" id="backup-streamer-emoji" placeholder="🫅" class="form-input" style="width: 80px; text-align: center;">
+<button onclick="addStreamerBackup()" class="btn btn-success" style="padding: 8px 16px; font-weight: bold; background-color: #28a745 !important; border: none !important;">
+➕ 추가
+</button>
+</div>
+</div>
+
+<!-- 모바일용 세로 레이아웃 -->
+<div style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-radius: 8px;">
+<h5 style="margin: 0 0 15px 0; color: #0d6efd;">📱 모바일용 간편 추가</h5>
+<div style="margin-bottom: 10px;">
+<input type="text" id="simple-streamer-name" placeholder="스트리머 이름" class="form-input" style="width: 100%;">
+</div>
+<div style="margin-bottom: 10px;">
+<input type="text" id="simple-streamer-emoji" placeholder="이모지 (예: 🫅)" class="form-input" style="width: 100%; text-align: center;">
+</div>
+<button onclick="addStreamerSimple()" class="btn btn-primary" 
+        style="width: 100%; padding: 12px; font-weight: bold; font-size: 16px; background-color: #0d6efd !important;">
+✨ 스트리머 추가하기
+</button>
 </div>
 </div>
 
@@ -2082,6 +2110,126 @@ async function editStreamer(streamerName) {
         });
     } catch (error) {
         console.log('⚠️ [관리자] 서버 동기화 실패:', error.message);
+    }
+}
+
+// 모바일용 스트리머 추가 함수
+async function addStreamerMobile() {
+    const name = document.getElementById('new-streamer-name-mobile').value.trim();
+    const emoji = document.getElementById('new-streamer-emoji-mobile').value.trim();
+    
+    if (!name) {
+        alert('이름을 입력해주세요!');
+        return;
+    }
+    
+    if (streamers.includes(name)) {
+        alert('이미 존재하는 스트리머입니다!');
+        return;
+    }
+    
+    // addStreamer 함수와 동일한 로직
+    streamers.push(name);
+    if (emoji) emojis[name] = emoji;
+    
+    saveToLocalStorage();
+    updateAllUI();
+    
+    document.getElementById('new-streamer-name-mobile').value = '';
+    document.getElementById('new-streamer-emoji-mobile').value = '';
+    
+    showStatus(`스트리머 "${name}" ${emoji}이 추가되었습니다!`, 'success');
+    
+    // 서버 동기화 시도
+    try {
+        const response = await fetch('/api/streamers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, emoji })
+        });
+        
+        if (response.ok) {
+            console.log('✅ [관리자] 서버 동기화 성공:', name, emoji);
+        }
+    } catch (error) {
+        console.log('⚠️ [관리자] 서버 동기화 실패:', error.message);
+    }
+}
+
+// 백업용 스트리머 추가 함수 (간단한 레이아웃)
+async function addStreamerBackup() {
+    const name = document.getElementById('backup-streamer-name').value.trim();
+    const emoji = document.getElementById('backup-streamer-emoji').value.trim();
+    
+    if (!name) {
+        alert('스트리머 이름을 입력해주세요!');
+        return;
+    }
+    
+    if (streamers.includes(name)) {
+        alert('이미 존재하는 스트리머입니다!');
+        return;
+    }
+    
+    streamers.push(name);
+    if (emoji) emojis[name] = emoji;
+    
+    saveToLocalStorage();
+    updateAllUI();
+    
+    document.getElementById('backup-streamer-name').value = '';
+    document.getElementById('backup-streamer-emoji').value = '';
+    
+    showStatus(`✅ "${name}" ${emoji} 추가 완료!`, 'success');
+    
+    // 서버 동기화
+    try {
+        await fetch('/api/streamers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, emoji })
+        });
+    } catch (error) {
+        console.log('⚠️ 서버 동기화 실패:', error.message);
+    }
+}
+
+// 간편 스트리머 추가 함수 (세로 레이아웃)
+async function addStreamerSimple() {
+    const name = document.getElementById('simple-streamer-name').value.trim();
+    const emoji = document.getElementById('simple-streamer-emoji').value.trim();
+    
+    if (!name) {
+        alert('스트리머 이름을 입력해주세요!');
+        return;
+    }
+    
+    if (streamers.includes(name)) {
+        alert('이미 존재하는 스트리머입니다!');
+        return;
+    }
+    
+    streamers.push(name);
+    if (emoji) emojis[name] = emoji;
+    
+    saveToLocalStorage();
+    updateAllUI();
+    
+    document.getElementById('simple-streamer-name').value = '';
+    document.getElementById('simple-streamer-emoji').value = '';
+    
+    showStatus(`🎉 "${name}" ${emoji} 스트리머가 성공적으로 추가되었습니다!`, 'success');
+    
+    // 서버 동기화
+    try {
+        await fetch('/api/streamers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, emoji })
+        });
+        console.log('✅ 서버 동기화 성공');
+    } catch (error) {
+        console.log('⚠️ 서버 동기화 실패:', error.message);
     }
 }
 
