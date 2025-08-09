@@ -88,6 +88,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button class="tab-button" onclick="switchTab(event, 'overlay')">🎨 오버레이</button>
 <button class="tab-button" onclick="switchTab(event, 'password')" id="password-tab-btn" style="display: none;">비밀번호</button>
 <button class="tab-button" onclick="switchTab(event, 'data')">데이터</button>
+<button class="tab-button" onclick="switchTab(event, 'debug')">🔧 디버그</button>
 <button class="tab-button" onclick="switchTab(event, 'chatbot')">🤖 챗봇</button>
 <button class="tab-button" onclick="switchTab(event, 'simple')" id="simple-tab-btn">🎯 조정</button>
 </div>
@@ -259,6 +260,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 <input type="file" id="import-file" accept=".json" style="display: none;" onchange="handleFileImport(event)">
 </div>
+<div class="tab-content" id="debug-tab">
+<div style="margin-bottom: 20px;">
+<h4>🔧 서버 상태 디버그</h4>
+<button onclick="checkServerData()" class="btn btn-primary">서버 데이터 확인</button>
+<button onclick="forceInitEmojis()" class="btn btn-warning">이모지 강제 초기화</button>
+<button onclick="testStreamerAdd()" class="btn btn-success">스트리머 추가 테스트</button>
+</div>
+
+<div id="debug-output" style="background: #f5f6f7; padding: 15px; border-radius: 6px; margin-top: 15px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap;"></div>
+</div>
+
 <div class="tab-content" id="chatbot-tab">
 <div id="google-auth-status" class="status status-warning">
 🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요.
@@ -1945,6 +1957,128 @@ async function deleteStreamer(streamerName) {
         saveToLocalStorage();
         updateAllUI();
         showStatus('스트리머가 삭제되었습니다 (로컬 저장)', 'warning');
+    }
+}
+
+// === 디버그 함수들 ===
+function debugLog(message) {
+    const output = document.getElementById('debug-output');
+    if (output) {
+        const timestamp = new Date().toLocaleTimeString();
+        output.textContent += `[${timestamp}] ${message}\n`;
+        output.scrollTop = output.scrollHeight;
+    }
+    console.log(`[디버그] ${message}`);
+}
+
+async function checkServerData() {
+    debugLog('서버 데이터 확인 시작...');
+    
+    try {
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        
+        debugLog(`✅ 서버 응답 성공`);
+        debugLog(`📊 스트리머 수: ${data.streamers?.length || 0}`);
+        debugLog(`😀 이모지 수: ${Object.keys(data.emojis || {}).length}`);
+        debugLog(`💸 후원 수: ${data.donations?.length || 0}`);
+        
+        if (data.emojis && Object.keys(data.emojis).length > 0) {
+            debugLog('🎉 이모지 데이터 존재함:');
+            Object.entries(data.emojis).forEach(([name, emoji]) => {
+                debugLog(`  ${name}: ${emoji}`);
+            });
+        } else {
+            debugLog('❌ 이모지 데이터 없음');
+        }
+        
+        if (data.streamers) {
+            debugLog('👤 스트리머 목록:');
+            data.streamers.forEach(name => {
+                debugLog(`  - ${name}`);
+            });
+        }
+        
+    } catch (error) {
+        debugLog(`❌ 서버 데이터 확인 실패: ${error.message}`);
+    }
+}
+
+async function forceInitEmojis() {
+    debugLog('이모지 강제 초기화 시작...');
+    
+    const emojiData = {
+        "엄삼용": "🫅", 
+        "손덕배": "🌺", 
+        "연기": "🐧", 
+        "동동": "😎", 
+        "주옥": "👺", 
+        "불곰": "🎬", 
+        "이효팔": "🏝", 
+        "남붕": "🤠", 
+        "옥긔": "🦆", 
+        "국고": "🏦"
+    };
+    
+    try {
+        // 로컬에 먼저 설정
+        emojis = { ...emojiData };
+        saveToLocalStorage();
+        debugLog('✅ 로컬 이모지 데이터 설정 완료');
+        
+        updateAllUI();
+        debugLog('🔄 UI 업데이트 완료');
+        
+        showStatus('이모지 데이터가 강제로 설정되었습니다', 'success');
+        
+    } catch (error) {
+        debugLog(`❌ 이모지 초기화 실패: ${error.message}`);
+    }
+}
+
+async function testStreamerAdd() {
+    debugLog('스트리머 추가 테스트 시작...');
+    
+    const testName = 'TEST' + Math.floor(Math.random() * 100);
+    const testEmoji = '🧪';
+    
+    debugLog(`테스트 스트리머: ${testName} ${testEmoji}`);
+    
+    try {
+        // 먼저 스트리머 추가 API 시도
+        const response = await fetch('/api/streamers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: testName, emoji: testEmoji })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            debugLog('✅ 서버 API 추가 성공');
+            debugLog(`응답: ${JSON.stringify(result)}`);
+        } else {
+            debugLog('❌ 서버 API 추가 실패, 로컬만 추가');
+            // 로컬에만 추가
+            if (!streamers.includes(testName)) {
+                streamers.push(testName);
+                emojis[testName] = testEmoji;
+                saveToLocalStorage();
+                updateAllUI();
+            }
+        }
+        
+    } catch (error) {
+        debugLog(`❌ 테스트 실패: ${error.message}`);
+        // 로컬에만 추가
+        if (!streamers.includes(testName)) {
+            streamers.push(testName);
+            emojis[testName] = testEmoji;
+            saveToLocalStorage();
+            updateAllUI();
+            debugLog('✅ 로컬에만 추가 완료');
+        }
     }
 }
 
