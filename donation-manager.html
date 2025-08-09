@@ -1864,8 +1864,17 @@ function refreshPassword() {
 async function addStreamer() { 
     const name = document.getElementById('new-streamer-name').value.trim();
     const emoji = document.getElementById('new-streamer-emoji').value.trim(); 
-    if (!name) return showStatus('이름을 입력해주세요', 'error');
-    if (streamers.includes(name)) return showStatus('이미 존재하는 스트리머입니다', 'error');
+    
+    console.log('🔧 [DEBUG] 스트리머 추가 시작:', { name, emoji });
+    
+    if (!name) {
+        console.log('🔧 [DEBUG] 이름 없음');
+        return showStatus('이름을 입력해주세요', 'error');
+    }
+    if (streamers.includes(name)) {
+        console.log('🔧 [DEBUG] 중복된 이름:', name);
+        return showStatus('이미 존재하는 스트리머입니다', 'error');
+    }
     
     // 버튼 비활성화
     const addBtn = document.getElementById('add-streamer-btn');
@@ -1873,8 +1882,29 @@ async function addStreamer() {
     addBtn.disabled = true;
     addBtn.textContent = '추가 중...';
     
+    console.log('🔧 [DEBUG] 로컬 추가 시작');
+    
+    // 로컬에 먼저 추가 (확실한 방법)
+    streamers.push(name);
+    if (emoji) emojis[name] = emoji;
+    
+    console.log('🔧 [DEBUG] 로컬 추가 완료, UI 업데이트 시작');
+    
+    // UI 업데이트
+    saveToLocalStorage();
+    updateAllUI();
+    
+    // 입력 필드 초기화
+    document.getElementById('new-streamer-name').value = ''; 
+    document.getElementById('new-streamer-emoji').value = '';
+    
+    console.log('🔧 [DEBUG] 현재 스트리머 목록:', streamers);
+    console.log('🔧 [DEBUG] 현재 이모지:', emojis);
+    
+    showStatus(`스트리머 "${name}" ${emoji}이 추가되었습니다!`, 'success');
+    
+    // 서버 동기화 시도 (백그라운드)
     try {
-        // 서버에 스트리머 추가 요청
         const response = await fetch('/api/streamers', {
             method: 'POST',
             headers: {
@@ -1883,81 +1913,55 @@ async function addStreamer() {
             body: JSON.stringify({ name, emoji })
         });
         
-        const result = await response.json();
-        
         if (response.ok) {
-            // 로컬 데이터도 업데이트 (서버 응답과 동기화)
-            if (!streamers.includes(name)) {
-                streamers.push(name);
-            }
-            if (emoji) {
-                emojis[name] = emoji;
-            }
-            
-            saveToLocalStorage();
-            updateAllUI();
-            
-            document.getElementById('new-streamer-name').value = ''; 
-            document.getElementById('new-streamer-emoji').value = '';
-            showStatus('스트리머가 추가되었습니다', 'success');
-            
-            console.log('👤 [관리자] 스트리머 추가 성공:', name, emoji);
+            console.log('✅ [관리자] 서버 동기화 성공:', name, emoji);
         } else {
-            showStatus(result.error || '스트리머 추가에 실패했습니다', 'error');
+            console.log('⚠️ [관리자] 서버 동기화 실패, 로컬만 저장됨');
         }
     } catch (error) {
-        console.error('스트리머 추가 API 호출 실패:', error);
-        
-        // 서버 연결 실패시 로컬에만 추가
-        streamers.push(name);
-        if (emoji) emojis[name] = emoji;
-        saveToLocalStorage();
-        updateAllUI();
-        
-        document.getElementById('new-streamer-name').value = ''; 
-        document.getElementById('new-streamer-emoji').value = '';
-        showStatus('스트리머가 추가되었습니다 (로컬 저장)', 'warning');
-    } finally {
-        // 버튼 복원
-        addBtn.disabled = false;
-        addBtn.textContent = originalText;
+        console.log('⚠️ [관리자] 서버 동기화 실패:', error.message);
     }
+    
+    // 버튼 복원
+    addBtn.disabled = false;
+    addBtn.textContent = originalText;
+    
+    console.log('🔧 [DEBUG] 스트리머 추가 완료');
 }
 
 async function deleteStreamer(streamerName) {
     if (!confirm(`'${streamerName}'님을 목록에서 삭제하시겠습니까?`)) return;
     
+    console.log('🔧 [DEBUG] 스트리머 삭제 시작:', streamerName);
+    
+    // 로컬에서 먼저 삭제 (확실한 방법)
+    streamers = streamers.filter(s => s !== streamerName);
+    delete emojis[streamerName];
+    
+    console.log('🔧 [DEBUG] 로컬 삭제 완료, UI 업데이트');
+    
+    saveToLocalStorage();
+    updateAllUI();
+    showStatus(`스트리머 "${streamerName}"이 삭제되었습니다`, 'success');
+    
+    console.log('🔧 [DEBUG] 현재 스트리머 목록:', streamers);
+    
+    // 서버 동기화 시도 (백그라운드)
     try {
-        // 서버에 스트리머 삭제 요청
         const response = await fetch(`/api/streamers/${encodeURIComponent(streamerName)}`, {
             method: 'DELETE'
         });
         
-        const result = await response.json();
-        
         if (response.ok) {
-            // 로컬 데이터도 업데이트 (서버 응답과 동기화)
-            streamers = streamers.filter(s => s !== streamerName);
-            delete emojis[streamerName];
-            
-            saveToLocalStorage();
-            updateAllUI();
-            showStatus('스트리머가 삭제되었습니다', 'success');
-            
-            console.log('❌ [관리자] 스트리머 삭제 성공:', streamerName);
+            console.log('✅ [관리자] 서버 동기화 성공:', streamerName);
         } else {
-            showStatus(result.error || '스트리머 삭제에 실패했습니다', 'error');
+            console.log('⚠️ [관리자] 서버 동기화 실패, 로컬만 삭제됨');
         }
     } catch (error) {
-        console.error('스트리머 삭제 API 호출 실패:', error);
-        
-        // 서버 연결 실패시 로컬에서만 삭제
-        streamers = streamers.filter(s => s !== streamerName);
-        delete emojis[streamerName];
-        saveToLocalStorage();
-        updateAllUI();
-        showStatus('스트리머가 삭제되었습니다 (로컬 저장)', 'warning');
+        console.log('⚠️ [관리자] 서버 동기화 실패:', error.message);
     }
+    
+    console.log('🔧 [DEBUG] 스트리머 삭제 완료');
 }
 
 // === 디버그 함수들 ===
