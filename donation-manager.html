@@ -604,28 +604,34 @@ function initializeRealtimeConnection() {
         
         socket.on('connect', () => {
             isSocketConnected = true;
-            console.log('🔗 실시간 서버 연결됨');
+            console.log('🔗 [관리자] 실시간 서버 연결됨');
             showStatus('🔴 실시간 서버 연결됨 - 공동작업 가능!', 'success');
             updateConnectionUI(true);
+            
+            // 연결 성공 시 즉시 데이터 요청
+            console.log('📡 [관리자] 초기 데이터 요청 중...');
         });
         
         socket.on('disconnect', () => {
             isSocketConnected = false;
-            console.log('❌ 실시간 서버 연결 끊어짐');
+            console.log('❌ [관리자] 실시간 서버 연결 끊어짐');
             showStatus('⚠️ 실시간 연결 끊어짐 - 로컬 모드로 전환', 'warning');
             updateConnectionUI(false);
         });
         
         socket.on('initialData', (data) => {
-            console.log('📊 초기 데이터 수신:', data);
+            console.log('📊 [관리자] 초기 데이터 수신:', data);
+            console.log('📊 [관리자] 수신된 후원 데이터:', data.donations?.length || 0, '건');
             donations = data.donations || [];
             streamers = data.streamers || streamers;
             emojis = data.emojis || emojis;
             updateAllUI();
+            console.log('✅ [관리자] 초기 UI 업데이트 완료');
         });
         
         socket.on('dataUpdate', (data) => {
-            console.log('🔄 실시간 데이터 업데이트:', data);
+            console.log('🔄 [관리자] 실시간 데이터 업데이트 수신:', data);
+            console.log('🔄 [관리자] 수신된 후원 데이터:', data.donations?.length || 0, '건');
             donations = data.donations || [];
             updateAllUI();
             showStatus('✨ 새 후원 데이터 동기화!', 'success', 2000);
@@ -635,6 +641,8 @@ function initializeRealtimeConnection() {
             
             // localStorage도 최신 데이터로 동기화 (로컬모드에서 데이터 부활 방지)
             saveToLocalStorage();
+            
+            console.log('✅ [관리자] 실시간 UI 업데이트 완료');
         });
         
     } catch (error) {
@@ -1121,9 +1129,11 @@ async function handleNewDonations(newDonations) {
                 });
                 
                 if (response.ok) {
-                    console.log('✅ 실시간 서버로 후원 전송 성공:', donation);
+                    console.log('✅ [관리자] 실시간 서버로 후원 전송 성공:', donation);
+                    console.log('📡 [관리자] 서버 응답 상태:', response.status);
                 } else {
-                    console.error('❌ 실시간 서버 전송 실패:', response.statusText);
+                    console.error('❌ [관리자] 실시간 서버 전송 실패:', response.statusText);
+                    console.error('📡 [관리자] 서버 응답 상태:', response.status);
                     // 실시간 전송 실패해도 로컬은 업데이트됨
                 }
             }
