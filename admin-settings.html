@@ -522,10 +522,24 @@ class AdminSettings {
             })
             .catch(error => console.error('설정 로드 실패:', error));
     }
+
+    async loadStreamers() {
+        try {
+            const response = await fetch('/api/data');
+            const data = await response.json();
+            
+            this.streamers = data.streamers || [];
+            this.emojis = data.emojis || {};
+            
+            this.renderStreamers();
+        } catch (error) {
+            console.error('스트리머 데이터 로드 실패:', error);
+        }
+    }
 }
 
 // 전역 함수들
-function addStreamer() {
+async function addStreamer() {
     const name = document.getElementById('newStreamerName').value.trim();
     const emoji = document.getElementById('newStreamerEmoji').value.trim();
     
@@ -534,18 +548,53 @@ function addStreamer() {
         return;
     }
     
-    // TODO: 서버에 스트리머 추가 요청
-    console.log('새 스트리머 추가:', name, emoji);
-    
-    // 입력 필드 초기화
-    document.getElementById('newStreamerName').value = '';
-    document.getElementById('newStreamerEmoji').value = '';
+    try {
+        const response = await fetch('/api/streamers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, emoji })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`✅ ${name} 스트리머가 추가되었습니다!`);
+            // 입력 필드 초기화
+            document.getElementById('newStreamerName').value = '';
+            document.getElementById('newStreamerEmoji').value = '';
+            // 스트리머 목록 새로고침
+            adminSettings.loadStreamers();
+        } else {
+            alert(`❌ 오류: ${result.error || '알 수 없는 오류'}`);
+        }
+    } catch (error) {
+        console.error('스트리머 추가 실패:', error);
+        alert('❌ 서버와의 통신에 실패했습니다.');
+    }
 }
 
-function removeStreamer(streamer) {
+async function removeStreamer(streamer) {
     if (confirm(`${streamer}을(를) 삭제하시겠습니까?`)) {
-        // TODO: 서버에 스트리머 삭제 요청
-        console.log('스트리머 삭제:', streamer);
+        try {
+            const response = await fetch(`/api/streamers/${encodeURIComponent(streamer)}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(`✅ ${streamer} 스트리머가 삭제되었습니다!`);
+                // 스트리머 목록 새로고침
+                adminSettings.loadStreamers();
+            } else {
+                alert(`❌ 오류: ${result.error || '알 수 없는 오류'}`);
+            }
+        } catch (error) {
+            console.error('스트리머 삭제 실패:', error);
+            alert('❌ 서버와의 통신에 실패했습니다.');
+        }
     }
 }
 
