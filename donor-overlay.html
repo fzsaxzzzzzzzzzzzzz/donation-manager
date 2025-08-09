@@ -221,23 +221,28 @@ function applyOverlaySettings() {
         
         [contentEl, noDataEl].forEach(el => {
             if (el) {
-                // !important 효과를 위해 직접 스타일 속성 설정
-                el.style.fontSize = fontSize + 'px !important';
-                el.style.textAlign = textAlign + ' !important';
+                // cssText로 !important 적용
+                el.style.cssText = `
+                    font-size: ${fontSize}px !important;
+                    text-align: ${textAlign} !important;
+                    font-weight: bold !important;
+                    color: white !important;
+                    line-height: 1.5 !important;
+                    white-space: pre-line !important;
+                    text-shadow: ${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000 !important;
+                `;
                 
-                // 텍스트 쉐도우(테두리) 적용
-                const shadow = `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000`;
-                el.style.textShadow = shadow + ' !important';
-                
-                console.log('✅ 스타일 적용됨:', el.className, 'fontSize:', fontSize + 'px');
+                console.log('✅ 스타일 적용됨:', el.className, 'fontSize:', fontSize + 'px', 'textAlign:', textAlign);
             }
         });
         
-        // 자식 요소들에도 적용
+        // 자식 요소들에도 강력하게 적용
         const allTextElements = document.querySelectorAll('.donor-content, .no-data, .donor-content *');
         allTextElements.forEach(el => {
-            el.style.fontSize = fontSize + 'px';
-            el.style.textAlign = textAlign;
+            el.style.cssText += `
+                font-size: ${fontSize}px !important;
+                text-align: ${textAlign} !important;
+            `;
         });
         
         // CSS 변수도 함께 설정
@@ -249,8 +254,53 @@ function applyOverlaySettings() {
         const shadow = `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000`;
         document.documentElement.style.setProperty('--overlay-text-shadow', shadow);
         
+        // 동적 CSS 스타일시트로 강력하게 적용
+        updateDynamicCSS(fontSize, strokeWidth, textAlign);
+        
     } catch (error) {
         console.error('❌ 설정 적용 실패:', error);
+    }
+}
+
+// 동적 CSS 스타일시트 업데이트
+function updateDynamicCSS(fontSize, strokeWidth, textAlign) {
+    try {
+        // 기존 동적 스타일 제거
+        const existingStyle = document.getElementById('dynamic-overlay-styles');
+        if (existingStyle) {
+            existingStyle.remove();
+        }
+        
+        // 새로운 스타일 생성
+        const shadow = `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000`;
+        
+        const styleElement = document.createElement('style');
+        styleElement.id = 'dynamic-overlay-styles';
+        styleElement.innerHTML = `
+            .donor-content, .no-data, .donor-content * {
+                font-size: ${fontSize}px !important;
+                text-align: ${textAlign} !important;
+                text-shadow: ${shadow} !important;
+            }
+            
+            .donor-content {
+                font-weight: bold !important;
+                color: white !important;
+                line-height: 1.5 !important;
+                white-space: pre-line !important;
+            }
+            
+            .no-data {
+                font-weight: bold !important;
+                color: white !important;
+            }
+        `;
+        
+        document.head.appendChild(styleElement);
+        console.log('🎨 동적 CSS 스타일시트 업데이트:', { fontSize, textAlign, strokeWidth });
+        
+    } catch (error) {
+        console.error('❌ 동적 CSS 업데이트 실패:', error);
     }
 }
 
