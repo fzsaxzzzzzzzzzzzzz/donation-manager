@@ -401,7 +401,7 @@ GitHub 동기화 상태를 확인 중...
 <button onclick="saveApiKey()" class="btn btn-primary">💾 저장</button>
 </div>
 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-<input type="text" id="youtube-video-id" placeholder="유튜브 영상 ID (예: dQw4w9WgXcQ)" class="form-input" style="flex: 2;">
+<input type="text" id="youtube-video-id-api" placeholder="유튜브 영상 ID (예: dQw4w9WgXcQ)" class="form-input" style="flex: 2;">
 <button onclick="connectToLiveChat()" class="btn btn-success">🔗 라이브 연결</button>
 </div>
 <div style="display: flex; gap: 10px;">
@@ -3093,7 +3093,7 @@ async function connectToLiveChat() {
         showStatus('💡 OAuth가 로그인되어 있습니다. OAuth 연결을 사용하시겠어요?', 'info', 3000);
     }
     
-    const videoId = document.getElementById('youtube-video-id').value.trim();
+    const videoId = document.getElementById('youtube-video-id-api').value.trim();
     if (!videoId) {
         showStatus('유튜브 영상 ID를 입력하세요', 'error');
         return;
@@ -3556,6 +3556,11 @@ async function testGitHubConnection() {
 }
 
 // GitHub API를 사용해서 data.json 파일 자동 업데이트
+// 동기화 중복 실행 방지 플래그
+let syncInProgress = false;
+let lastSyncTime = 0;
+const SYNC_COOLDOWN = 5000; // 5초 쿨다운
+
 async function autoSyncToGitHub() {
     const token = localStorage.getItem('github-token');
     const autoSyncEnabled = localStorage.getItem('auto-sync-enabled') === 'true';
@@ -3564,6 +3569,22 @@ async function autoSyncToGitHub() {
         console.log('자동 동기화가 비활성화되어 있습니다');
         return false;
     }
+    
+    // 중복 실행 방지
+    if (syncInProgress) {
+        console.log('동기화가 이미 진행 중입니다');
+        return false;
+    }
+    
+    // 쿨다운 체크
+    const now = Date.now();
+    if (now - lastSyncTime < SYNC_COOLDOWN) {
+        console.log('동기화 쿨다운 중입니다');
+        return false;
+    }
+    
+    syncInProgress = true;
+    lastSyncTime = now;
     
     try {
         // 현재 데이터 수집
@@ -3633,6 +3654,8 @@ async function autoSyncToGitHub() {
         console.error('GitHub 자동 동기화 실패:', error);
         showSaveStatus('GitHub 동기화 실패', 'error');
         return false;
+    } finally {
+        syncInProgress = false;
     }
 }
 
@@ -3700,6 +3723,49 @@ async function forceSyncSettingsToGitHub() {
     } catch (error) {
         console.error('강제 동기화 실패:', error);
         return false;
+    }
+}
+
+// data.json 파일 다운로드 함수
+function downloadDataAsJson() {
+    try {
+        const data = {
+            donations: donations,
+            streamers: streamers,
+            emojis: emojis,
+            settings: {
+                'overlay-font-size': localStorage.getItem('overlay-font-size') || '16',
+                'overlay-stroke-width': localStorage.getItem('overlay-stroke-width') || '2',
+                'overlay-text-align': localStorage.getItem('overlay-text-align') || 'left',
+                'table-opacity': localStorage.getItem('table-opacity') || '85',
+                'table-number-size': localStorage.getItem('table-number-size') || '16',
+                'table-font-size': localStorage.getItem('table-font-size') || '14',
+                'table-text-color': localStorage.getItem('table-text-color') || 'white',
+                'hidden-streamers': localStorage.getItem('hidden-streamers') || '[]',
+                'group-threshold': localStorage.getItem('group-threshold') || '1',
+                'show-total-row': localStorage.getItem('show-total-row') || 'true',
+                'show-update-time': localStorage.getItem('show-update-time') || 'false',
+                'table-title': localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆'
+            },
+            lastUpdated: new Date().toISOString()
+        };
+        
+        const jsonContent = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'data.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('✅ data.json 파일 다운로드 완료');
+    } catch (error) {
+        console.error('다운로드 실패:', error);
+        throw error;
     }
 }
 
