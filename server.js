@@ -23,12 +23,32 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
-// 현재 데이터 저장소 (나중에 Firebase로 교체)
+// 현재 데이터 저장소 (메모리 + 파일 백업)
 let currentData = {
   donations: [],
-  streamers: [],
-  emojis: {},
-  settings: {},
+  streamers: [
+    "엄삼용", "손덕배", "연기", "주옥", "불곰", 
+    "이효팔", "동동", "남붕", "옥긔", "국고"
+  ],
+  emojis: {
+    "엄삼용": "🫅", "손덕배": "🌺", "연기": "🐧", "동동": "😎", 
+    "주옥": "👺", "불곰": "🎬", "이효팔": "🏝", "남붕": "🤠", 
+    "옥긔": "🦆", "국고": "🏦"
+  },
+  settings: {
+    "overlay-font-size": "24",
+    "overlay-stroke-width": "3", 
+    "overlay-text-align": "center",
+    "table-opacity": "85",
+    "table-number-size": "16",
+    "table-font-size": "14",
+    "table-text-color": "white",
+    "hidden-streamers": "[]",
+    "group-threshold": "2",
+    "show-total-row": "true",
+    "show-update-time": "false",
+    "table-title": "🏆 스트리머별 후원 현황 🏆"
+  },
   lastUpdated: new Date().toISOString()
 };
 
@@ -43,13 +63,15 @@ async function loadExistingData() {
   }
 }
 
-// 데이터 저장
+// 데이터 저장 (에러 방지)
 async function saveData() {
   try {
-    await fs.writeFile('./data.json', JSON.stringify(currentData, null, 2));
     currentData.lastUpdated = new Date().toISOString();
+    await fs.writeFile('./data.json', JSON.stringify(currentData, null, 2));
+    console.log('✅ 데이터 저장 성공:', currentData.donations.length, '건');
   } catch (error) {
-    console.error('데이터 저장 실패:', error);
+    console.error('❌ 데이터 저장 실패 (계속 진행):', error.message);
+    // 파일 저장 실패해도 메모리 데이터는 유지
   }
 }
 
@@ -71,7 +93,18 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
-    donations: currentData.donations.length
+    donations: currentData.donations.length,
+    connectedUsers: io.sockets.sockets.size,
+    uptime: process.uptime()
+  });
+});
+
+// Keep-alive 엔드포인트 (Sleep 방지)
+app.get('/ping', (req, res) => {
+  res.json({ 
+    pong: true, 
+    time: new Date().toISOString(),
+    users: io.sockets.sockets.size
   });
 });
 
@@ -112,13 +145,23 @@ app.post('/api/settings', async (req, res) => {
 
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
-  console.log('클라이언트 연결:', socket.id);
+  console.log('🔗 클라이언트 연결:', socket.id, '(총', io.sockets.sockets.size, '명)');
   
   // 새 클라이언트에게 현재 데이터 전송
   socket.emit('initialData', currentData);
   
+  // 연결된 클라이언트 수 브로드캐스트
+  io.emit('userCount', io.sockets.sockets.size);
+  
   socket.on('disconnect', () => {
-    console.log('클라이언트 연결 해제:', socket.id);
+    console.log('❌ 클라이언트 연결 해제:', socket.id, '(총', io.sockets.sockets.size, '명)');
+    // 연결된 클라이언트 수 업데이트
+    io.emit('userCount', io.sockets.sockets.size);
+  });
+  
+  // ping/pong으로 연결 상태 확인
+  socket.on('ping', () => {
+    socket.emit('pong');
   });
 });
 
