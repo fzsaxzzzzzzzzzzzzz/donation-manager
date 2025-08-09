@@ -569,30 +569,41 @@ setInterval(() => {
     applyOverlaySettings();
 }, 1000);
 
-// 강력한 설정 적용 함수 (매우 빈번하게 실행) - 임시 비활성화
-/*
+// 강력한 설정 적용 함수 - 활성화로 변경
 setInterval(() => {
     const contentEl = document.getElementById('donor-content');
-    if (contentEl) {
-        const fontSize = localStorage.getItem('overlay-font-size') || '18';
-        const textAlign = localStorage.getItem('overlay-text-align') || 'left';
-        
-        // 매우 강력하게 스타일 강제 적용
-        const strokeWidth = localStorage.getItem('overlay-stroke-width') || '3';
-        const shadow = `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000`;
-        
-        contentEl.style.cssText = `
-            font-size: ${fontSize}px !important;
-            text-align: ${textAlign} !important;
-            font-weight: bold !important;
-            color: white !important;
-            line-height: 1.5 !important;
-            white-space: pre-line !important;
-            text-shadow: ${shadow} !important;
-        `;
-    }
-}, 500); // 0.5초마다 강제 적용
-*/
+    const noDataEl = document.querySelector('.no-data');
+    
+    [contentEl, noDataEl].forEach(el => {
+        if (el) {
+            const fontSize = localStorage.getItem('overlay-font-size') || '18';
+            const textAlign = localStorage.getItem('overlay-text-align') || 'left';
+            const strokeWidth = localStorage.getItem('overlay-stroke-width') || '3';
+            
+            // 매우 강력하게 스타일 강제 적용
+            const shadow = `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000`;
+            
+            el.style.cssText = `
+                font-size: ${fontSize}px !important;
+                text-align: ${textAlign} !important;
+                font-weight: bold !important;
+                color: white !important;
+                line-height: 1.5 !important;
+                white-space: pre-line !important;
+                text-shadow: ${shadow} !important;
+            `;
+            
+            // 추가: 모든 자식 요소에도 강제 적용
+            const children = el.querySelectorAll('*');
+            children.forEach(child => {
+                child.style.cssText += `
+                    font-size: ${fontSize}px !important;
+                    text-align: ${textAlign} !important;
+                `;
+            });
+        }
+    });
+}, 1000); // 1초마다 강제 적용
 </script>
 
 </body>
