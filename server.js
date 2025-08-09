@@ -59,10 +59,10 @@ app.get('/', (req, res) => {
     <h1>🎬 실시간 후원 시스템</h1>
     <p>서버가 정상 작동 중입니다!</p>
     <ul>
-      <li><a href="/donation-manager-realtime.html">📱 관리자 페이지</a></li>
+      <li><a href="/donation-manager.html">📱 관리자 페이지</a></li>
       <li><a href="/admin-settings.html">⚙️ 관리자 설정</a></li>
-      <li><a href="/overlay-realtime.html">🎥 오버레이</a></li>
-      <li><a href="/table-realtime.html">📊 테이블</a></li>
+      <li><a href="/donor-overlay.html">🎥 후원자 오버레이</a></li>
+      <li><a href="/streamer-table-overlay.html">📊 스트리머 테이블</a></li>
     </ul>
   `);
 });
