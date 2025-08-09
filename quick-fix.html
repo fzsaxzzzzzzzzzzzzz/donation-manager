@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔧 긴급 수정 도구</title>
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #f5f5f5;
+}
+.card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 5px;
+    transition: all 0.2s;
+}
+.btn-primary { background: #007bff; color: white; }
+.btn-success { background: #28a745; color: white; }
+.btn-warning { background: #ffc107; color: #212529; }
+.btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.form-group { margin: 15px 0; }
+.form-input { 
+    width: 100%; 
+    padding: 10px; 
+    border: 1px solid #ddd; 
+    border-radius: 4px; 
+    font-size: 16px; 
+}
+.status {
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    font-weight: bold;
+}
+.status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+</style>
+</head>
+<body>
+
+<h1>🔧 후원 시스템 긴급 수정 도구</h1>
+
+<div class="card">
+    <h3>1. 이모지 즉시 복원</h3>
+    <p>스트리머 이모지가 안 보일 때 사용하세요.</p>
+    <button onclick="fixEmojis()" class="btn btn-warning">이모지 복원</button>
+    <div id="emoji-status"></div>
+</div>
+
+<div class="card">
+    <h3>2. 스트리머 추가</h3>
+    <div class="form-group">
+        <input type="text" id="streamer-name" placeholder="스트리머 이름" class="form-input">
+    </div>
+    <div class="form-group">
+        <input type="text" id="streamer-emoji" placeholder="이모지 (예: 🆕)" class="form-input">
+    </div>
+    <button onclick="addStreamer()" class="btn btn-success">스트리머 추가</button>
+    <div id="streamer-status"></div>
+</div>
+
+<div class="card">
+    <h3>3. 관리자 페이지로 이동</h3>
+    <button onclick="goToManager()" class="btn btn-primary">관리자 페이지 열기</button>
+</div>
+
+<script>
+// 로컬스토리지에서 현재 데이터 로드
+let streamers = [];
+let emojis = {};
+
+function loadCurrentData() {
+    try {
+        const savedStreamers = localStorage.getItem('streamers');
+        const savedEmojis = localStorage.getItem('emojis');
+        
+        if (savedStreamers) {
+            streamers = JSON.parse(savedStreamers);
+        } else {
+            streamers = ["엄삼용", "손덕배", "연기", "주옥", "불곰", "이효팔", "동동", "남붕", "옥긔", "국고"];
+        }
+        
+        if (savedEmojis) {
+            emojis = JSON.parse(savedEmojis);
+        }
+        
+        console.log('현재 데이터 로드됨:', {streamers: streamers.length, emojis: Object.keys(emojis).length});
+    } catch (error) {
+        console.error('데이터 로드 실패:', error);
+        streamers = ["엄삼용", "손덕배", "연기", "주옥", "불곰", "이효팔", "동동", "남붕", "옥긔", "국고"];
+        emojis = {};
+    }
+}
+
+function showStatus(elementId, message, type) {
+    const element = document.getElementById(elementId);
+    element.innerHTML = `<div class="status status-${type}">${message}</div>`;
+    setTimeout(() => {
+        element.innerHTML = '';
+    }, 3000);
+}
+
+function fixEmojis() {
+    // 모든 이모지 설정
+    emojis = {
+        "엄삼용": "🫅", 
+        "손덕배": "🌺", 
+        "연기": "🐧", 
+        "동동": "😎", 
+        "주옥": "👺", 
+        "불곰": "🎬", 
+        "이효팔": "🏝", 
+        "남붕": "🤠", 
+        "옥긔": "🦆", 
+        "국고": "🏦"
+    };
+    
+    // 로컬스토리지에 저장
+    localStorage.setItem('emojis', JSON.stringify(emojis));
+    localStorage.setItem('streamers', JSON.stringify(streamers));
+    
+    // 서버에도 전송 시도
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 'emoji-data': JSON.stringify(emojis) })
+    }).then(response => {
+        if (response.ok) {
+            console.log('서버에도 저장됨');
+        }
+    }).catch(e => {
+        console.log('서버 저장 실패 (로컬만 저장됨)');
+    });
+    
+    showStatus('emoji-status', '✅ 이모지가 복원되었습니다! 관리자 페이지를 새로고침하세요.', 'success');
+}
+
+function addStreamer() {
+    const name = document.getElementById('streamer-name').value.trim();
+    const emoji = document.getElementById('streamer-emoji').value.trim();
+    
+    if (!name) {
+        showStatus('streamer-status', '❌ 스트리머 이름을 입력하세요.', 'error');
+        return;
+    }
+    
+    if (streamers.includes(name)) {
+        showStatus('streamer-status', '❌ 이미 존재하는 스트리머입니다.', 'error');
+        return;
+    }
+    
+    // 스트리머 추가
+    streamers.push(name);
+    if (emoji) {
+        emojis[name] = emoji;
+    }
+    
+    // 저장
+    localStorage.setItem('streamers', JSON.stringify(streamers));
+    localStorage.setItem('emojis', JSON.stringify(emojis));
+    
+    // 서버에도 전송 시도
+    fetch('/api/streamers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, emoji })
+    }).then(response => {
+        if (response.ok) {
+            console.log('서버에도 저장됨');
+        }
+    }).catch(e => {
+        console.log('서버 저장 실패 (로컬만 저장됨)');
+    });
+    
+    // 입력창 초기화
+    document.getElementById('streamer-name').value = '';
+    document.getElementById('streamer-emoji').value = '';
+    
+    showStatus('streamer-status', `✅ ${name} ${emoji} 스트리머가 추가되었습니다!`, 'success');
+}
+
+function goToManager() {
+    window.open('/donation-manager.html', '_blank');
+}
+
+// 페이지 로드 시 데이터 로드
+loadCurrentData();
+</script>
+
+</body>
+</html>
