@@ -125,9 +125,10 @@ function initializeRealtimeConnection() {
         });
         
     } catch (error) {
-        console.error('Socket.io 초기화 실패, GitHub 백업 모드:', error);
-        loadDataFromGitHub(); // 실패 시 GitHub 백업
-    }
+        console.error('Socket.io 초기화 실패, 로컬 모드로 전환:', error);
+        // GitHub 백업 비활성화 - 데이터 부활 방지
+        // loadDataFromGitHub(); // 실패 시 GitHub 백업
+        console.log('⚠️ GitHub 백업 비활성화됨 (데이터 충돌 방지)');
 }
 
 // GitHub에서 데이터 로드 (백업용)
@@ -329,13 +330,13 @@ document.addEventListener('keydown', (e) => {
 console.log('🔴 실시간 후원자 오버레이 시작...');
 initializeRealtimeConnection();
 
-// 백업용 자동 새로고침 (실시간 연결 실패 시에만)
-setInterval(() => {
-    if (!isSocketConnected) {
-        console.log('실시간 연결 없음, GitHub 백업 로드');
-        loadDataFromGitHub();
-    }
-}, 10000); // 10초마다
+// 백업용 자동 새로고침 (실시간 연결 실패 시에만) - 비활성화
+// setInterval(() => {
+//     if (!isSocketConnected) {
+//         console.log('실시간 연결 없음, GitHub 백업 로드');
+//         loadDataFromGitHub();
+//     }
+// }, 10000); // 10초마다 - 데이터 충돌 방지를 위해 비활성화
 
 // 설정을 주기적으로 확인하고 적용 (실시간 반영)
 setInterval(() => {
