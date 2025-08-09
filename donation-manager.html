@@ -1936,13 +1936,54 @@ async function confirmReset() {
         return;
     }
 
+    // 🔴 완전 초기화 - 모든 데이터 소스 정리
+    console.log('🔄 완전 데이터 초기화 시작...');
+    
+    // 1. 로컬 데이터 초기화
     donations = [];
     selectedRows.clear();
     todayDonors.clear();
-    saveToLocalStorage();
+    
+    // 2. localStorage 완전 정리
+    try {
+        localStorage.removeItem('donation_data');
+        localStorage.removeItem('streamer_data');
+        localStorage.removeItem('emoji_data');
+        console.log('✅ localStorage 완전 정리 완료');
+    } catch (error) {
+        console.error('localStorage 정리 실패:', error);
+    }
+    
+    // 3. 서버 데이터도 완전 초기화
+    if (isSocketConnected) {
+        try {
+            const response = await fetch('/api/donations/bulk', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ donations: [] })
+            });
+            
+            if (response.ok) {
+                console.log('✅ 서버 데이터 완전 초기화 성공');
+            } else {
+                console.error('❌ 서버 초기화 실패');
+            }
+        } catch (error) {
+            console.error('서버 초기화 요청 실패:', error);
+        }
+    }
+    
+    // 4. UI 업데이트
     updateAllUI();
     closeResetDialog();
-    showStatus('모든 데이터가 초기화되었습니다', 'success');
+    showStatus('🔴 모든 데이터가 완전히 초기화되었습니다 (서버+로컬+캐시)', 'success');
+    
+    // 5. 페이지 새로고침으로 모든 캐시 정리
+    setTimeout(() => {
+        if (confirm('초기화를 완전히 적용하려면 페이지를 새로고침해야 합니다. 새로고침하시겠습니까?')) {
+            location.reload();
+        }
+    }, 1000);
 }
 
 // --- 데이터 내보내기/가져오기 ---
