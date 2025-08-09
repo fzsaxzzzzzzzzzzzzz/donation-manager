@@ -96,7 +96,8 @@ app.get('/', (req, res) => {
     <p>서버가 정상 작동 중입니다!</p>
     <ul>
       <li><a href="/donation-manager.html">📱 관리자 페이지</a></li>
-      <li><a href="/donation-sheet.html">📊 엑셀 스타일 시트</a> <span style="color: #28a745; font-weight: bold;">NEW!</span></li>
+      <li><a href="/donation-sheet.html">📊 엑셀 스타일 시트</a></li>
+      <li><a href="/settings-sheet.html">⚙️ 설정 관리 시트</a> <span style="color: #28a745; font-weight: bold;">NEW!</span></li>
       <li><a href="/admin-settings.html">⚙️ 관리자 설정</a></li>
       <li><a href="/donor-overlay.html">🎥 후원자 오버레이</a></li>
       <li><a href="/streamer-table-overlay.html">📊 스트리머 테이블</a></li>

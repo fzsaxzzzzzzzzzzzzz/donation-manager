@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚙️ 실시간 설정 관리 시트</title>
+
+<!-- Socket.IO -->
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f8f9fa;
+    color: #333;
+    overflow: auto;
+}
+
+.header {
+    background: #6f42c1;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header h1 {
+    font-size: 1.4rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #42b72a;
+    animation: pulse 2s infinite;
+}
+
+.status-dot.disconnected {
+    background: #fa383e;
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.main-content {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.section-header {
+    background: #495057;
+    color: white;
+    padding: 15px 20px;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.section-content {
+    padding: 20px;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.setting-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.setting-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.setting-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: #6f42c1;
+}
+
+.setting-value {
+    min-width: 60px;
+    padding: 6px 10px;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-weight: 600;
+    text-align: center;
+    color: #495057;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background: #6f42c1;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a359c;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #218838;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.info-panel {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 0 6px 6px 0;
+}
+
+.success-message {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+    display: none;
+}
+
+.overlay-preview {
+    background: #000;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 15px;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .main-content {
+        padding: 15px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>⚙️ 실시간 설정 관리 시트</h1>
+    <div class="connection-status">
+        <div class="status-dot" id="connectionDot"></div>
+        <span id="connectionText">연결 중...</span>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="info-panel">
+        <strong>🌐 크로스 디바이스 설정 관리</strong><br>
+        이 페이지에서 변경한 설정은 모든 컴퓨터와 디바이스의 오버레이에 실시간으로 반영됩니다.
+    </div>
+
+    <div id="successMessage" class="success-message"></div>
+
+    <!-- 오버레이 기본 설정 -->
+    <div class="section">
+        <div class="section-header">🎨 오버레이 기본 설정</div>
+        <div class="section-content">
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <div class="setting-label">폰트 크기</div>
+                    <div class="setting-control">
+                        <input type="range" class="setting-input" id="overlay-font-size" min="10" max="50" value="24">
+                        <div class="setting-value" id="overlay-font-size-value">24px</div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">텍스트 테두리 굵기</div>
+                    <div class="setting-control">
+                        <input type="range" class="setting-input" id="overlay-stroke-width" min="0" max="10" value="3">
+                        <div class="setting-value" id="overlay-stroke-width-value">3px</div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">텍스트 정렬</div>
+                    <div class="setting-control">
+                        <select class="setting-input" id="overlay-text-align">
+                            <option value="left">왼쪽 정렬</option>
+                            <option value="center">가운데 정렬</option>
+                            <option value="right">오른쪽 정렬</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overlay-preview" id="overlayPreview">
+                <div style="font-weight: bold;">미리보기: 사랑해요♡<br>홍길동님 10만<br>김철수님 5만</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 테이블 설정 -->
+    <div class="section">
+        <div class="section-header">📊 테이블 설정</div>
+        <div class="section-content">
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <div class="setting-label">테이블 투명도</div>
+                    <div class="setting-control">
+                        <input type="range" class="setting-input" id="table-opacity" min="0" max="100" value="85">
+                        <div class="setting-value" id="table-opacity-value">85%</div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">순위 숫자 크기</div>
+                    <div class="setting-control">
+                        <input type="range" class="setting-input" id="table-number-size" min="8" max="30" value="16">
+                        <div class="setting-value" id="table-number-size-value">16px</div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">테이블 폰트 크기</div>
+                    <div class="setting-control">
+                        <input type="range" class="setting-input" id="table-font-size" min="8" max="24" value="14">
+                        <div class="setting-value" id="table-font-size-value">14px</div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">텍스트 색상</div>
+                    <div class="setting-control">
+                        <input type="color" class="setting-input" id="table-text-color" value="#ffffff">
+                        <div class="setting-value" id="table-text-color-value">#ffffff</div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">그룹 임계값</div>
+                    <div class="setting-control">
+                        <input type="number" class="setting-input" id="group-threshold" min="1" max="10" value="2">
+                        <div class="setting-value" id="group-threshold-value">2명</div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">테이블 제목</div>
+                    <div class="setting-control">
+                        <input type="text" class="setting-input" id="table-title" value="🏆 스트리머별 후원 현황 🏆">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 표시 옵션 -->
+    <div class="section">
+        <div class="section-header">👁️ 표시 옵션</div>
+        <div class="section-content">
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <div class="setting-label">총계 행 표시</div>
+                    <div class="setting-control">
+                        <input type="checkbox" id="show-total-row" checked>
+                        <label for="show-total-row">총계 행 보이기</label>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">업데이트 시간 표시</div>
+                    <div class="setting-control">
+                        <input type="checkbox" id="show-update-time">
+                        <label for="show-update-time">마지막 업데이트 시간 보이기</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 액션 버튼 -->
+    <div class="action-buttons">
+        <button class="btn btn-primary" onclick="applyAllSettings()">
+            💾 모든 설정 적용 및 저장
+        </button>
+        <button class="btn btn-success" onclick="resetToDefaults()">
+            🔄 기본값으로 복원
+        </button>
+        <button class="btn btn-warning" onclick="testOverlays()">
+            🧪 오버레이 테스트
+        </button>
+    </div>
+</div>
+
+<script>
+let socket = null;
+let isConnected = false;
+let currentSettings = {};
+
+// Socket.io 연결
+function initializeConnection() {
+    try {
+        socket = io();
+        
+        socket.on('connect', () => {
+            isConnected = true;
+            updateConnectionStatus();
+            console.log('서버에 연결됨');
+        });
+        
+        socket.on('disconnect', () => {
+            isConnected = false;
+            updateConnectionStatus();
+        });
+        
+        socket.on('initialData', (data) => {
+            console.log('초기 데이터 수신:', data);
+            if (data.settings) {
+                currentSettings = data.settings;
+                loadSettingsToUI();
+            }
+        });
+        
+        socket.on('settingsUpdate', (settings) => {
+            console.log('설정 업데이트 수신:', settings);
+            currentSettings = settings;
+            loadSettingsToUI();
+        });
+        
+    } catch (error) {
+        console.error('Socket.io 연결 실패:', error);
+    }
+}
+
+// 연결 상태 업데이트
+function updateConnectionStatus() {
+    const dot = document.getElementById('connectionDot');
+    const text = document.getElementById('connectionText');
+    
+    if (isConnected) {
+        dot.classList.remove('disconnected');
+        text.textContent = '실시간 연결됨';
+    } else {
+        dot.classList.add('disconnected');
+        text.textContent = '연결 끊김';
+    }
+}
+
+// UI에서 설정 로드
+function loadSettingsToUI() {
+    Object.entries(currentSettings).forEach(([key, value]) => {
+        const element = document.getElementById(key);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = value === 'true' || value === true;
+            } else {
+                element.value = value;
+            }
+            updateValueDisplay(key, value);
+        }
+    });
+    updateOverlayPreview();
+}
+
+// 값 표시 업데이트
+function updateValueDisplay(key, value) {
+    const valueEl = document.getElementById(key + '-value');
+    if (valueEl) {
+        if (key.includes('font-size') || key.includes('stroke-width') || key.includes('number-size')) {
+            valueEl.textContent = value + 'px';
+        } else if (key === 'table-opacity') {
+            valueEl.textContent = value + '%';
+        } else if (key === 'group-threshold') {
+            valueEl.textContent = value + '명';
+        } else if (key === 'table-text-color') {
+            valueEl.textContent = value;
+            valueEl.style.backgroundColor = value;
+            valueEl.style.color = getContrastColor(value);
+        } else {
+            valueEl.textContent = value;
+        }
+    }
+}
+
+// 대비 색상 계산
+function getContrastColor(hexColor) {
+    const r = parseInt(hexColor.substr(1, 2), 16);
+    const g = parseInt(hexColor.substr(3, 2), 16);
+    const b = parseInt(hexColor.substr(5, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? '#000000' : '#ffffff';
+}
+
+// 오버레이 미리보기 업데이트
+function updateOverlayPreview() {
+    const preview = document.getElementById('overlayPreview');
+    const fontSize = document.getElementById('overlay-font-size')?.value || '24';
+    const strokeWidth = document.getElementById('overlay-stroke-width')?.value || '3';
+    const textAlign = document.getElementById('overlay-text-align')?.value || 'center';
+    
+    const shadow = `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000`;
+    
+    preview.style.fontSize = fontSize + 'px';
+    preview.style.textAlign = textAlign;
+    preview.style.textShadow = shadow;
+}
+
+// 모든 설정 적용
+async function applyAllSettings() {
+    try {
+        const settings = {};
+        
+        // 모든 설정 요소에서 값 수집
+        const settingElements = document.querySelectorAll('[id^="overlay-"], [id^="table-"], [id^="show-"], [id^="group-"]');
+        
+        settingElements.forEach(element => {
+            if (element.type === 'checkbox') {
+                settings[element.id] = element.checked ? 'true' : 'false';
+            } else {
+                settings[element.id] = element.value;
+            }
+        });
+        
+        console.log('적용할 설정:', settings);
+        
+        // 서버에 설정 전송
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ settings })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSuccessMessage('✅ 모든 설정이 성공적으로 적용되었습니다!');
+            currentSettings = { ...currentSettings, ...settings };
+        } else {
+            throw new Error(result.error || '설정 적용 실패');
+        }
+        
+    } catch (error) {
+        console.error('설정 적용 실패:', error);
+        showSuccessMessage('❌ 설정 적용에 실패했습니다: ' + error.message, 'error');
+    }
+}
+
+// 기본값으로 복원
+function resetToDefaults() {
+    if (confirm('모든 설정을 기본값으로 복원하시겠습니까?')) {
+        const defaults = {
+            'overlay-font-size': '24',
+            'overlay-stroke-width': '3',
+            'overlay-text-align': 'center',
+            'table-opacity': '85',
+            'table-number-size': '16',
+            'table-font-size': '14',
+            'table-text-color': '#ffffff',
+            'group-threshold': '2',
+            'show-total-row': 'true',
+            'show-update-time': 'false',
+            'table-title': '🏆 스트리머별 후원 현황 🏆'
+        };
+        
+        Object.entries(defaults).forEach(([key, value]) => {
+            const element = document.getElementById(key);
+            if (element) {
+                if (element.type === 'checkbox') {
+                    element.checked = value === 'true';
+                } else {
+                    element.value = value;
+                }
+                updateValueDisplay(key, value);
+            }
+        });
+        
+        updateOverlayPreview();
+        applyAllSettings();
+    }
+}
+
+// 오버레이 테스트
+function testOverlays() {
+    const overlayUrls = [
+        '/donor-overlay.html',
+        '/overlay-realtime.html',
+        '/streamer-table-overlay.html'
+    ];
+    
+    overlayUrls.forEach(url => {
+        window.open(url, '_blank', 'width=800,height=600');
+    });
+    
+    showSuccessMessage('🧪 오버레이 테스트 창들을 열었습니다.');
+}
+
+// 성공 메시지 표시
+function showSuccessMessage(message, type = 'success') {
+    const msgEl = document.getElementById('successMessage');
+    msgEl.textContent = message;
+    msgEl.className = type === 'error' ? 'error-message' : 'success-message';
+    msgEl.style.display = 'block';
+    
+    setTimeout(() => {
+        msgEl.style.display = 'none';
+    }, 3000);
+}
+
+// 이벤트 리스너 등록
+document.addEventListener('DOMContentLoaded', () => {
+    initializeConnection();
+    
+    // 모든 설정 요소에 변경 이벤트 추가
+    const settingElements = document.querySelectorAll('[id^="overlay-"], [id^="table-"], [id^="show-"], [id^="group-"]');
+    
+    settingElements.forEach(element => {
+        element.addEventListener('input', (e) => {
+            updateValueDisplay(e.target.id, e.target.value);
+            if (e.target.id.startsWith('overlay-')) {
+                updateOverlayPreview();
+            }
+        });
+        
+        element.addEventListener('change', (e) => {
+            updateValueDisplay(e.target.id, e.target.value);
+            if (e.target.id.startsWith('overlay-')) {
+                updateOverlayPreview();
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>
