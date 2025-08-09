@@ -348,7 +348,7 @@ GitHub 동기화 상태를 확인 중...
 </div>
 <div class="tab-content" id="data-tab">
 <button onclick="showAdminPassword()" class="btn btn-secondary" id="pwd-btn" style="display:none;">🔑 비번조회</button>
-<div style="display: flex; flex-wrap: wrap; gap: 10px;"><button onclick="exportData()" class="btn btn-primary">📄 데이터 내보내기</button><button onclick="saveData()" class="btn btn-success" id="save-btn">💾 일간저장</button><button onclick="showResetDialog()" class="btn btn-warning" id="reset-btn">🔄 초기화</button><button onclick="importData()" class="btn btn-secondary" id="import-btn">📂 데이터 가져오기</button></div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px;"><button onclick="exportData()" class="btn btn-primary">📄 데이터 내보내기</button><button onclick="downloadDataAsJson()" class="btn btn-primary">📥 JSON 다운로드</button><button onclick="saveData()" class="btn btn-success" id="save-btn">💾 일간저장</button><button onclick="showResetDialog()" class="btn btn-warning" id="reset-btn">🔄 초기화</button><button onclick="importData()" class="btn btn-secondary" id="import-btn">📂 데이터 가져오기</button></div>
 
 <div style="margin-top: 20px; padding: 15px; border: 2px solid #4285f4; border-radius: 8px; background: #f8f9ff;">
 <h4 style="color: #4285f4; margin: 0 0 15px 0;">☁️ 구글 드라이브 백업</h4>
@@ -3736,17 +3736,7 @@ async function forceSyncSettingsToGitHub() {
             console.log('💾 로컬 스토리지에 동기화 대기 데이터 저장');
             
             // 3차: 사용자에게 수동 다운로드 알림
-            showStatus('⚠️ 자동 동기화 실패. GitHub 토큰을 설정하거나 수동으로 data.json을 다운로드해주세요.', 'warning');
-            
-            // 자동으로 data.json 다운로드 제공
-            setTimeout(() => {
-                try {
-                    downloadDataAsJson();
-                    showStatus('📥 data.json 파일이 다운로드되었습니다. GitHub에 업로드해주세요.', 'info');
-                } catch (e) {
-                    console.error('다운로드 실패:', e);
-                }
-            }, 1000);
+            showStatus('⚠️ GitHub 동기화 실패. 필요시 "데이터" 탭에서 수동으로 다운로드하세요.', 'warning');
         }
         
         return true;
@@ -3839,7 +3829,7 @@ function showGitHubTokenInput() {
 }
 
 function useManualSync() {
-    showStatus('설정 변경 시 자동으로 data.json 파일을 다운로드합니다. 수동으로 GitHub에 업로드해주세요.', 'info');
+    showStatus('수동 동기화 모드입니다. 필요시 "데이터" 탭에서 직접 다운로드하세요.', 'info');
     document.getElementById('sync-status').style.display = 'none';
 }
 
