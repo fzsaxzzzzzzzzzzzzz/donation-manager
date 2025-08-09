@@ -10,8 +10,10 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  allowEIO3: true
 });
 
 const PORT = process.env.PORT || 3000;
@@ -50,6 +52,28 @@ async function saveData() {
     console.error('데이터 저장 실패:', error);
   }
 }
+
+// 헬스체크 엔드포인트
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>🎬 실시간 후원 시스템</h1>
+    <p>서버가 정상 작동 중입니다!</p>
+    <ul>
+      <li><a href="/donation-manager-realtime.html">📱 관리자 페이지</a></li>
+      <li><a href="/admin-settings.html">⚙️ 관리자 설정</a></li>
+      <li><a href="/overlay-realtime.html">🎥 오버레이</a></li>
+      <li><a href="/table-realtime.html">📊 테이블</a></li>
+    </ul>
+  `);
+});
+
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    donations: currentData.donations.length
+  });
+});
 
 // API 엔드포인트
 app.get('/api/data', (req, res) => {
@@ -102,7 +126,7 @@ io.on('connection', (socket) => {
 async function startServer() {
   await loadExistingData();
   
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 실시간 후원 서버 시작됨!`);
     console.log(`📱 관리자 페이지: http://localhost:${PORT}/donation-manager-realtime.html`);
     console.log(`⚙️  관리자 설정: http://localhost:${PORT}/admin-settings.html`);
