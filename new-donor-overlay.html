@@ -115,10 +115,8 @@ function initializeRealtimeConnection() {
         });
         
     } catch (error) {
-        console.error('Socket.io 초기화 실패, 로컬 모드로 전환:', error);
-        // GitHub 백업 비활성화 - 데이터 부활 방지
-        // loadDataFromGitHub(); // 실패 시 GitHub 백업
-        console.log('⚠️ GitHub 백업 비활성화됨 (데이터 충돌 방지)');
+        console.error('Socket.io 초기화 실패, 서버 API로 데이터 로드 시도:', error);
+        loadDataFromServer(); // 서버 API에서 직접 로드
     }
 }
 
@@ -295,6 +293,55 @@ function updateDisplay() {
     }, 100);
 }
 
+// 서버 API에서 데이터 로드
+async function loadDataFromServer() {
+    try {
+        console.log('서버 API에서 데이터 로드 시도...');
+        
+        const response = await fetch('/api/data');
+        if (response.ok) {
+            const data = await response.json();
+            console.log('서버 API 데이터 로드 성공:', data);
+            
+            if (data.donations && Array.isArray(data.donations)) {
+                donations = data.donations.map(d => ({
+                    ...d,
+                    time: new Date(d.time),
+                    amount: parseFloat(d.amount) || 0
+                }));
+            } else {
+                donations = [];
+            }
+            
+            updateDisplay();
+            applyOverlaySettings();
+            return;
+        }
+    } catch (error) {
+        console.log('서버 API 로드 실패, localStorage 시도...', error);
+    }
+    
+    // 서버 API 실패 시 로컬스토리지에서 시도
+    try {
+        const savedData = localStorage.getItem('donation_data');
+        if (savedData) {
+            donations = JSON.parse(savedData).map(d => ({
+                ...d,
+                time: new Date(d.time),
+                amount: parseFloat(d.amount) || 0
+            }));
+            console.log('localStorage에서 데이터 로드:', donations.length);
+        } else {
+            donations = [];
+        }
+    } catch (error) {
+        console.error('localStorage 로드 실패:', error);
+        donations = [];
+    }
+    
+    updateDisplay();
+}
+
 // 크로마키 모드 토글
 function toggleTransparent() {
     isTransparentMode = !isTransparentMode;
@@ -321,13 +368,13 @@ document.addEventListener('keydown', (e) => {
 console.log('🔴 실시간 후원자 오버레이 시작...');
 initializeRealtimeConnection();
 
-// 백업용 자동 새로고침 (실시간 연결 실패 시에만) - 비활성화  
-// setInterval(() => {
-//     if (!isSocketConnected) {
-//         console.log('실시간 연결 없음, GitHub 백업 로드');
-//         loadDataFromGitHub();
-//     }
-// }, 10000); // 10초마다 - 데이터 충돌 방지를 위해 비활성화
+// 백업용 자동 새로고침 (실시간 연결 실패 시에만)
+setInterval(() => {
+    if (!isSocketConnected) {
+        console.log('실시간 연결 없음, 서버 API로 데이터 새로고침');
+        loadDataFromServer();
+    }
+}, 15000); // 15초마다
 
 // 설정을 주기적으로 확인하고 적용 (실시간 반영)
 setInterval(() => {
