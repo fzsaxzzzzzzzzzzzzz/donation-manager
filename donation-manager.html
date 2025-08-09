@@ -131,6 +131,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div id="app-loader">
 <div class="spinner"></div>
 <p>애플리케이션을 불러오는 중...</p>
+<p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">3초 후 자동으로 표시됩니다</p>
 </div>
 <div id="save-status" style="display: none;"></div>
 <div class="container" id="app-container">
@@ -740,6 +741,32 @@ const STORAGE_KEYS = {
 // --- 앱 시작 ---
 document.addEventListener('DOMContentLoaded', initializeApp);
 
+// 빠른 안전장치: 1초 후 앱 강제 표시
+setTimeout(() => {
+    const loader = document.getElementById('app-loader');
+    const container = document.getElementById('app-container');
+    if (loader && container) {
+        console.log('1초 안전장치 작동 - 앱을 표시합니다');
+        loader.style.display = 'none';
+        container.style.display = 'grid';
+        container.classList.add('loaded');
+    }
+}, 1000);
+
+// 추가 안전장치: 3초 후에도 로딩 화면이 있으면 강제로 앱 표시
+setTimeout(() => {
+    const loader = document.getElementById('app-loader');
+    if (loader && loader.style.display !== 'none') {
+        console.warn('3초 후에도 로딩 중 - 강제로 앱을 표시합니다');
+        loader.style.display = 'none';
+        const container = document.getElementById('app-container');
+        if (container) {
+            container.style.display = 'grid';
+            container.classList.add('loaded');
+        }
+    }
+}, 3000);
+
 // 안전한 DOM 조작 헬퍼 함수들
 function safeGetElement(id) {
     try {
@@ -943,7 +970,7 @@ async function initializeApp() {
                 if (message) message.textContent = `앱 로딩 실패: ${error.message} - 안전 모드로 계속...`;
             }
             
-            // 강제로 앱 표시
+            // 강제로 앱 표시 (더 빠른 안전장치)
             setTimeout(() => {
                 const style = document.createElement('style');
                 style.textContent = `
@@ -952,7 +979,7 @@ async function initializeApp() {
                 `;
                 document.head.appendChild(style);
                 console.log('안전 모드로 앱을 강제 표시했습니다');
-            }, 1000);
+            }, 500); // 1초 → 0.5초로 단축
             
         } catch (fallbackError) {
             console.error("Even fallback failed:", fallbackError);
