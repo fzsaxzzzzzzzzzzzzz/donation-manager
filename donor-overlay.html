@@ -277,22 +277,32 @@ function updateDynamicCSS(fontSize, strokeWidth, textAlign) {
         const styleElement = document.createElement('style');
         styleElement.id = 'dynamic-overlay-styles';
         styleElement.innerHTML = `
-            .donor-content, .no-data, .donor-content * {
+            body .overlay-container .donor-content,
+            body .overlay-container .no-data,
+            body .overlay-container .donor-content *,
+            body .overlay-container .no-data * {
                 font-size: ${fontSize}px !important;
                 text-align: ${textAlign} !important;
                 text-shadow: ${shadow} !important;
             }
             
-            .donor-content {
+            body .overlay-container .donor-content {
                 font-weight: bold !important;
                 color: white !important;
                 line-height: 1.5 !important;
                 white-space: pre-line !important;
             }
             
-            .no-data {
+            body .overlay-container .no-data {
                 font-weight: bold !important;
                 color: white !important;
+            }
+            
+            /* 추가 강력한 셀렉터 */
+            #donor-content {
+                font-size: ${fontSize}px !important;
+                text-align: ${textAlign} !important;
+                text-shadow: ${shadow} !important;
             }
         `;
         
@@ -493,6 +503,46 @@ document.addEventListener('keydown', (e) => {
         case 't':
         case 'T':
             toggleTransparent();
+            break;
+        // 디버그용 단축키들
+        case '1': // 왼쪽 정렬 테스트
+            localStorage.setItem('overlay-text-align', 'left');
+            applyOverlaySettings();
+            console.log('🔧 테스트: 왼쪽 정렬 적용');
+            break;
+        case '2': // 가운데 정렬 테스트
+            localStorage.setItem('overlay-text-align', 'center');
+            applyOverlaySettings();
+            console.log('🔧 테스트: 가운데 정렬 적용');
+            break;
+        case '3': // 오른쪽 정렬 테스트
+            localStorage.setItem('overlay-text-align', 'right');
+            applyOverlaySettings();
+            console.log('🔧 테스트: 오른쪽 정렬 적용');
+            break;
+        case '+': // 폰트 크기 증가
+            let currentSize = parseInt(localStorage.getItem('overlay-font-size') || '18');
+            localStorage.setItem('overlay-font-size', (currentSize + 2).toString());
+            applyOverlaySettings();
+            console.log('🔧 테스트: 폰트 크기 증가 →', currentSize + 2);
+            break;
+        case '-': // 폰트 크기 감소
+            let currentSize2 = parseInt(localStorage.getItem('overlay-font-size') || '18');
+            localStorage.setItem('overlay-font-size', Math.max(10, currentSize2 - 2).toString());
+            applyOverlaySettings();
+            console.log('🔧 테스트: 폰트 크기 감소 →', Math.max(10, currentSize2 - 2));
+            break;
+        case 'd': // 현재 설정 디버그 출력
+        case 'D':
+            console.log('🔍 현재 설정 디버그:');
+            console.log('- overlay-font-size:', localStorage.getItem('overlay-font-size'));
+            console.log('- overlay-text-align:', localStorage.getItem('overlay-text-align'));
+            console.log('- overlay-stroke-width:', localStorage.getItem('overlay-stroke-width'));
+            const contentEl = document.getElementById('donor-content');
+            if (contentEl) {
+                console.log('- 실제 적용된 fontSize:', window.getComputedStyle(contentEl).fontSize);
+                console.log('- 실제 적용된 textAlign:', window.getComputedStyle(contentEl).textAlign);
+            }
             break;
     }
 });

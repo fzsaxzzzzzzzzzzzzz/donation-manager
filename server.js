@@ -65,7 +65,9 @@ async function loadExistingData() {
       // 빈 이모지 객체가 있다면 기본값으로 교체
       emojis: loadedData.emojis && Object.keys(loadedData.emojis).length > 0 
         ? loadedData.emojis 
-        : currentData.emojis
+        : currentData.emojis,
+      // 중첩된 설정 문제 해결
+      settings: loadedData.settings?.settings || loadedData.settings || currentData.settings
     };
     
     console.log('✅ 기존 데이터 로드 완료');
