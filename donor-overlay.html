@@ -103,17 +103,20 @@ function initializeRealtimeConnection() {
         });
         
         socket.on('dataUpdate', (data) => {
-            console.log('🔄 실시간 데이터 업데이트:', data);
+            console.log('🔄 [오버레이] 실시간 데이터 업데이트 수신:', data);
+            console.log('🔄 [오버레이] 현재 연결 상태:', isSocketConnected);
+            console.log('🔄 [오버레이] 수신된 후원 데이터:', data.donations?.length || 0, '건');
+            
             donations = data.donations || [];
-            console.log('📊 새 데이터로 화면 업데이트:', donations.length, '건');
+            console.log('📊 [오버레이] 새 데이터로 화면 업데이트:', donations.length, '건');
             updateDonorDisplay();
             
             // localStorage 동기화 (로컬모드에서 데이터 부활 방지)
             try {
                 localStorage.setItem('donation_data', JSON.stringify(donations));
-                console.log('📱 localStorage 동기화 완료');
+                console.log('📱 [오버레이] localStorage 동기화 완료');
             } catch (error) {
-                console.error('localStorage 저장 실패:', error);
+                console.error('❌ [오버레이] localStorage 저장 실패:', error);
             }
             
             // 화면 깜박임 효과로 업데이트 표시

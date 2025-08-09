@@ -370,8 +370,12 @@ class DonationSheet {
             });
 
             this.socket.on('dataUpdate', (data) => {
-                console.log('🔄 실시간 데이터 업데이트:', data);
+                console.log('🔄 [엑셀시트] 실시간 데이터 업데이트 수신:', data);
+                console.log('🔄 [엑셀시트] 현재 연결 상태:', this.isConnected);
+                console.log('🔄 [엑셀시트] 수신된 후원 데이터:', data.donations?.length || 0, '건');
+                
                 this.donations = data.donations || [];
+                console.log('📊 [엑셀시트] 새 데이터로 시트 업데이트:', this.donations.length, '건');
                 this.renderSheet();
                 this.highlightNewRows();
                 

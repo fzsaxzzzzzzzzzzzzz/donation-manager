@@ -129,7 +129,9 @@ app.post('/api/donations', async (req, res) => {
   await saveData();
   
   // 모든 클라이언트에게 실시간 업데이트 전송
+  console.log(`📡 [서버] dataUpdate 이벤트 전송 (${io.sockets.sockets.size}명 클라이언트)`);
   io.emit('dataUpdate', currentData);
+  console.log(`📊 [서버] 전송된 데이터: ${currentData.donations.length}건`);
   
   res.json({ success: true, donation: newDonation });
 });
@@ -177,7 +179,9 @@ app.delete('/api/donations/:id', async (req, res) => {
     await saveData();
     
     // 모든 클라이언트에게 실시간 업데이트 전송
+    console.log(`📡 [서버] dataUpdate 이벤트 전송 (${io.sockets.sockets.size}명 클라이언트)`);
     io.emit('dataUpdate', currentData);
+    console.log(`📊 [서버] 전송된 데이터: ${currentData.donations.length}건`);
     console.log('✅ 실시간 업데이트 전송 완료');
     
     res.json({ success: true, message: '후원이 삭제되었습니다.' });
@@ -200,7 +204,9 @@ app.put('/api/donations/bulk', async (req, res) => {
     await saveData();
     
     // 모든 클라이언트에게 실시간 업데이트 전송
+    console.log(`📡 [서버] dataUpdate 이벤트 전송 (${io.sockets.sockets.size}명 클라이언트)`);
     io.emit('dataUpdate', currentData);
+    console.log(`📊 [서버] 전송된 데이터: ${currentData.donations.length}건`);
     
     res.json({ success: true, message: '데이터가 성공적으로 업데이트되었습니다.' });
   } catch (error) {
