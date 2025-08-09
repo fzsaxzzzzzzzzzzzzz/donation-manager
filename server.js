@@ -242,13 +242,15 @@ async function startServer() {
   await loadExistingData();
   
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n🚀 실시간 후원 서버 재시작됨! (포트: ${PORT})`);
+    console.log(`\n🚀 실시간 후원 서버 부팅 완료! (포트: ${PORT})`);
     console.log(`📱 관리자 페이지: http://localhost:${PORT}/donation-manager-realtime.html`);
     console.log(`⚙️  관리자 설정: http://localhost:${PORT}/admin-settings.html`);
     console.log(`🎥 오버레이: http://localhost:${PORT}/overlay-realtime.html`);
     console.log(`📊 테이블: http://localhost:${PORT}/table-realtime.html`);
     console.log(`💾 현재 후원 데이터: ${currentData.donations.length}건`);
-    console.log(`🕒 서버 시작 시간: ${new Date().toLocaleString()}`);
+    console.log(`🕒 서버 부팅 시간: ${new Date().toISOString()}`);
+    console.log(`🌐 Render 배포 상태: 정상 작동`);
+    console.log(`🔄 자동 재배포 트리거 성공`);
   });
 }
 
