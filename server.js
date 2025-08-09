@@ -105,6 +105,7 @@ async function startServer() {
   server.listen(PORT, () => {
     console.log(`\n🚀 실시간 후원 서버 시작됨!`);
     console.log(`📱 관리자 페이지: http://localhost:${PORT}/donation-manager-realtime.html`);
+    console.log(`⚙️  관리자 설정: http://localhost:${PORT}/admin-settings.html`);
     console.log(`🎥 오버레이: http://localhost:${PORT}/overlay-realtime.html`);
     console.log(`📊 테이블: http://localhost:${PORT}/table-realtime.html`);
   });
