@@ -1,0 +1,85 @@
+{
+  "donations": [
+    {
+      "donor": "1Q",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1,
+      "time": "2025-08-08T22:46:41.783Z"
+    },
+    {
+      "donor": "A",
+      "streamer": "주옥",
+      "type": "계좌",
+      "amount": 111,
+      "time": "2025-08-08T22:39:41.235Z"
+    },
+    {
+      "donor": "QQQQQ",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1,
+      "time": "2025-08-08T22:23:03.431Z"
+    },
+    {
+      "donor": "1",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 12,
+      "time": "2025-08-08T22:05:35.617Z"
+    },
+    {
+      "donor": "AA",
+      "streamer": "손덕배",
+      "type": "계좌",
+      "amount": 2,
+      "time": "2025-08-08T21:59:34.048Z"
+    },
+    {
+      "donor": "1",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1,
+      "time": "2025-08-08T21:59:18.225Z"
+    }
+  ],
+  "streamers": [
+    "엄삼용",
+    "손덕배",
+    "연기",
+    "주옥",
+    "불곰",
+    "이효팔",
+    "동동",
+    "남붕",
+    "옥긔",
+    "국고"
+  ],
+  "emojis": {
+    "엄삼용": "🫅",
+    "손덕배": "🌺",
+    "연기": "🐧",
+    "동동": "😎",
+    "주옥": "👺",
+    "불곰": "🎬",
+    "이효팔": "🏝",
+    "남붕": "🤠",
+    "옥긔": "🦆",
+    "국고": "🏦"
+  },
+  "settings": {
+    "overlay-font-size": "48",
+    "overlay-stroke-width": "2",
+    "overlay-text-align": "right",
+    "table-opacity": "100",
+    "table-number-size": "16",
+    "table-font-size": "14",
+    "table-text-color": "white",
+    "hidden-streamers": "[]",
+    "group-threshold": "1",
+    "show-total-row": "true",
+    "show-update-time": "false",
+    "table-title": "🏆 스트리머별 후원 현황 🏆"
+  },
+  "lastUpdated": "2025-08-08T22:46:42.290Z"
+}
