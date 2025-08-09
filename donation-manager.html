@@ -103,17 +103,34 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="addDonation()" class="btn btn-primary" id="add-btn" style="width:100%;">✨ 등록</button>
 </div>
 <div class="tab-content" id="streamer-tab">
-<div style="display: flex; gap: 10px; margin-bottom: 15px;">
-<input type="text" id="new-streamer-name" placeholder="이름" class="form-input">
-<input type="text" id="new-streamer-emoji" placeholder="이모지" class="form-input" style="flex: 0 0 80px;">
-<button onclick="addStreamer()" class="btn btn-success" id="add-streamer-btn">추가</button>
+<div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+<h4 style="margin: 0 0 15px 0; color: #495057;">👤 새 스트리머 추가</h4>
+<div style="display: flex; gap: 10px; align-items: center;">
+<div style="flex: 2;">
+<label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 5px;">스트리머 이름</label>
+<input type="text" id="new-streamer-name" placeholder="예: 엄삼용" class="form-input" style="width: 100%;">
 </div>
-<div id="streamer-list"></div>
+<div style="flex: 1;">
+<label style="display: block; font-size: 12px; color: #6c757d; margin-bottom: 5px;">이모지</label>
+<input type="text" id="new-streamer-emoji" placeholder="🫅" class="form-input" style="width: 100%; text-align: center;">
+</div>
+<div>
+<button onclick="addStreamer()" class="btn btn-success" id="add-streamer-btn" style="margin-top: 18px; padding: 10px 20px; font-weight: bold;">
+✨ 추가
+</button>
+</div>
+</div>
+</div>
 
-<div style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 6px;">
-<h4 style="margin: 0 0 10px 0;">🔧 이모지 복원</h4>
+<div style="background: white; border-radius: 8px; border: 1px solid #e9ecef;">
+<h4 style="margin: 0; padding: 15px; border-bottom: 1px solid #e9ecef; background: #f8f9fa;">📋 스트리머 목록</h4>
+<div id="streamer-list" style="min-height: 200px; padding: 15px;"></div>
+</div>
+
+<div style="margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px;">
+<h4 style="margin: 0 0 10px 0; color: #856404;">🔧 이모지 복원</h4>
 <button onclick="restoreEmojis()" class="btn btn-warning">이모지 즉시 복원</button>
-<p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">이모지가 안 보이면 이 버튼을 눌러주세요</p>
+<p style="font-size: 12px; color: #856404; margin: 5px 0 0 0;">이모지가 안 보이면 이 버튼을 눌러주세요</p>
 </div>
 </div>
 <div class="tab-content" id="mission-tab">
@@ -1431,16 +1448,48 @@ function updateStreamerInputs() {
 function updateStreamerList() {
     const container = document.getElementById('streamer-list');
     if(container) {
+        if (!streamers || streamers.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #6c757d;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">👥</div>
+                    <p style="margin: 0; font-size: 16px;">등록된 스트리머가 없습니다</p>
+                    <p style="margin: 5px 0 0 0; font-size: 14px;">위에서 새 스트리머를 추가해주세요</p>
+                </div>
+            `;
+            return;
+        }
+
         const hiddenStreamers = JSON.parse(localStorage.getItem('hidden-streamers') || '[]');
-        container.innerHTML = (streamers || []).map(s => {
+        container.innerHTML = (streamers || []).map((s, index) => {
             const isHidden = hiddenStreamers.includes(s);
-            return `<div style="display:flex; align-items:center; justify-content:space-between; padding: 8px 5px; border-bottom: 1px solid #f0f2f5; ${isHidden ? 'opacity: 0.5;' : ''}" ${isHidden ? 'title="임시 숨김 상태"' : ''}>
-                <label style="display: flex; align-items: center; flex-grow: 1; cursor: pointer;">
-                    <input type="checkbox" onchange="toggleStreamerVisibility('${s}')" ${isHidden ? '' : 'checked'} style="margin-right: 8px;">
-                    <span>${emojis[s] || ''}${s}</span>
-                </label>
-                <button onclick="deleteStreamer('${s}')" class="btn btn-danger" style="font-size:12px; padding: 2px 6px;">🗑️</button>
-            </div>`;
+            const emoji = emojis[s] || '👤';
+            return `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #e9ecef; ${isHidden ? 'opacity: 0.5;' : ''}" ${isHidden ? 'title="임시 숨김 상태"' : ''}>
+                    <div style="display: flex; align-items: center; flex-grow: 1;">
+                        <div style="display: flex; align-items: center; margin-right: 15px;">
+                            <input type="checkbox" onchange="toggleStreamerVisibility('${s}')" ${isHidden ? '' : 'checked'} 
+                                   style="margin-right: 10px; transform: scale(1.2);">
+                            <span style="background: #f8f9fa; border-radius: 20px; padding: 2px 8px; font-size: 12px; color: #495057;">
+                                ${index + 1}
+                            </span>
+                        </div>
+                        <div>
+                            <span style="font-size: 24px; margin-right: 8px;">${emoji}</span>
+                            <span style="font-size: 16px; font-weight: 500;">${s}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button onclick="editStreamer('${s}')" class="btn btn-secondary" 
+                                style="font-size: 12px; padding: 4px 8px; background: #6c757d;">
+                            ✏️ 수정
+                        </button>
+                        <button onclick="deleteStreamer('${s}')" class="btn btn-danger" 
+                                style="font-size: 12px; padding: 4px 8px;">
+                            🗑️ 삭제
+                        </button>
+                    </div>
+                </div>
+            `;
         }).join('');
     }
 }
@@ -1972,6 +2021,68 @@ async function deleteStreamer(streamerName) {
     }
     
     console.log('🔧 [DEBUG] 스트리머 삭제 완료');
+}
+
+async function editStreamer(streamerName) {
+    const currentEmoji = emojis[streamerName] || '';
+    const newName = prompt(`스트리머 이름을 수정하세요:`, streamerName);
+    if (!newName || newName.trim() === '') return;
+    
+    const trimmedNewName = newName.trim();
+    if (trimmedNewName === streamerName) {
+        // 이름이 같다면 이모지만 수정
+        const newEmoji = prompt(`${streamerName}의 이모지를 수정하세요:`, currentEmoji);
+        if (newEmoji !== null) {
+            emojis[streamerName] = newEmoji.trim();
+            saveToLocalStorage();
+            updateAllUI();
+            showStatus(`${streamerName}의 이모지가 수정되었습니다!`, 'success');
+        }
+        return;
+    }
+    
+    // 이름이 바뀌는 경우 중복 체크
+    if (streamers.includes(trimmedNewName)) {
+        alert('이미 존재하는 스트리머 이름입니다.');
+        return;
+    }
+    
+    const newEmoji = prompt(`${trimmedNewName}의 이모지를 설정하세요:`, currentEmoji);
+    if (newEmoji === null) return; // 취소
+    
+    // 기존 스트리머 삭제
+    streamers = streamers.filter(s => s !== streamerName);
+    delete emojis[streamerName];
+    
+    // 새 스트리머 추가
+    streamers.push(trimmedNewName);
+    emojis[trimmedNewName] = newEmoji.trim();
+    
+    // 후원 데이터에서도 스트리머 이름 변경
+    donations = donations.map(d => {
+        if (d.streamer === streamerName) {
+            return { ...d, streamer: trimmedNewName };
+        }
+        return d;
+    });
+    
+    saveToLocalStorage();
+    updateAllUI();
+    showStatus(`${streamerName}이(가) ${trimmedNewName}으로 수정되었습니다!`, 'success');
+    
+    // 서버 동기화 시도
+    try {
+        // 기존 삭제
+        await fetch(`/api/streamers/${encodeURIComponent(streamerName)}`, { method: 'DELETE' });
+        // 새로 추가
+        await fetch('/api/streamers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: trimmedNewName, emoji: newEmoji.trim() })
+        });
+    } catch (error) {
+        console.log('⚠️ [관리자] 서버 동기화 실패:', error.message);
+    }
 }
 
 // === 디버그 함수들 ===
