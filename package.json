@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
+    "build": "echo 'No build step required'",
     "firebase": "firebase serve --host 0.0.0.0 --port 5000"
   },
   "dependencies": {
