@@ -138,6 +138,7 @@ function initializeRealtimeConnection() {
     } catch (error) {
         console.error('Socket.io 초기화 실패, 서버 API로 데이터 로드 시도:', error);
         loadDataFromServer(); // 서버 API에서 직접 로드
+    }
 }
 
 // GitHub에서 데이터 로드 (백업용)
@@ -316,7 +317,7 @@ function updateDonorDisplay() {
     
     contentEl.innerHTML = displayText;
     contentEl.className = 'donor-content'; // 클래스 직접 지정
-    console.log('화면 업데이트 완료:', sortedDonors.length + '명');
+    console.log(`✅ [오버레이] 화면 업데이트 완료: ${sortedDonors.length}명`);
     
     // 설정 즉시 적용
     applyOverlaySettings();
