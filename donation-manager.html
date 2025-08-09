@@ -1852,26 +1852,100 @@ function refreshPassword() {
 async function addStreamer() { 
     const name = document.getElementById('new-streamer-name').value.trim();
     const emoji = document.getElementById('new-streamer-emoji').value.trim(); 
-    if (!name || streamers.includes(name)) return showStatus('이름을 입력하거나 중복된 이름입니다', 'error'); 
+    if (!name) return showStatus('이름을 입력해주세요', 'error');
+    if (streamers.includes(name)) return showStatus('이미 존재하는 스트리머입니다', 'error');
     
-    streamers.push(name);
-    emojis[name] = emoji;
-    saveToLocalStorage();
-    updateAllUI();
+    // 버튼 비활성화
+    const addBtn = document.getElementById('add-streamer-btn');
+    const originalText = addBtn.textContent;
+    addBtn.disabled = true;
+    addBtn.textContent = '추가 중...';
     
-    document.getElementById('new-streamer-name').value = ''; 
-    document.getElementById('new-streamer-emoji').value = '';
-    showStatus('스트리머가 추가되었습니다', 'success');
+    try {
+        // 서버에 스트리머 추가 요청
+        const response = await fetch('/api/streamers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, emoji })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // 로컬 데이터도 업데이트 (서버 응답과 동기화)
+            if (!streamers.includes(name)) {
+                streamers.push(name);
+            }
+            if (emoji) {
+                emojis[name] = emoji;
+            }
+            
+            saveToLocalStorage();
+            updateAllUI();
+            
+            document.getElementById('new-streamer-name').value = ''; 
+            document.getElementById('new-streamer-emoji').value = '';
+            showStatus('스트리머가 추가되었습니다', 'success');
+            
+            console.log('👤 [관리자] 스트리머 추가 성공:', name, emoji);
+        } else {
+            showStatus(result.error || '스트리머 추가에 실패했습니다', 'error');
+        }
+    } catch (error) {
+        console.error('스트리머 추가 API 호출 실패:', error);
+        
+        // 서버 연결 실패시 로컬에만 추가
+        streamers.push(name);
+        if (emoji) emojis[name] = emoji;
+        saveToLocalStorage();
+        updateAllUI();
+        
+        document.getElementById('new-streamer-name').value = ''; 
+        document.getElementById('new-streamer-emoji').value = '';
+        showStatus('스트리머가 추가되었습니다 (로컬 저장)', 'warning');
+    } finally {
+        // 버튼 복원
+        addBtn.disabled = false;
+        addBtn.textContent = originalText;
+    }
 }
 
 async function deleteStreamer(streamerName) {
     if (!confirm(`'${streamerName}'님을 목록에서 삭제하시겠습니까?`)) return;
     
-    streamers = streamers.filter(s => s !== streamerName);
-    delete emojis[streamerName];
-    saveToLocalStorage();
-    updateAllUI();
-    showStatus('스트리머가 삭제되었습니다', 'success');
+    try {
+        // 서버에 스트리머 삭제 요청
+        const response = await fetch(`/api/streamers/${encodeURIComponent(streamerName)}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // 로컬 데이터도 업데이트 (서버 응답과 동기화)
+            streamers = streamers.filter(s => s !== streamerName);
+            delete emojis[streamerName];
+            
+            saveToLocalStorage();
+            updateAllUI();
+            showStatus('스트리머가 삭제되었습니다', 'success');
+            
+            console.log('❌ [관리자] 스트리머 삭제 성공:', streamerName);
+        } else {
+            showStatus(result.error || '스트리머 삭제에 실패했습니다', 'error');
+        }
+    } catch (error) {
+        console.error('스트리머 삭제 API 호출 실패:', error);
+        
+        // 서버 연결 실패시 로컬에서만 삭제
+        streamers = streamers.filter(s => s !== streamerName);
+        delete emojis[streamerName];
+        saveToLocalStorage();
+        updateAllUI();
+        showStatus('스트리머가 삭제되었습니다 (로컬 저장)', 'warning');
+    }
 }
 
 function setupDonorAutocomplete(inputId, listId) {

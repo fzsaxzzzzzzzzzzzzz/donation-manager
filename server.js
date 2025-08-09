@@ -215,6 +215,76 @@ app.put('/api/donations/bulk', async (req, res) => {
   }
 });
 
+// 스트리머 관리 API
+app.post('/api/streamers', async (req, res) => {
+  try {
+    const { name, emoji } = req.body;
+    
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: '스트리머 이름이 필요합니다.' });
+    }
+    
+    const trimmedName = name.trim();
+    
+    // 중복 체크
+    if (currentData.streamers.includes(trimmedName)) {
+      return res.status(400).json({ error: '이미 존재하는 스트리머입니다.' });
+    }
+    
+    // 스트리머 추가
+    currentData.streamers.push(trimmedName);
+    if (emoji && emoji.trim()) {
+      currentData.emojis[trimmedName] = emoji.trim();
+    }
+    
+    await saveData();
+    
+    // 모든 클라이언트에게 업데이트 전송
+    console.log(`👤 [서버] 스트리머 추가: ${trimmedName} ${emoji || ''}`);
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ 
+      success: true, 
+      message: '스트리머가 추가되었습니다.',
+      streamer: { name: trimmedName, emoji: emoji || '' }
+    });
+  } catch (error) {
+    console.error('스트리머 추가 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
+app.delete('/api/streamers/:name', async (req, res) => {
+  try {
+    const streamerName = decodeURIComponent(req.params.name);
+    
+    console.log('🗑️ 스트리머 삭제 요청:', streamerName);
+    
+    // 스트리머 목록에서 제거
+    const beforeCount = currentData.streamers.length;
+    currentData.streamers = currentData.streamers.filter(s => s !== streamerName);
+    const afterCount = currentData.streamers.length;
+    
+    // 이모지도 제거
+    delete currentData.emojis[streamerName];
+    
+    if (beforeCount === afterCount) {
+      return res.status(404).json({ error: '스트리머를 찾을 수 없습니다.' });
+    }
+    
+    await saveData();
+    
+    // 모든 클라이언트에게 업데이트 전송
+    console.log(`❌ [서버] 스트리머 삭제: ${streamerName}`);
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ success: true, message: '스트리머가 삭제되었습니다.' });
+  } catch (error) {
+    console.error('스트리머 삭제 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
   console.log('🔗 클라이언트 연결:', socket.id, '(총', io.sockets.sockets.size, '명)');
