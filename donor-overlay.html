@@ -130,7 +130,7 @@ function initializeRealtimeConnection() {
         });
         
         socket.on('settingsUpdate', (settings) => {
-            console.log('⚙️ 설정 업데이트:', settings);
+            console.log('⚙️ [오버레이] 설정 업데이트 수신:', settings);
             applySettings(settings);
             updateDonorDisplay();
         });
@@ -251,6 +251,46 @@ function applyOverlaySettings() {
         
     } catch (error) {
         console.error('❌ 설정 적용 실패:', error);
+    }
+}
+
+// 서버에서 받은 설정 적용
+function applySettings(settings) {
+    try {
+        console.log('⚙️ [오버레이] 설정 적용 시작:', settings);
+        
+        // 각 설정을 localStorage에 저장하고 즉시 적용
+        if (settings['overlay-font-size']) {
+            localStorage.setItem('overlay-font-size', settings['overlay-font-size']);
+        }
+        if (settings['overlay-stroke-width']) {
+            localStorage.setItem('overlay-stroke-width', settings['overlay-stroke-width']);
+        }
+        if (settings['overlay-text-align']) {
+            localStorage.setItem('overlay-text-align', settings['overlay-text-align']);
+        }
+        if (settings['table-opacity']) {
+            localStorage.setItem('table-opacity', settings['table-opacity']);
+        }
+        if (settings['table-number-size']) {
+            localStorage.setItem('table-number-size', settings['table-number-size']);
+        }
+        if (settings['table-font-size']) {
+            localStorage.setItem('table-font-size', settings['table-font-size']);
+        }
+        if (settings['table-text-color']) {
+            localStorage.setItem('table-text-color', settings['table-text-color']);
+        }
+        if (settings['table-color-preset']) {
+            localStorage.setItem('table-color-preset', settings['table-color-preset']);
+        }
+        
+        // 설정 즉시 적용
+        applyOverlaySettings();
+        
+        console.log('✅ [오버레이] 설정 적용 완료');
+    } catch (error) {
+        console.error('❌ [오버레이] 설정 적용 실패:', error);
     }
 }
 

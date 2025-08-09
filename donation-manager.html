@@ -3601,11 +3601,13 @@ function openOverlay(type) {
 function updateOverlayFontSize(value) {
     document.getElementById('overlay-font-size-value').textContent = value + 'px';
     localStorage.setItem('overlay-font-size', value);
+    updateServerSettings({ 'overlay-font-size': value });
 }
 
 function updateOverlayStrokeWidth(value) {
     document.getElementById('overlay-stroke-width-value').textContent = value + 'px';
     localStorage.setItem('overlay-stroke-width', value);
+    updateServerSettings({ 'overlay-stroke-width': value });
 }
 
 function setOverlayTextAlign(align) {
@@ -3620,28 +3622,54 @@ function setOverlayTextAlign(align) {
     
     // 실시간 적용
     localStorage.setItem('overlay-text-align', align);
+    updateServerSettings({ 'overlay-text-align': align });
 }
 
 function updateTableOpacity(value) {
     document.getElementById('table-opacity-value').textContent = value + '%';
     localStorage.setItem('table-opacity', value);
+    updateServerSettings({ 'table-opacity': value });
 }
 
 function updateTableNumberSize(value) {
     document.getElementById('table-number-size-value').textContent = value + 'px';
     localStorage.setItem('table-number-size', value);
+    updateServerSettings({ 'table-number-size': value });
 }
 
 function updateTableFontSize(value) {
     document.getElementById('table-font-size-value').textContent = value + 'px';
     localStorage.setItem('table-font-size', value);
+    updateServerSettings({ 'table-font-size': value });
 }
 
 function setTableTextColor(color) {
     localStorage.setItem('table-text-color', color);
+    updateServerSettings({ 'table-text-color': color });
     showStatus(`테이블 글자 색상이 변경되었습니다`, 'success');
 }
 
+// 서버에 설정 업데이트 전송
+async function updateServerSettings(settings) {
+    try {
+        console.log('⚙️ [관리자] 서버 설정 업데이트 전송:', settings);
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ settings })
+        });
+        
+        if (response.ok) {
+            console.log('✅ [관리자] 서버 설정 업데이트 성공');
+        } else {
+            console.warn('⚠️ [관리자] 서버 설정 업데이트 실패');
+        }
+    } catch (error) {
+        console.error('❌ [관리자] 서버 설정 업데이트 오류:', error);
+    }
+}
 
 function applyOverlaySettings() {
     showStatus('후원자별 총액 오버레이 설정이 적용되었습니다 (실시간 반영)', 'success');
@@ -3663,6 +3691,7 @@ function resetOverlaySettings() {
 
 function setTableColorPreset(preset) {
     localStorage.setItem('table-color-preset', preset);
+    updateServerSettings({ 'table-color-preset': preset });
     showStatus(`테이블 색상이 ${preset}로 설정되었습니다`, 'success');
 }
 

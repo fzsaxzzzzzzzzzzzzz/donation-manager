@@ -337,6 +337,39 @@ app.post('/api/force-reload', async (req, res) => {
   }
 });
 
+// 설정 업데이트 API
+app.post('/api/settings', async (req, res) => {
+  try {
+    const { settings } = req.body;
+    
+    if (!settings || typeof settings !== 'object') {
+      return res.status(400).json({ error: '잘못된 설정 데이터입니다.' });
+    }
+    
+    // 현재 설정 업데이트
+    currentData.settings = {
+      ...currentData.settings,
+      ...settings
+    };
+    
+    await saveData();
+    
+    // 모든 클라이언트에게 설정 업데이트 전송
+    console.log('⚙️ [서버] 설정 업데이트 전송:', Object.keys(settings).join(', '));
+    io.emit('settingsUpdate', currentData.settings);
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ 
+      success: true, 
+      message: '설정이 성공적으로 업데이트되었습니다.',
+      settings: currentData.settings
+    });
+  } catch (error) {
+    console.error('설정 업데이트 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
   console.log('🔗 클라이언트 연결:', socket.id, '(총', io.sockets.sockets.size, '명)');
