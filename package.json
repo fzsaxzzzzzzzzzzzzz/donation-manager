@@ -1,0 +1,24 @@
+{
+  "name": "donation-tracker",
+  "version": "1.0.0",
+  "description": "실시간 스트리밍 후원 관리 시스템",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "firebase": "firebase serve --host 0.0.0.0 --port 5000"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "cors": "^2.8.5",
+    "firebase": "^10.5.0",
+    "firebase-admin": "^11.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["streaming", "donation", "overlay", "realtime"],
+  "author": "",
+  "license": "MIT"
+}

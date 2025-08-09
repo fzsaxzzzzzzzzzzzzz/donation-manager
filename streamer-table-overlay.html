@@ -723,55 +723,6 @@ setInterval(() => {
     }
 }, 3000);
 
-// 브로드캐스트 채널로 실시간 동기화
-let broadcastChannel = null;
-try {
-    broadcastChannel = new BroadcastChannel('donation-sync');
-    
-    broadcastChannel.onmessage = (event) => {
-        if (event.data.type === 'DATA_UPDATE') {
-            console.log('📡 테이블 브로드캐스트로 데이터 수신:', event.data.payload);
-            
-            const data = event.data.payload;
-            
-            // 데이터 업데이트
-            if (data.donations) {
-                donations = data.donations.map(d => ({
-                    ...d,
-                    time: new Date(d.time),
-                    amount: parseFloat(d.amount) || 0
-                }));
-            }
-            
-            if (data.streamers) {
-                streamers = data.streamers;
-            }
-            
-            if (data.emojis) {
-                emojis = data.emojis;
-            }
-            
-            // 설정 업데이트
-            if (data.settings && !settingsSyncedFromServer) {
-                Object.entries(data.settings).forEach(([key, value]) => {
-                    if (value !== null && value !== undefined) {
-                        localStorage.setItem(key, value);
-                    }
-                });
-                console.log('✅ 테이블 브로드캐스트로 설정 동기화 완료');
-            }
-            
-            // 화면 업데이트
-            updateTable();
-            applyTableSettings();
-        }
-    };
-    
-    console.log('📡 테이블 브로드캐스트 채널 활성화됨');
-} catch (error) {
-    console.log('ℹ️ 테이블 브로드캐스트 채널 사용 불가:', error.message);
-}
-
 // 초기 로드
 document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(() => {

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실시간 후원자별 총액 오버레이</title>
+
+<!-- Socket.IO -->
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+body {
+    margin: 0;
+    padding: 0 10px 0 0;
+    background: transparent;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    color: white;
+    overflow: hidden;
+}
+
+.overlay-container {
+    background: transparent;
+    max-width: none;
+    width: calc(100% - 10px);
+    transition: all 0.3s ease-in-out;
+}
+
+.donor-content {
+    font-size: var(--overlay-font-size, 16px);
+    font-weight: bold;
+    color: white;
+    text-shadow: 
+        var(--overlay-stroke-width, 2px) var(--overlay-stroke-width, 2px) 0 #000000,
+        calc(-1 * var(--overlay-stroke-width, 2px)) calc(-1 * var(--overlay-stroke-width, 2px)) 0 #000000,
+        var(--overlay-stroke-width, 2px) calc(-1 * var(--overlay-stroke-width, 2px)) 0 #000000,
+        calc(-1 * var(--overlay-stroke-width, 2px)) var(--overlay-stroke-width, 2px) 0 #000000,
+        var(--overlay-stroke-width, 2px) 0px 0 #000000,
+        calc(-1 * var(--overlay-stroke-width, 2px)) 0px 0 #000000,
+        0px var(--overlay-stroke-width, 2px) 0 #000000,
+        0px calc(-1 * var(--overlay-stroke-width, 2px)) 0 #000000;
+    line-height: 1.4;
+    white-space: pre-line;
+    padding: 0;
+    transition: all 0.2s ease-in-out;
+    text-align: var(--overlay-text-align, left);
+}
+
+.no-data {
+    font-size: var(--overlay-font-size, 16px);
+    font-weight: bold;
+    color: white;
+    text-shadow: 
+        var(--overlay-stroke-width, 2px) var(--overlay-stroke-width, 2px) 0 #000000,
+        calc(-1 * var(--overlay-stroke-width, 2px)) calc(-1 * var(--overlay-stroke-width, 2px)) 0 #000000,
+        var(--overlay-stroke-width, 2px) calc(-1 * var(--overlay-stroke-width, 2px)) 0 #000000,
+        calc(-1 * var(--overlay-stroke-width, 2px)) var(--overlay-stroke-width, 2px) 0 #000000;
+    text-align: center;
+    padding: 20px 0;
+}
+
+.donor-item {
+    margin-bottom: 8px;
+    animation: slideIn 0.5s ease-out;
+}
+
+.donor-amount {
+    color: #FFD700;
+}
+
+.new-donation {
+    animation: highlightNew 2s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes highlightNew {
+    0% { background: rgba(255, 215, 0, 0.3); }
+    50% { background: rgba(255, 215, 0, 0.6); }
+    100% { background: transparent; }
+}
+
+.connection-indicator {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #42b72a;
+    z-index: 1000;
+    animation: pulse 2s infinite;
+}
+
+.connection-indicator.disconnected {
+    background: #fa383e;
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+</style>
+</head>
+<body>
+
+<div class="overlay-container">
+    <div class="donor-content" id="donorContent">
+        <div class="no-data">실시간 연결 중...</div>
+    </div>
+</div>
+
+<div class="connection-indicator" id="connectionIndicator"></div>
+
+<script>
+class RealtimeOverlay {
+    constructor() {
+        this.socket = io();
+        this.data = null;
+        this.settings = {};
+        this.isConnected = false;
+        this.previousDonorTotals = new Map();
+        
+        this.initializeSocketEvents();
+        this.updateConnectionStatus();
+    }
+
+    initializeSocketEvents() {
+        this.socket.on('connect', () => {
+            this.isConnected = true;
+            this.updateConnectionStatus();
+            console.log('실시간 서버에 연결됨');
+        });
+
+        this.socket.on('disconnect', () => {
+            this.isConnected = false;
+            this.updateConnectionStatus();
+            this.showNoConnection();
+        });
+
+        this.socket.on('initialData', (data) => {
+            this.data = data;
+            this.settings = data.settings || {};
+            this.applySettings();
+            this.renderDonorTotals();
+        });
+
+        this.socket.on('dataUpdate', (data) => {
+            const previousData = this.data;
+            this.data = data;
+            this.renderDonorTotals(previousData);
+        });
+
+        this.socket.on('settingsUpdate', (settings) => {
+            this.settings = settings;
+            this.applySettings();
+            this.renderDonorTotals();
+        });
+    }
+
+    updateConnectionStatus() {
+        const indicator = document.getElementById('connectionIndicator');
+        
+        if (this.isConnected) {
+            indicator.classList.remove('disconnected');
+        } else {
+            indicator.classList.add('disconnected');
+        }
+    }
+
+    applySettings() {
+        const root = document.documentElement;
+        
+        // CSS 변수 설정
+        root.style.setProperty('--overlay-font-size', (this.settings['overlay-font-size'] || 16) + 'px');
+        root.style.setProperty('--overlay-stroke-width', (this.settings['overlay-stroke-width'] || 2) + 'px');
+        root.style.setProperty('--overlay-text-align', this.settings['overlay-text-align'] || 'left');
+    }
+
+    renderDonorTotals(previousData = null) {
+        if (!this.data || !this.data.donations) {
+            this.showNoData();
+            return;
+        }
+
+        // 후원자별 총액 계산
+        const donorTotals = this.calculateDonorTotals();
+        
+        if (donorTotals.size === 0) {
+            this.showNoData();
+            return;
+        }
+
+        // 이전 데이터와 비교해서 새로운 후원 감지
+        const newDonations = this.detectNewDonations(previousData);
+        
+        this.displayDonorTotals(donorTotals, newDonations);
+    }
+
+    calculateDonorTotals() {
+        const totals = new Map();
+        
+        this.data.donations.forEach(donation => {
+            const current = totals.get(donation.donor) || 0;
+            totals.set(donation.donor, current + donation.amount);
+        });
+
+        // 금액 순으로 정렬
+        return new Map([...totals.entries()].sort((a, b) => b[1] - a[1]));
+    }
+
+    detectNewDonations(previousData) {
+        if (!previousData || !previousData.donations) return new Set();
+        
+        const newDonationIds = new Set();
+        const previousDonationTimes = new Set(
+            previousData.donations.map(d => d.time)
+        );
+        
+        this.data.donations.forEach(donation => {
+            if (!previousDonationTimes.has(donation.time)) {
+                newDonationIds.add(donation.donor);
+            }
+        });
+        
+        return newDonationIds;
+    }
+
+    displayDonorTotals(donorTotals, newDonations) {
+        const container = document.getElementById('donorContent');
+        
+        let content = '';
+        let index = 1;
+        
+        for (const [donor, total] of donorTotals) {
+            const isNew = newDonations.has(donor);
+            const newClass = isNew ? ' new-donation' : '';
+            
+            content += `<div class="donor-item${newClass}">`;
+            content += `${index}. ${donor}: `;
+            content += `<span class="donor-amount">₩${total.toLocaleString()}</span>`;
+            content += `</div>`;
+            
+            index++;
+        }
+        
+        container.innerHTML = content;
+        
+        // 새 후원이 있으면 스크롤을 위로
+        if (newDonations.size > 0) {
+            window.scrollTo(0, 0);
+        }
+    }
+
+    showNoData() {
+        const container = document.getElementById('donorContent');
+        container.innerHTML = '<div class="no-data">아직 후원이 없습니다.</div>';
+    }
+
+    showNoConnection() {
+        const container = document.getElementById('donorContent');
+        container.innerHTML = '<div class="no-data">서버 연결이 끊어졌습니다...</div>';
+    }
+}
+
+// URL 파라미터 확인 (테스트용)
+function getUrlParameter(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    const results = regex.exec(location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+}
+
+// 앱 시작
+document.addEventListener('DOMContentLoaded', () => {
+    // 테스트 모드 확인
+    const testMode = getUrlParameter('test') === '1';
+    if (testMode) {
+        console.log('테스트 모드로 실행됩니다.');
+    }
+    
+    window.overlay = new RealtimeOverlay();
+});
+
+// OBS에서 사용할 수 있도록 전역 함수 제공
+window.refreshOverlay = () => {
+    if (window.overlay && window.overlay.data) {
+        window.overlay.renderDonorTotals();
+    }
+};
+</script>
+
+</body>
+</html>
