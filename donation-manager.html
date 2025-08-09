@@ -605,13 +605,15 @@ function initializeRealtimeConnection() {
         socket.on('connect', () => {
             isSocketConnected = true;
             console.log('🔗 실시간 서버 연결됨');
-            showStatus('🔴 실시간 서버 연결됨', 'success');
+            showStatus('🔴 실시간 서버 연결됨 - 공동작업 가능!', 'success');
+            updateConnectionUI(true);
         });
         
         socket.on('disconnect', () => {
             isSocketConnected = false;
             console.log('❌ 실시간 서버 연결 끊어짐');
-            showStatus('⚠️ 실시간 연결 끊어짐', 'warning');
+            showStatus('⚠️ 실시간 연결 끊어짐 - 로컬 모드로 전환', 'warning');
+            updateConnectionUI(false);
         });
         
         socket.on('initialData', (data) => {
@@ -632,7 +634,33 @@ function initializeRealtimeConnection() {
     } catch (error) {
         console.error('Socket.io 초기화 실패:', error);
         showStatus('❌ 실시간 연결 실패 - 로컬 모드로 동작', 'warning');
+        updateConnectionUI(false);
     }
+}
+
+// 연결 상태 UI 업데이트
+function updateConnectionUI(connected) {
+    // 제목에 연결 상태 표시
+    const title = document.querySelector('title');
+    if (title) {
+        if (connected) {
+            title.textContent = '🔴 실시간 방송 후원 정산 시스템 (연결됨)';
+        } else {
+            title.textContent = '⚪ 방송 후원 정산 시스템 (로컬모드)';
+        }
+    }
+    
+    // 연결 상태 표시 요소가 있다면 업데이트
+    const statusElements = document.querySelectorAll('[data-connection-status]');
+    statusElements.forEach(el => {
+        if (connected) {
+            el.textContent = '🔴 실시간 연결';
+            el.className = 'status-success';
+        } else {
+            el.textContent = '⚪ 로컬 모드';
+            el.className = 'status-warning';
+        }
+    });
 }
 
 // YouTube API 관련 변수
@@ -1068,6 +1096,9 @@ async function handleNewDonations(newDonations) {
     donations.sort((a, b) => b.time - a.time);
     newDonations.forEach(d => todayDonors.add(d.donor));
     
+    // 🔴 즉시 로컬 화면 업데이트 (반응성 향상)
+    updateAllUI();
+    
     // 🔴 실시간 서버로 데이터 전송
     if (isSocketConnected && socket) {
         try {
@@ -1087,27 +1118,27 @@ async function handleNewDonations(newDonations) {
                     console.log('✅ 실시간 서버로 후원 전송 성공:', donation);
                 } else {
                     console.error('❌ 실시간 서버 전송 실패:', response.statusText);
+                    // 실시간 전송 실패해도 로컬은 업데이트됨
                 }
             }
             showSaveStatus('🔴 실시간 동기화 완료', 'saved');
         } catch (error) {
             console.error('실시간 전송 오류:', error);
-            showSaveStatus('⚠️ 실시간 동기화 실패', 'error');
+            showSaveStatus('⚠️ 실시간 전송 실패 (로컬 저장됨)', 'warning');
+            // 실시간 실패해도 로컬 작업은 계속
         }
+    } else {
+        console.log('⚠️ 실시간 연결 없음, 로컬 모드로 동작');
+        showSaveStatus('💾 로컬 모드로 저장', 'warning');
     }
     
     // 로컬 저장 (백업용)
     if (autoSaveEnabled) {
         saveToLocalStorage();
-        if (!isSocketConnected) {
-            showSaveStatus('💾 로컬 저장 완료', 'saved');
-        }
     }
     
-    updateAllUI();
-    
     // 🤖 후원시 챗봇 자동 알림
-    if (document.getElementById('auto-chat-notify').checked) {
+    if (document.getElementById('auto-chat-notify') && document.getElementById('auto-chat-notify').checked) {
         sendDonationNotification(newDonations);
     }
 }

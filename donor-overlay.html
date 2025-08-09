@@ -105,7 +105,17 @@ function initializeRealtimeConnection() {
         socket.on('dataUpdate', (data) => {
             console.log('🔄 실시간 데이터 업데이트:', data);
             donations = data.donations || [];
+            console.log('📊 새 데이터로 화면 업데이트:', donations.length, '건');
             updateDonorDisplay();
+            
+            // 화면 깜박임 효과로 업데이트 표시
+            const container = document.querySelector('.overlay-container');
+            if (container) {
+                container.style.opacity = '0.7';
+                setTimeout(() => {
+                    container.style.opacity = '1';
+                }, 200);
+            }
         });
         
         socket.on('settingsUpdate', (settings) => {
