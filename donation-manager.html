@@ -14,11 +14,13 @@
 /* CSS는 이전과 동일합니다. */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; color: #333; margin: 0; padding: 0; overflow-x: hidden; }
-#app-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f0f2f5; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+#app-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f0f2f5; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; animation: fadeOut 0.5s ease 1s forwards; }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; visibility: hidden; } }
 #app-loader .spinner { border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #1877f2; animation: spin 1s ease infinite; }
 #app-loader p { margin-top: 20px; font-weight: 500; color: #606770; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-.container { display: none; width: 100%; max-width: none; margin: 0; padding: 15px; grid-template-columns: 1.2fr 1.2fr 1.6fr; gap: 15px; min-height: calc(100vh - 30px); }
+.container { display: none; width: 100%; max-width: none; margin: 0; padding: 15px; grid-template-columns: 1.2fr 1.2fr 1.6fr; gap: 15px; min-height: calc(100vh - 30px); animation: fadeIn 0.3s ease 1s forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; display: grid; } }
 .container.loaded { display: grid; }
 .panel { background: #ffffff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); min-height: calc(100vh - 100px); overflow-y: auto; resize: horizontal; }
 .panel h2 { margin: -20px -20px 15px -20px; padding: 15px 20px; color: #333; border-bottom: 1px solid #e0e0e0; font-size: 1.1rem; background-color: #fafafa; border-radius: 8px 8px 0 0;}
@@ -131,7 +133,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div id="app-loader">
 <div class="spinner"></div>
 <p>애플리케이션을 불러오는 중...</p>
-<p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">3초 후 자동으로 표시됩니다</p>
+<p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">0.5초 후 자동으로 표시됩니다</p>
 </div>
 <div id="save-status" style="display: none;"></div>
 <div class="container" id="app-container">
@@ -738,20 +740,43 @@ const STORAGE_KEYS = {
     YOUTUBE_VIDEO_ID: 'youtube_video_id'
 };
 
-// --- 앱 시작 ---
-document.addEventListener('DOMContentLoaded', initializeApp);
+// JavaScript 오류 감지 시 즉시 앱 표시
+window.addEventListener('error', (e) => {
+    console.error('JavaScript 오류 감지:', e.error);
+    forceShowApp();
+});
 
-// 빠른 안전장치: 1초 후 앱 강제 표시
-setTimeout(() => {
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Promise 거부 감지:', e.reason);
+    forceShowApp();
+});
+
+// 강제 앱 표시 함수
+function forceShowApp() {
     const loader = document.getElementById('app-loader');
     const container = document.getElementById('app-container');
-    if (loader && container) {
-        console.log('1초 안전장치 작동 - 앱을 표시합니다');
+    if (loader && container && loader.style.display !== 'none') {
+        console.warn('오류 감지 - 즉시 앱을 표시합니다');
         loader.style.display = 'none';
         container.style.display = 'grid';
         container.classList.add('loaded');
     }
-}, 1000);
+}
+
+// --- 앱 시작 ---
+document.addEventListener('DOMContentLoaded', initializeApp);
+
+// 빠른 안전장치: 0.5초 후 앱 강제 표시
+setTimeout(() => {
+    const loader = document.getElementById('app-loader');
+    const container = document.getElementById('app-container');
+    if (loader && container) {
+        console.log('0.5초 안전장치 작동 - 앱을 표시합니다');
+        loader.style.display = 'none';
+        container.style.display = 'grid';
+        container.classList.add('loaded');
+    }
+}, 500);
 
 // 추가 안전장치: 3초 후에도 로딩 화면이 있으면 강제로 앱 표시
 setTimeout(() => {
