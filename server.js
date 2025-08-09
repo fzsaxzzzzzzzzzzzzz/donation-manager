@@ -249,7 +249,7 @@ async function startServer() {
     console.log(`📊 테이블: http://localhost:${PORT}/table-realtime.html`);
     console.log(`💾 현재 후원 데이터: ${currentData.donations.length}건`);
     console.log(`🕒 서버 부팅 시간: ${new Date().toISOString()}`);
-    console.log(`🌐 Render 배포 상태: 정상 작동`);
+    console.log(`🌐 Render 배포 상태: 정상 작동 - 이모지 복원됨`);
     console.log(`🔄 자동 재배포 트리거 성공`);
   });
 }
