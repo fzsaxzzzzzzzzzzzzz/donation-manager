@@ -757,6 +757,20 @@ window.addEventListener('unhandledrejection', (e) => {
     forceShowApp();
 });
 
+// 로딩 상태 체크 함수
+function isLoading() {
+    return document.body.classList.contains('loading');
+}
+
+// 로딩 중 차단 메시지 표시
+function blockDuringLoading(actionName) {
+    if (isLoading()) {
+        console.log(`로딩 중에는 ${actionName} 기능을 사용할 수 없습니다`);
+        return true;
+    }
+    return false;
+}
+
 // 강제 앱 표시 함수
 function forceShowApp() {
     const loader = document.getElementById('app-loader');
@@ -1584,6 +1598,7 @@ function handleNewDonations(newDonations) {
 }
 
 function deleteSelected() {
+    if (blockDuringLoading('선택 삭제')) return;
     if (selectedRows.size === 0 || !confirm(`${selectedRows.size}개 항목을 삭제하시겠습니까?`)) return;
     
     const indicesToDelete = Array.from(selectedRows).sort((a, b) => b - a);
@@ -2363,7 +2378,10 @@ async function saveData() {
     showStatus('일간 정산이 저장되었습니다', 'success');
 }
 
-function showResetDialog() { document.getElementById('reset-dialog').style.display = 'flex'; }
+function showResetDialog() { 
+    if (blockDuringLoading('초기화')) return;
+    document.getElementById('reset-dialog').style.display = 'flex'; 
+}
 function closeResetDialog() { document.getElementById('reset-dialog').style.display = 'none'; document.getElementById('reset-password').value = ''; }
 
 async function confirmReset() {
@@ -2409,6 +2427,7 @@ function exportData() {
 }
 
 function importData() {
+    if (blockDuringLoading('데이터 가져오기')) return;
     document.getElementById('import-file').click();
 }
 
