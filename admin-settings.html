@@ -360,6 +360,29 @@ body {
         </div>
     </div>
 
+    <!-- 크로스 디바이스 설정 -->
+    <div class="settings-panel" style="margin-top: 25px;">
+        <h2 class="panel-title">🌐 크로스 디바이스 설정</h2>
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <strong>💡 다른 컴퓨터에서 설정이 안 먹을 때</strong><br>
+            아래 버튼을 눌러 설정을 서버에 저장하면 모든 컴퓨터와 오버레이에 실시간 반영됩니다.
+        </div>
+        
+        <div class="form-group">
+            <button class="btn btn-primary" onclick="syncSettingsToServer()" style="width: 100%; margin-bottom: 10px;">
+                🔄 모든 설정을 서버에 동기화
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <button class="btn btn-warning" onclick="loadSettingsFromServer()" style="width: 100%; margin-bottom: 10px;">
+                📥 서버에서 설정 불러오기
+            </button>
+        </div>
+        
+        <div id="syncStatus" style="display: none; padding: 10px; border-radius: 6px; margin-top: 10px;"></div>
+    </div>
+
     <!-- 저장 버튼 -->
     <div style="text-align: center; margin: 30px 0;">
         <button class="btn btn-success" onclick="saveSettings()">💾 설정 저장</button>
@@ -613,6 +636,136 @@ function resetSettings() {
         
         adminSettings.updateRangeDisplays();
         adminSettings.updatePreview();
+    }
+}
+
+// 크로스 디바이스 설정 동기화 함수들
+async function syncSettingsToServer() {
+    try {
+        showSyncStatus('🔄 설정을 서버에 동기화 중...', 'info');
+        
+        // 현재 모든 localStorage 설정 수집
+        const settings = {};
+        const settingsKeys = [
+            'overlay-font-size', 'overlay-stroke-width', 'overlay-text-align',
+            'table-opacity', 'table-number-size', 'table-font-size', 
+            'table-text-color', 'table-title', 'group-threshold',
+            'show-total-row', 'show-update-time'
+        ];
+        
+        settingsKeys.forEach(key => {
+            const value = localStorage.getItem(key);
+            if (value !== null) {
+                settings[key] = value;
+            }
+        });
+        
+        // 현재 UI에서 설정값도 수집
+        const fontSizeEl = document.getElementById('overlayFontSize');
+        const strokeWidthEl = document.getElementById('overlayStrokeWidth');
+        const textAlignEl = document.getElementById('overlayTextAlign');
+        const tableOpacityEl = document.getElementById('tableOpacity');
+        const tableFontSizeEl = document.getElementById('tableFontSize');
+        const tableTextColorEl = document.getElementById('tableTextColor');
+        const tableTitleEl = document.getElementById('tableTitle');
+        const groupThresholdEl = document.getElementById('groupThreshold');
+        const showUpdateTimeEl = document.getElementById('showUpdateTime');
+        const showTotalRowEl = document.getElementById('showTotalRow');
+        
+        if (fontSizeEl) settings['overlay-font-size'] = fontSizeEl.value;
+        if (strokeWidthEl) settings['overlay-stroke-width'] = strokeWidthEl.value;
+        if (textAlignEl) settings['overlay-text-align'] = textAlignEl.value;
+        if (tableOpacityEl) settings['table-opacity'] = tableOpacityEl.value;
+        if (tableFontSizeEl) settings['table-font-size'] = tableFontSizeEl.value;
+        if (tableTextColorEl) settings['table-text-color'] = tableTextColorEl.value;
+        if (tableTitleEl) settings['table-title'] = tableTitleEl.value;
+        if (groupThresholdEl) settings['group-threshold'] = groupThresholdEl.value;
+        if (showUpdateTimeEl) settings['show-update-time'] = showUpdateTimeEl.checked ? 'true' : 'false';
+        if (showTotalRowEl) settings['show-total-row'] = showTotalRowEl.checked ? 'true' : 'false';
+        
+        console.log('동기화할 설정:', settings);
+        
+        // 서버에 설정 전송
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ settings })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSyncStatus('✅ 설정이 모든 디바이스에 동기화되었습니다!', 'success');
+        } else {
+            throw new Error(result.error || '동기화 실패');
+        }
+        
+    } catch (error) {
+        console.error('설정 동기화 실패:', error);
+        showSyncStatus('❌ 설정 동기화 실패: ' + error.message, 'error');
+    }
+}
+
+async function loadSettingsFromServer() {
+    try {
+        showSyncStatus('📥 서버에서 설정을 불러오는 중...', 'info');
+        
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        
+        if (data.settings) {
+            // 서버 설정을 localStorage에 저장
+            Object.entries(data.settings).forEach(([key, value]) => {
+                localStorage.setItem(key, value);
+            });
+            
+            // UI에 반영
+            adminSettings.loadSettings();
+            adminSettings.updatePreview();
+            
+            showSyncStatus('✅ 서버 설정을 성공적으로 불러왔습니다!', 'success');
+        } else {
+            showSyncStatus('⚠️ 서버에 저장된 설정이 없습니다.', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('서버 설정 로드 실패:', error);
+        showSyncStatus('❌ 서버 설정 로드 실패: ' + error.message, 'error');
+    }
+}
+
+function showSyncStatus(message, type) {
+    const statusEl = document.getElementById('syncStatus');
+    statusEl.style.display = 'block';
+    statusEl.textContent = message;
+    
+    // 스타일 적용
+    statusEl.className = '';
+    if (type === 'success') {
+        statusEl.style.backgroundColor = '#d4edda';
+        statusEl.style.color = '#155724';
+        statusEl.style.border = '1px solid #c3e6cb';
+    } else if (type === 'error') {
+        statusEl.style.backgroundColor = '#f8d7da';
+        statusEl.style.color = '#721c24';
+        statusEl.style.border = '1px solid #f5c6cb';
+    } else if (type === 'warning') {
+        statusEl.style.backgroundColor = '#fff3cd';
+        statusEl.style.color = '#856404';
+        statusEl.style.border = '1px solid #ffeaa7';
+    } else {
+        statusEl.style.backgroundColor = '#cce7ff';
+        statusEl.style.color = '#004085';
+        statusEl.style.border = '1px solid #99d3f5';
+    }
+    
+    // 3초 후 숨기기
+    if (type !== 'info') {
+        setTimeout(() => {
+            statusEl.style.display = 'none';
+        }, 3000);
     }
 }
 
