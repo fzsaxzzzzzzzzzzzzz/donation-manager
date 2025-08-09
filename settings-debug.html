@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔧 실시간 설정 디버그 테스트</title>
+
+<!-- Socket.IO -->
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.panel {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.panel h2 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+}
+
+.test-area {
+    background: #000;
+    color: white;
+    padding: 30px;
+    margin: 20px 0;
+    border-radius: 8px;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.control-group {
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.control-group label {
+    min-width: 120px;
+    font-weight: 600;
+}
+
+.control-group input, .control-group select {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    margin: 5px;
+}
+
+.btn-primary { background: #007bff; color: white; }
+.btn-success { background: #28a745; color: white; }
+.btn-warning { background: #ffc107; color: #212529; }
+.btn-danger { background: #dc3545; color: white; }
+
+.debug-output {
+    background: #2d3748;
+    color: #e2e8f0;
+    padding: 15px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+.status {
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    font-weight: 600;
+}
+
+.status.success { background: #d4edda; color: #155724; }
+.status.error { background: #f8d7da; color: #721c24; }
+.status.info { background: #d1ecf1; color: #0c5460; }
+
+#testContent {
+    font-size: var(--test-font-size, 18px);
+    text-align: var(--test-text-align, left);
+    text-shadow: var(--test-text-shadow, 2px 2px 0 #000000);
+    font-weight: bold;
+    line-height: 1.5;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 설정 컨트롤 패널 -->
+    <div class="panel">
+        <h2>⚙️ 설정 컨트롤</h2>
+        
+        <div class="control-group">
+            <label>폰트 크기:</label>
+            <input type="range" id="fontSize" min="10" max="50" value="18">
+            <span id="fontSizeValue">18px</span>
+        </div>
+        
+        <div class="control-group">
+            <label>텍스트 정렬:</label>
+            <select id="textAlign">
+                <option value="left">왼쪽 정렬</option>
+                <option value="center">가운데 정렬</option>
+                <option value="right">오른쪽 정렬</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>테두리 굵기:</label>
+            <input type="range" id="strokeWidth" min="0" max="10" value="2">
+            <span id="strokeWidthValue">2px</span>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button class="btn btn-primary" onclick="applyLocalSettings()">
+                🔧 로컬 적용 테스트
+            </button>
+            <button class="btn btn-success" onclick="sendToServer()">
+                📡 서버로 전송
+            </button>
+            <button class="btn btn-warning" onclick="loadFromServer()">
+                📥 서버에서 로드
+            </button>
+            <button class="btn btn-danger" onclick="clearAll()">
+                🗑️ 모든 설정 삭제
+            </button>
+        </div>
+        
+        <div id="statusMessage"></div>
+        
+        <h3>💾 LocalStorage 현황</h3>
+        <div id="localStorageStatus" class="debug-output" style="height: 150px;"></div>
+    </div>
+    
+    <!-- 테스트 영역 -->
+    <div class="panel">
+        <h2>🎨 실시간 테스트 영역</h2>
+        
+        <div class="test-area">
+            <div id="testContent">
+                사랑해요♡<br>
+                홍길동님 10만<br>
+                김철수님 5만<br>
+                이영희님 3만
+            </div>
+        </div>
+        
+        <h3>🔍 적용된 스타일 분석</h3>
+        <div id="styleAnalysis" class="debug-output" style="height: 200px;"></div>
+        
+        <h3>📡 서버 통신 로그</h3>
+        <div id="serverLog" class="debug-output" style="height: 150px;"></div>
+    </div>
+</div>
+
+<script>
+let socket = null;
+let debugLogs = [];
+
+// Socket.io 연결
+function initializeConnection() {
+    try {
+        socket = io();
+        
+        socket.on('connect', () => {
+            log('서버 연결 성공', 'success');
+        });
+        
+        socket.on('disconnect', () => {
+            log('서버 연결 끊김', 'error');
+        });
+        
+        socket.on('initialData', (data) => {
+            log('초기 데이터 수신: ' + JSON.stringify(data.settings, null, 2), 'info');
+        });
+        
+        socket.on('settingsUpdate', (settings) => {
+            log('설정 업데이트 수신: ' + JSON.stringify(settings, null, 2), 'success');
+            applyReceivedSettings(settings);
+        });
+        
+    } catch (error) {
+        log('Socket 연결 실패: ' + error.message, 'error');
+    }
+}
+
+// 로컬 설정 적용
+function applyLocalSettings() {
+    const fontSize = document.getElementById('fontSize').value;
+    const textAlign = document.getElementById('textAlign').value;
+    const strokeWidth = document.getElementById('strokeWidth').value;
+    
+    // localStorage에 저장
+    localStorage.setItem('overlay-font-size', fontSize);
+    localStorage.setItem('overlay-text-align', textAlign);
+    localStorage.setItem('overlay-stroke-width', strokeWidth);
+    
+    // CSS 변수 적용
+    const shadow = generateTextShadow(strokeWidth);
+    document.documentElement.style.setProperty('--test-font-size', fontSize + 'px');
+    document.documentElement.style.setProperty('--test-text-align', textAlign);
+    document.documentElement.style.setProperty('--test-text-shadow', shadow);
+    
+    // 직접 스타일 적용
+    const testEl = document.getElementById('testContent');
+    testEl.style.cssText = `
+        font-size: ${fontSize}px !important;
+        text-align: ${textAlign} !important;
+        text-shadow: ${shadow} !important;
+        font-weight: bold !important;
+        color: white !important;
+        line-height: 1.5 !important;
+    `;
+    
+    log('로컬 설정 적용: ' + JSON.stringify({fontSize, textAlign, strokeWidth}), 'success');
+    updateLocalStorageDisplay();
+    analyzeAppliedStyles();
+}
+
+// 서버로 설정 전송
+async function sendToServer() {
+    try {
+        const settings = {
+            'overlay-font-size': document.getElementById('fontSize').value,
+            'overlay-text-align': document.getElementById('textAlign').value,
+            'overlay-stroke-width': document.getElementById('strokeWidth').value
+        };
+        
+        log('서버로 설정 전송 중: ' + JSON.stringify(settings), 'info');
+        
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ settings })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            log('서버 전송 성공: ' + JSON.stringify(result), 'success');
+            showStatus('서버로 설정 전송 완료!', 'success');
+        } else {
+            log('서버 전송 실패: ' + JSON.stringify(result), 'error');
+            showStatus('서버 전송 실패: ' + result.error, 'error');
+        }
+        
+    } catch (error) {
+        log('서버 전송 오류: ' + error.message, 'error');
+        showStatus('서버 통신 오류: ' + error.message, 'error');
+    }
+}
+
+// 서버에서 설정 로드
+async function loadFromServer() {
+    try {
+        log('서버에서 설정 로드 중...', 'info');
+        
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        
+        log('서버 데이터 수신: ' + JSON.stringify(data.settings, null, 2), 'info');
+        
+        if (data.settings) {
+            applyReceivedSettings(data.settings);
+            showStatus('서버 설정 로드 완료!', 'success');
+        } else {
+            showStatus('서버에 설정이 없습니다.', 'info');
+        }
+        
+    } catch (error) {
+        log('서버 로드 오류: ' + error.message, 'error');
+        showStatus('서버 로드 실패: ' + error.message, 'error');
+    }
+}
+
+// 수신된 설정 적용
+function applyReceivedSettings(settings) {
+    if (settings['overlay-font-size']) {
+        document.getElementById('fontSize').value = settings['overlay-font-size'];
+        document.getElementById('fontSizeValue').textContent = settings['overlay-font-size'] + 'px';
+    }
+    
+    if (settings['overlay-text-align']) {
+        document.getElementById('textAlign').value = settings['overlay-text-align'];
+    }
+    
+    if (settings['overlay-stroke-width']) {
+        document.getElementById('strokeWidth').value = settings['overlay-stroke-width'];
+        document.getElementById('strokeWidthValue').textContent = settings['overlay-stroke-width'] + 'px';
+    }
+    
+    applyLocalSettings();
+    log('수신된 설정 적용 완료', 'success');
+}
+
+// 모든 설정 삭제
+function clearAll() {
+    localStorage.clear();
+    document.getElementById('fontSize').value = 18;
+    document.getElementById('textAlign').value = 'left';
+    document.getElementById('strokeWidth').value = 2;
+    
+    const testEl = document.getElementById('testContent');
+    testEl.style.cssText = '';
+    
+    updateLocalStorageDisplay();
+    analyzeAppliedStyles();
+    log('모든 설정 삭제 완료', 'info');
+    showStatus('모든 설정이 삭제되었습니다.', 'info');
+}
+
+// 텍스트 섀도우 생성
+function generateTextShadow(width) {
+    const w = parseInt(width);
+    return `${w}px ${w}px 0 #000000, -${w}px -${w}px 0 #000000, ${w}px -${w}px 0 #000000, -${w}px ${w}px 0 #000000, ${w}px 0px 0 #000000, -${w}px 0px 0 #000000, 0px ${w}px 0 #000000, 0px -${w}px 0 #000000`;
+}
+
+// 로그 출력
+function log(message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    debugLogs.push(`[${timestamp}] ${message}`);
+    
+    const serverLog = document.getElementById('serverLog');
+    serverLog.textContent = debugLogs.slice(-20).join('\n');
+    serverLog.scrollTop = serverLog.scrollHeight;
+}
+
+// 상태 메시지 표시
+function showStatus(message, type) {
+    const statusEl = document.getElementById('statusMessage');
+    statusEl.textContent = message;
+    statusEl.className = 'status ' + type;
+    
+    setTimeout(() => {
+        statusEl.textContent = '';
+        statusEl.className = '';
+    }, 3000);
+}
+
+// localStorage 상태 업데이트
+function updateLocalStorageDisplay() {
+    const storageEl = document.getElementById('localStorageStatus');
+    const relevantKeys = [
+        'overlay-font-size', 'overlay-text-align', 'overlay-stroke-width',
+        'table-opacity', 'table-font-size', 'table-text-color'
+    ];
+    
+    let output = 'localStorage 내용:\n';
+    relevantKeys.forEach(key => {
+        const value = localStorage.getItem(key);
+        output += `  ${key}: ${value || '(없음)'}\n`;
+    });
+    
+    output += '\n모든 localStorage 항목:\n';
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        output += `  ${key}: ${value}\n`;
+    }
+    
+    storageEl.textContent = output;
+}
+
+// 적용된 스타일 분석
+function analyzeAppliedStyles() {
+    const testEl = document.getElementById('testContent');
+    const computed = window.getComputedStyle(testEl);
+    
+    const analysis = `적용된 스타일 분석:
+  fontSize: ${computed.fontSize}
+  textAlign: ${computed.textAlign}
+  textShadow: ${computed.textShadow}
+  fontWeight: ${computed.fontWeight}
+  color: ${computed.color}
+  lineHeight: ${computed.lineHeight}
+  
+CSS 변수:
+  --test-font-size: ${getComputedStyle(document.documentElement).getPropertyValue('--test-font-size')}
+  --test-text-align: ${getComputedStyle(document.documentElement).getPropertyValue('--test-text-align')}
+  --test-text-shadow: ${getComputedStyle(document.documentElement).getPropertyValue('--test-text-shadow')}
+  
+inline style:
+  ${testEl.style.cssText}`;
+    
+    document.getElementById('styleAnalysis').textContent = analysis;
+}
+
+// 이벤트 리스너 설정
+document.addEventListener('DOMContentLoaded', () => {
+    initializeConnection();
+    
+    // 슬라이더 값 업데이트
+    document.getElementById('fontSize').addEventListener('input', (e) => {
+        document.getElementById('fontSizeValue').textContent = e.target.value + 'px';
+    });
+    
+    document.getElementById('strokeWidth').addEventListener('input', (e) => {
+        document.getElementById('strokeWidthValue').textContent = e.target.value + 'px';
+    });
+    
+    // 초기 상태 업데이트
+    updateLocalStorageDisplay();
+    analyzeAppliedStyles();
+    
+    // 1초마다 상태 업데이트
+    setInterval(() => {
+        updateLocalStorageDisplay();
+        analyzeAppliedStyles();
+    }, 1000);
+});
+</script>
+
+</body>
+</html>
