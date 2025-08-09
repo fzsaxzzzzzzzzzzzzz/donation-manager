@@ -255,22 +255,30 @@ function applyOverlaySettings() {
 
 // 화면 업데이트
 function updateDonorDisplay() {
+    console.log('🎨 [오버레이] updateDonorDisplay 시작');
+    console.log('📊 [오버레이] donations:', donations);
+    console.log('📊 [오버레이] donations.length:', donations?.length || 0);
+    
     const contentEl = document.getElementById('donor-content');
     
     if (!donations || donations.length === 0) {
+        console.log('⚠️ [오버레이] 후원 데이터 없음, 기본 메시지 표시');
         contentEl.innerHTML = '사랑해요♡';
         contentEl.className = 'no-data'; // 클래스 직접 지정
         applyOverlaySettings(); // 설정 적용
         setTimeout(() => {
             applyOverlaySettings(); // 한 번 더 적용
         }, 100);
+        console.log('✅ [오버레이] 기본 메시지 표시 완료');
         return;
     }
     
     // 후원자별 계좌 후원 총액 계산
     const donorTotals = {};
+    console.log('💰 [오버레이] 후원자 총액 계산 시작');
     
     donations.forEach(d => {
+        console.log('📊 [오버레이] 후원 데이터:', d);
         if (d.type === '계좌') {
             // 후원자명에서 조정 부분 제거
             let cleanDonorName = d.donor;
@@ -281,14 +289,19 @@ function updateDonorDisplay() {
             const amount = parseFloat(d.amount) || 0;
             if (amount > 0) {
                 donorTotals[cleanDonorName] = (donorTotals[cleanDonorName] || 0) + amount;
+                console.log(`💰 [오버레이] ${cleanDonorName}: ${amount}만 (총: ${donorTotals[cleanDonorName]}만)`);
             }
         }
     });
+    
+    console.log('💰 [오버레이] 최종 후원자 총액:', donorTotals);
     
     // 금액순으로 정렬
     const sortedDonors = Object.entries(donorTotals)
         .filter(([name, amount]) => amount > 0 && name.trim() !== '')
         .sort(([,a], [,b]) => b - a);
+    
+    console.log('🏆 [오버레이] 정렬된 후원자:', sortedDonors);
     
     // 표시 텍스트 생성
     let displayText = "사랑해요♡\n";
@@ -296,6 +309,7 @@ function updateDonorDisplay() {
         displayText += sortedDonors.map(([name, amount]) => 
             `${name}님 ${parseFloat(amount.toFixed(1))}만`
         ).join('\n');
+        console.log('✨ [오버레이] 생성된 표시 텍스트:', displayText);
     } else {
         displayText = "사랑해요♡";
     }

@@ -148,19 +148,26 @@ class RealtimeOverlay {
         });
 
         this.socket.on('initialData', (data) => {
+            console.log('🔄 [오버레이] initialData 수신:', data);
+            console.log('🔄 [오버레이] 후원 데이터 수:', data?.donations?.length || 0);
             this.data = data;
             this.settings = data.settings || {};
             this.applySettings();
             this.renderDonorTotals();
+            console.log('✅ [오버레이] initialData 처리 완료');
         });
 
         this.socket.on('dataUpdate', (data) => {
+            console.log('🔄 [오버레이] dataUpdate 수신:', data);
+            console.log('🔄 [오버레이] 후원 데이터 수:', data?.donations?.length || 0);
             const previousData = this.data;
             this.data = data;
             this.renderDonorTotals(previousData);
+            console.log('✅ [오버레이] dataUpdate 처리 완료');
         });
 
         this.socket.on('settingsUpdate', (settings) => {
+            console.log('⚙️ [오버레이] settingsUpdate 수신:', settings);
             this.settings = settings;
             this.applySettings();
             this.renderDonorTotals();
@@ -187,23 +194,32 @@ class RealtimeOverlay {
     }
 
     renderDonorTotals(previousData = null) {
+        console.log('🎨 [오버레이] renderDonorTotals 시작');
+        console.log('📊 [오버레이] this.data:', this.data);
+        console.log('📊 [오버레이] donations 수:', this.data?.donations?.length || 0);
+        
         if (!this.data || !this.data.donations) {
+            console.log('⚠️ [오버레이] 데이터 없음, showNoData 호출');
             this.showNoData();
             return;
         }
 
         // 후원자별 총액 계산
         const donorTotals = this.calculateDonorTotals();
+        console.log('💰 [오버레이] 계산된 후원자 총액:', donorTotals);
         
         if (donorTotals.size === 0) {
+            console.log('⚠️ [오버레이] 후원자 총액 없음, showNoData 호출');
             this.showNoData();
             return;
         }
 
         // 이전 데이터와 비교해서 새로운 후원 감지
         const newDonations = this.detectNewDonations(previousData);
+        console.log('🆕 [오버레이] 새로운 후원:', newDonations);
         
         this.displayDonorTotals(donorTotals, newDonations);
+        console.log('✅ [오버레이] renderDonorTotals 완료');
     }
 
     calculateDonorTotals() {

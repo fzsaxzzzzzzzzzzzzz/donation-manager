@@ -342,7 +342,11 @@ io.on('connection', (socket) => {
   console.log('🔗 클라이언트 연결:', socket.id, '(총', io.sockets.sockets.size, '명)');
   
   // 새 클라이언트에게 현재 데이터 전송
+  console.log('📤 [서버] initialData 전송 준비');
+  console.log('📊 [서버] 전송할 후원 데이터 수:', currentData.donations?.length || 0);
+  console.log('📊 [서버] 전송할 스트리머 수:', currentData.streamers?.length || 0);
   socket.emit('initialData', currentData);
+  console.log('✅ [서버] initialData 전송 완료');
   
   // 연결된 클라이언트 수 브로드캐스트
   io.emit('userCount', io.sockets.sockets.size);
