@@ -56,10 +56,24 @@ let currentData = {
 async function loadExistingData() {
   try {
     const data = await fs.readFile('./data.json', 'utf8');
-    currentData = JSON.parse(data);
-    console.log('기존 데이터 로드 완료');
+    const loadedData = JSON.parse(data);
+    
+    // 데이터 병합 (기본값 유지)
+    currentData = {
+      ...currentData,
+      ...loadedData,
+      // 빈 이모지 객체가 있다면 기본값으로 교체
+      emojis: loadedData.emojis && Object.keys(loadedData.emojis).length > 0 
+        ? loadedData.emojis 
+        : currentData.emojis
+    };
+    
+    console.log('✅ 기존 데이터 로드 완료');
+    console.log('📊 스트리머:', currentData.streamers.length + '명');
+    console.log('😀 이모지:', Object.keys(currentData.emojis).length + '개');
+    console.log('💸 후원:', currentData.donations.length + '건');
   } catch (error) {
-    console.log('기존 데이터 없음, 새로 시작');
+    console.log('⚠️ 기존 데이터 없음, 새로 시작');
   }
 }
 
@@ -258,7 +272,7 @@ app.delete('/api/streamers/:name', async (req, res) => {
   try {
     const streamerName = decodeURIComponent(req.params.name);
     
-    console.log('🗑️ 스트리머 삭제 요청:', streamerName);
+    console.log('🗑️스트리머 삭제 요청:', streamerName);
     
     // 스트리머 목록에서 제거
     const beforeCount = currentData.streamers.length;
@@ -281,6 +295,44 @@ app.delete('/api/streamers/:name', async (req, res) => {
     res.json({ success: true, message: '스트리머가 삭제되었습니다.' });
   } catch (error) {
     console.error('스트리머 삭제 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
+// 서버 데이터 강제 초기화 API (디버깅용)
+app.post('/api/force-reload', async (req, res) => {
+  try {
+    console.log('🔄 서버 데이터 강제 초기화 시작...');
+    
+    // 기본 이모지 데이터로 강제 설정
+    currentData.emojis = {
+      "엄삼용": "🫅", 
+      "손덕배": "🌺", 
+      "연기": "🐧", 
+      "동동": "😎", 
+      "주옥": "👺", 
+      "불곰": "🎬", 
+      "이효팔": "🏝", 
+      "남붕": "🤠", 
+      "옥긔": "🦆", 
+      "국고": "🏦"
+    };
+    
+    // 파일에 저장
+    await saveData();
+    
+    // 모든 클라이언트에게 업데이트 전송
+    console.log('📡 [서버] 강제 초기화 후 데이터 전송');
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ 
+      success: true, 
+      message: '서버 데이터가 강제로 초기화되었습니다.',
+      emojis: Object.keys(currentData.emojis).length,
+      streamers: currentData.streamers.length
+    });
+  } catch (error) {
+    console.error('강제 초기화 실패:', error);
     res.status(500).json({ error: '서버 오류' });
   }
 });
