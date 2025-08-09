@@ -1,6 +1,27 @@
 {
   "donations": [
     {
+      "donor": "aaaaaaaa",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1,
+      "time": "2025-08-09T04:13:46.995Z"
+    },
+    {
+      "donor": "q",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1,
+      "time": "2025-08-09T04:10:08.293Z"
+    },
+    {
+      "donor": "a",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1,
+      "time": "2025-08-09T04:08:50.282Z"
+    },
+    {
       "donor": "1",
       "streamer": "엄삼용",
       "type": "계좌",
@@ -131,18 +152,18 @@
     "국고": "🏦"
   },
   "settings": {
-    "overlay-font-size": "110",
-    "overlay-stroke-width": "2",
-    "overlay-text-align": "left",
+    "overlay-font-size": "24",
+    "overlay-stroke-width": "3",
+    "overlay-text-align": "center",
     "table-opacity": "85",
     "table-number-size": "16",
     "table-font-size": "14",
     "table-text-color": "white",
     "hidden-streamers": "[]",
-    "group-threshold": "1",
+    "group-threshold": "2",
     "show-total-row": "true",
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆"
   },
-  "lastUpdated": "2025-08-08T10:44:58.591Z"
+  "lastUpdated": "2025-08-09T06:47:27.033Z"
 }
