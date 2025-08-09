@@ -1,3 +1,13 @@
+# Git 속성 설정 파일
+# 인코딩 및 줄바꿈 설정
+
+# UTF-8 인코딩 강제 설정
+*.json text eol=lf encoding=utf-8
+*.html text eol=lf encoding=utf-8
+*.js text eol=lf encoding=utf-8
+*.css text eol=lf encoding=utf-8
+*.md text eol=lf encoding=utf-8
+
 # Git LFS 설정 파일
 # 대용량 데이터 파일들을 LFS로 관리
 
