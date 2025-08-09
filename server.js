@@ -144,6 +144,54 @@ app.post('/api/settings', async (req, res) => {
   res.json({ success: true, settings: currentData.settings });
 });
 
+// 후원 삭제 API
+app.delete('/api/donations/:id', async (req, res) => {
+  const donationId = req.params.id;
+  
+  try {
+    // ID로 후원 삭제 (time 필드 기준)
+    const beforeCount = currentData.donations.length;
+    currentData.donations = currentData.donations.filter(d => d.time !== donationId);
+    const afterCount = currentData.donations.length;
+    
+    if (beforeCount === afterCount) {
+      return res.status(404).json({ error: '삭제할 후원을 찾을 수 없습니다.' });
+    }
+    
+    await saveData();
+    
+    // 모든 클라이언트에게 실시간 업데이트 전송
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ success: true, message: '후원이 삭제되었습니다.' });
+  } catch (error) {
+    console.error('후원 삭제 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
+// 벌크 업데이트 API (전체 데이터 교체)
+app.put('/api/donations/bulk', async (req, res) => {
+  try {
+    const { donations } = req.body;
+    
+    if (!Array.isArray(donations)) {
+      return res.status(400).json({ error: '잘못된 데이터 형식' });
+    }
+    
+    currentData.donations = donations;
+    await saveData();
+    
+    // 모든 클라이언트에게 실시간 업데이트 전송
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ success: true, message: '데이터가 성공적으로 업데이트되었습니다.' });
+  } catch (error) {
+    console.error('벌크 업데이트 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
   console.log('🔗 클라이언트 연결:', socket.id, '(총', io.sockets.sockets.size, '명)');

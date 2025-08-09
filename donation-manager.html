@@ -1143,18 +1143,55 @@ async function handleNewDonations(newDonations) {
     }
 }
 
-function deleteSelected() {
+async function deleteSelected() {
     if (selectedRows.size === 0 || !confirm(`${selectedRows.size}개 항목을 삭제하시겠습니까?`)) return;
     
     const indicesToDelete = Array.from(selectedRows).sort((a, b) => b - a);
-    indicesToDelete.forEach(index => {
-        donations.splice(index, 1);
-    });
+    let deleteCount = 0;
+    
+    // 서버에서 삭제 시도
+    for (const index of indicesToDelete) {
+        const donation = donations[index];
+        if (donation && donation.time) {
+            try {
+                if (isSocketConnected) {
+                    // 서버에 삭제 요청
+                    const response = await fetch(`/api/donations/${donation.time}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        deleteCount++;
+                        console.log('✅ 서버에서 후원 삭제 성공:', donation.donor);
+                    } else {
+                        console.error('❌ 서버 삭제 실패:', donation.donor);
+                        // 서버 삭제 실패 시 로컬에서만 삭제
+                        donations.splice(index, 1);
+                        deleteCount++;
+                    }
+                } else {
+                    // 연결 없으면 로컬에서만 삭제
+                    donations.splice(index, 1);
+                    deleteCount++;
+                }
+            } catch (error) {
+                console.error('삭제 중 오류:', error);
+                // 오류 시 로컬에서라도 삭제
+                donations.splice(index, 1);
+                deleteCount++;
+            }
+        }
+    }
     
     selectedRows.clear();
-    saveToLocalStorage();
-    updateAllUI();
-    showStatus(`${indicesToDelete.length}개 항목이 삭제되었습니다`, 'success');
+    
+    // 서버 연결이 없거나 실패한 경우에만 로컬 저장
+    if (!isSocketConnected) {
+        saveToLocalStorage();
+        updateAllUI();
+    }
+    
+    showStatus(`${deleteCount}개 항목이 삭제되었습니다`, 'success');
 }
 
 // --- UI 업데이트 함수 ---
