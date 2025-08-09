@@ -103,8 +103,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="addDonation()" class="btn btn-primary" id="add-btn" style="width:100%;">✨ 등록</button>
 </div>
 <div class="tab-content" id="streamer-tab">
-<div style="display: flex; gap: 10px; margin-bottom: 15px;"><input type="text" id="new-streamer-name" placeholder="이름" class="form-input"><input type="text" id="new-streamer-emoji" placeholder="이모지" class="form-input" style="flex: 0 0 80px;"><button onclick="addStreamer()" class="btn btn-success" id="add-streamer-btn">추가</button></div>
+<div style="display: flex; gap: 10px; margin-bottom: 15px;">
+<input type="text" id="new-streamer-name" placeholder="이름" class="form-input">
+<input type="text" id="new-streamer-emoji" placeholder="이모지" class="form-input" style="flex: 0 0 80px;">
+<button onclick="simpleAddStreamer()" class="btn btn-success" id="add-streamer-btn">추가</button>
+</div>
 <div id="streamer-list"></div>
+
+<div style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 6px;">
+<h4 style="margin: 0 0 10px 0;">🔧 이모지 복원</h4>
+<button onclick="restoreEmojis()" class="btn btn-warning">이모지 즉시 복원</button>
+<p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">이모지가 안 보이면 이 버튼을 눌러주세요</p>
+</div>
 </div>
 <div class="tab-content" id="mission-tab">
 <div id="mission-settings" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
@@ -2084,6 +2094,70 @@ async function testStreamerAdd() {
             debugLog('✅ 로컬에만 추가 완료');
         }
     }
+}
+
+// === 간단한 스트리머 관리 함수들 ===
+function simpleAddStreamer() {
+    const name = document.getElementById('new-streamer-name').value.trim();
+    const emoji = document.getElementById('new-streamer-emoji').value.trim();
+    
+    if (!name) {
+        alert('이름을 입력해주세요');
+        return;
+    }
+    
+    if (streamers.includes(name)) {
+        alert('이미 존재하는 스트리머입니다');
+        return;
+    }
+    
+    // 즉시 추가
+    streamers.push(name);
+    emojis[name] = emoji || '⭐';
+    
+    // 저장 및 업데이트
+    try {
+        saveToLocalStorage();
+        updateAllUI();
+    } catch (e) {
+        // 함수가 없으면 직접 처리
+        localStorage.setItem('streamers', JSON.stringify(streamers));
+        localStorage.setItem('emojis', JSON.stringify(emojis));
+        location.reload();
+    }
+    
+    // 입력창 초기화
+    document.getElementById('new-streamer-name').value = '';
+    document.getElementById('new-streamer-emoji').value = '';
+    
+    alert(`✅ ${name} ${emoji} 추가 완료!`);
+}
+
+function restoreEmojis() {
+    // 이모지 강제 복원
+    emojis = {
+        "엄삼용": "🫅", 
+        "손덕배": "🌺", 
+        "연기": "🐧", 
+        "동동": "😎", 
+        "주옥": "👺", 
+        "불곰": "🎬", 
+        "이효팔": "🏝", 
+        "남붕": "🤠", 
+        "옥긔": "🦆", 
+        "국고": "🏦"
+    };
+    
+    // 저장
+    try {
+        saveToLocalStorage();
+        updateAllUI();
+    } catch (e) {
+        localStorage.setItem('emojis', JSON.stringify(emojis));
+        location.reload();
+    }
+    
+    alert('✅ 이모지 복원 완료!');
 }
 
 function setupDonorAutocomplete(inputId, listId) {
