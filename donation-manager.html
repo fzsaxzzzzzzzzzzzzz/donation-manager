@@ -621,14 +621,17 @@ function initializeRealtimeConnection() {
             donations = data.donations || [];
             streamers = data.streamers || streamers;
             emojis = data.emojis || emojis;
-            updateAll();
+            updateAllUI();
         });
         
         socket.on('dataUpdate', (data) => {
             console.log('🔄 실시간 데이터 업데이트:', data);
             donations = data.donations || [];
-            updateAll();
+            updateAllUI();
             showStatus('✨ 새 후원 데이터 동기화!', 'success', 2000);
+            
+            // 선택된 행들 초기화 (삭제된 항목들이 포함될 수 있음)
+            selectedRows.clear();
         });
         
     } catch (error) {
@@ -1163,9 +1166,10 @@ async function deleteSelected() {
                     if (response.ok) {
                         deleteCount++;
                         console.log('✅ 서버에서 후원 삭제 성공:', donation.donor);
+                        // 서버 삭제 성공 시에는 dataUpdate 이벤트로 UI가 자동 업데이트됨
                     } else {
                         console.error('❌ 서버 삭제 실패:', donation.donor);
-                        // 서버 삭제 실패 시 로컬에서만 삭제
+                        // 서버 삭제 실패 시에만 로컬에서 삭제
                         donations.splice(index, 1);
                         deleteCount++;
                     }
