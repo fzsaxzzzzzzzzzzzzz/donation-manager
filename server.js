@@ -147,12 +147,28 @@ app.post('/api/settings', async (req, res) => {
 // 후원 삭제 API
 app.delete('/api/donations/:id', async (req, res) => {
   const donationId = req.params.id;
+  console.log('🗑️ 삭제 요청 받음:', donationId);
+  console.log('현재 후원 개수:', currentData.donations.length);
   
   try {
     // ID로 후원 삭제 (time 필드 기준)
     const beforeCount = currentData.donations.length;
+    const deletedDonation = currentData.donations.find(d => d.time === donationId);
+    
+    if (deletedDonation) {
+      console.log('삭제할 후원 찾음:', deletedDonation.donor, deletedDonation.time);
+    } else {
+      console.log('❌ 삭제할 후원을 찾을 수 없음. 기존 후원들의 time 필드:');
+      currentData.donations.slice(0, 3).forEach((d, i) => {
+        console.log(`  [${i}] time: "${d.time}" (타입: ${typeof d.time})`);
+      });
+      console.log(`요청된 ID: "${donationId}" (타입: ${typeof donationId})`);
+    }
+    
     currentData.donations = currentData.donations.filter(d => d.time !== donationId);
     const afterCount = currentData.donations.length;
+    
+    console.log(`삭제 결과: ${beforeCount} → ${afterCount} (${beforeCount - afterCount}개 삭제됨)`);
     
     if (beforeCount === afterCount) {
       return res.status(404).json({ error: '삭제할 후원을 찾을 수 없습니다.' });
@@ -162,6 +178,7 @@ app.delete('/api/donations/:id', async (req, res) => {
     
     // 모든 클라이언트에게 실시간 업데이트 전송
     io.emit('dataUpdate', currentData);
+    console.log('✅ 실시간 업데이트 전송 완료');
     
     res.json({ success: true, message: '후원이 삭제되었습니다.' });
   } catch (error) {

@@ -1155,13 +1155,18 @@ async function deleteSelected() {
     // 서버에서 삭제 시도
     for (const index of indicesToDelete) {
         const donation = donations[index];
+        console.log('삭제 시도하는 후원:', donation);
+        
         if (donation && donation.time) {
             try {
                 if (isSocketConnected) {
                     // 서버에 삭제 요청
+                    console.log(`서버 삭제 API 호출: /api/donations/${donation.time}`);
                     const response = await fetch(`/api/donations/${donation.time}`, {
                         method: 'DELETE'
                     });
+                    
+                    console.log('서버 응답 상태:', response.status, response.statusText);
                     
                     if (response.ok) {
                         deleteCount++;
