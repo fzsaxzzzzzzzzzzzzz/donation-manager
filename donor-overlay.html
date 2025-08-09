@@ -108,6 +108,14 @@ function initializeRealtimeConnection() {
             console.log('📊 새 데이터로 화면 업데이트:', donations.length, '건');
             updateDonorDisplay();
             
+            // localStorage 동기화 (로컬모드에서 데이터 부활 방지)
+            try {
+                localStorage.setItem('donation_data', JSON.stringify(donations));
+                console.log('📱 localStorage 동기화 완료');
+            } catch (error) {
+                console.error('localStorage 저장 실패:', error);
+            }
+            
             // 화면 깜박임 효과로 업데이트 표시
             const container = document.querySelector('.overlay-container');
             if (container) {
@@ -320,6 +328,14 @@ async function loadDataFromServer() {
                 }));
             } else {
                 donations = [];
+            }
+            
+            // localStorage 동기화
+            try {
+                localStorage.setItem('donation_data', JSON.stringify(donations));
+                console.log('📱 서버 API 데이터로 localStorage 동기화 완료');
+            } catch (error) {
+                console.error('localStorage 저장 실패:', error);
             }
             
             updateDonorDisplay();

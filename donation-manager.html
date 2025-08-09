@@ -632,6 +632,9 @@ function initializeRealtimeConnection() {
             
             // 선택된 행들 초기화 (삭제된 항목들이 포함될 수 있음)
             selectedRows.clear();
+            
+            // localStorage도 최신 데이터로 동기화 (로컬모드에서 데이터 부활 방지)
+            saveToLocalStorage();
         });
         
     } catch (error) {

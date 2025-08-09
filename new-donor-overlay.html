@@ -106,6 +106,14 @@ function initializeRealtimeConnection() {
             console.log('🔄 실시간 데이터 업데이트:', data);
             donations = data.donations || [];
             updateDonorDisplay();
+            
+            // localStorage 동기화 (로컬모드에서 데이터 부활 방지)
+            try {
+                localStorage.setItem('donation_data', JSON.stringify(donations));
+                console.log('📱 localStorage 동기화 완료');
+            } catch (error) {
+                console.error('localStorage 저장 실패:', error);
+            }
         });
         
         socket.on('settingsUpdate', (settings) => {
@@ -311,6 +319,14 @@ async function loadDataFromServer() {
                 }));
             } else {
                 donations = [];
+            }
+            
+            // localStorage 동기화
+            try {
+                localStorage.setItem('donation_data', JSON.stringify(donations));
+                console.log('📱 서버 API 데이터로 localStorage 동기화 완료');
+            } catch (error) {
+                console.error('localStorage 저장 실패:', error);
             }
             
             updateDisplay();
