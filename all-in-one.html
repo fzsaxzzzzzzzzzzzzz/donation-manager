@@ -958,7 +958,7 @@ function updateOverlayPreview() {
     
     // 표시 텍스트 생성
     const sortedDonors = Object.entries(donorTotals)
-        .filter(([name, amount]) => amount > 0)
+        .filter(([name, amount]) => amount >= 0.1)
         .sort(([,a], [,b]) => b - a);
     
     let displayText = "사랑해요♡\n";
