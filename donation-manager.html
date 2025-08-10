@@ -171,13 +171,67 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div class="tab-content" id="overlay-tab">
 <div style="margin-bottom: 20px;">
 <h4 style="margin-bottom: 10px;">📺 방송용 오버레이</h4>
-<div style="display: flex; gap: 10px; margin-bottom: 15px;">
-<button onclick="openOverlay('donor')" class="btn btn-primary">💝 후원자별 총액 열기</button>
-<button onclick="openOverlay('table')" class="btn btn-primary">🏆 스트리머 테이블 열기</button>
+
+<!-- 후원자 오버레이 섹션 -->
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+<strong>💝 후원자별 총액 오버레이</strong>
+<div style="display: flex; gap: 8px;">
+<button onclick="openOverlay('donor')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
+<button onclick="copyOverlayURL('donor')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
+<button onclick="showQRCode('donor')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
 </div>
-<p style="font-size: 13px; color: #666; margin-bottom: 20px;">
-💡 OBS에서 브라우저 소스로 추가하여 사용하세요
+</div>
+<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+<span id="donor-overlay-url">https://donation-manager-ufm1.onrender.com/donor-overlay.html</span>
+</div>
+</div>
+
+<!-- 스트리머 테이블 섹션 -->
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+<strong>🏆 스트리머 테이블 오버레이</strong>
+<div style="display: flex; gap: 8px;">
+<button onclick="openOverlay('table')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
+<button onclick="copyOverlayURL('table')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
+<button onclick="showQRCode('table')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
+</div>
+</div>
+<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+<span id="table-overlay-url">https://donation-manager-ufm1.onrender.com/streamer-table-overlay.html</span>
+</div>
+</div>
+
+<!-- 실시간 미리보기 토글 -->
+<div style="margin-bottom: 15px; text-align: center;">
+<button onclick="togglePreview()" class="btn btn-info" id="preview-toggle">👁️ 실시간 미리보기 켜기</button>
+<button onclick="openAllOverlays()" class="btn btn-warning" style="margin-left: 10px;">🔗 모든 오버레이 한번에 열기</button>
+</div>
+
+<!-- 미리보기 영역 -->
+<div id="preview-area" style="display: none; border: 2px solid #667eea; border-radius: 8px; padding: 15px; background: #f8f9ff; margin-bottom: 15px;">
+<h5 style="margin: 0 0 10px 0; color: #667eea;">🔴 실시간 미리보기 (설정 변경 시 즉시 반영)</h5>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+<div style="background: black; border-radius: 4px; min-height: 100px; padding: 10px; position: relative;">
+<iframe id="donor-preview" src="" style="width: 100%; height: 100px; border: none; transform: scale(0.5); transform-origin: top left; width: 200%; height: 200px;"></iframe>
+<div style="position: absolute; bottom: 5px; left: 5px; color: white; font-size: 10px; background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 3px;">후원자 오버레이</div>
+</div>
+<div style="background: black; border-radius: 4px; min-height: 100px; padding: 10px; position: relative;">
+<iframe id="table-preview" src="" style="width: 100%; height: 100px; border: none; transform: scale(0.5); transform-origin: top left; width: 200%; height: 200px;"></iframe>
+<div style="position: absolute; bottom: 5px; left: 5px; color: white; font-size: 10px; background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 3px;">테이블 오버레이</div>
+</div>
+</div>
+</div>
+
+<div style="background: #e8f4f8; border: 1px solid #bee5eb; border-radius: 4px; padding: 10px; margin-bottom: 15px;">
+<p style="font-size: 13px; margin: 0; color: #0c5460;">
+💡 <strong>사용 방법:</strong><br>
+• <strong>OBS:</strong> 브라우저 소스 추가 → URL 붙여넣기 → 너비: 1920, 높이: 1080<br>
+• <strong>모바일:</strong> QR코드로 스캔하여 바로 접속<br>
+• <strong>다른 PC:</strong> URL을 복사해서 브라우저에서 열기<br>
+• 설정 변경 시 모든 기기에 실시간 반영됩니다
 </p>
+</div>
 </div>
 
 <div style="border-top: 1px solid #ddd; padding-top: 20px;">
@@ -692,6 +746,13 @@ function initializeRealtimeConnection() {
             donations = data.donations || [];
             streamers = data.streamers || streamers;
             emojis = data.emojis || emojis;
+            
+            // 서버 설정을 UI에 적용
+            if (data.settings) {
+                console.log('⚙️ [관리자] 서버 설정 적용 중:', data.settings);
+                applyServerSettingsToUI(data.settings);
+            }
+            
             updateAllUI();
             console.log('✅ [관리자] 초기 UI 업데이트 완료');
         });
@@ -710,6 +771,12 @@ function initializeRealtimeConnection() {
             saveToLocalStorage();
             
             console.log('✅ [관리자] 실시간 UI 업데이트 완료');
+        });
+        
+        socket.on('settingsUpdate', (settings) => {
+            console.log('⚙️ [관리자] 실시간 설정 업데이트 수신:', settings);
+            applyServerSettingsToUI(settings);
+            showStatus('⚙️ 설정이 업데이트되었습니다', 'info', 2000);
         });
         
     } catch (error) {
@@ -3583,30 +3650,186 @@ async function stopAllMissions() {
 }
 
 // --- 오버레이 관리 함수 ---
-function openOverlay(type) {
-    const baseUrl = window.location.origin + window.location.pathname.replace('donation-manager.html', '');
-    let overlayUrl = '';
+
+// 서버 설정을 UI에 적용하는 함수
+function applyServerSettingsToUI(settings) {
+    if (!settings) return;
     
-    if (type === 'donor') {
-        overlayUrl = baseUrl + 'donor-overlay.html';
-    } else if (type === 'table') {
-        overlayUrl = baseUrl + 'streamer-table-overlay.html';
+    try {
+        // 후원자 오버레이 설정
+        if (settings['overlay-font-size']) {
+            const fontSize = String(settings['overlay-font-size']);
+            document.getElementById('overlay-font-size-range').value = fontSize;
+            document.getElementById('overlay-font-size-value').textContent = fontSize + 'px';
+        }
+        
+        if (settings['overlay-stroke-width']) {
+            const strokeWidth = String(settings['overlay-stroke-width']);
+            document.getElementById('overlay-stroke-width-range').value = strokeWidth;
+            document.getElementById('overlay-stroke-width-value').textContent = strokeWidth + 'px';
+        }
+        
+        if (settings['overlay-text-align']) {
+            const textAlign = settings['overlay-text-align'];
+            // 정렬 버튼 상태 업데이트
+            document.getElementById('overlay-align-left').style.background = '';
+            document.getElementById('overlay-align-center').style.background = '';
+            document.getElementById('overlay-align-right').style.background = '';
+            
+            const selectedButton = document.getElementById(`overlay-align-${textAlign}`);
+            if (selectedButton) {
+                selectedButton.style.background = '#1877f2';
+                selectedButton.style.color = 'white';
+            }
+        }
+        
+        // 테이블 오버레이 설정
+        if (settings['table-opacity']) {
+            const opacity = String(settings['table-opacity']);
+            document.getElementById('table-opacity-range').value = opacity;
+            document.getElementById('table-opacity-value').textContent = opacity + '%';
+        }
+        
+        if (settings['table-number-size']) {
+            const numberSize = String(settings['table-number-size']);
+            document.getElementById('table-number-size-range').value = numberSize;
+            document.getElementById('table-number-size-value').textContent = numberSize + 'px';
+        }
+        
+        if (settings['table-font-size']) {
+            const fontSize = String(settings['table-font-size']);
+            document.getElementById('table-font-size-range').value = fontSize;
+            document.getElementById('table-font-size-value').textContent = fontSize + 'px';
+        }
+        
+        console.log('✅ [관리자] 서버 설정이 UI에 적용되었습니다:', settings);
+        
+    } catch (error) {
+        console.error('❌ [관리자] 서버 설정 UI 적용 실패:', error);
     }
-    
+}
+
+function openOverlay(type) {
+    const overlayUrl = getOverlayURL(type);
     if (overlayUrl) {
         window.open(overlayUrl, '_blank', 'width=800,height=600');
     }
 }
 
+// 오버레이 URL 생성
+function getOverlayURL(type) {
+    const baseUrl = 'https://donation-manager-ufm1.onrender.com/';
+    
+    if (type === 'donor') {
+        return baseUrl + 'donor-overlay.html';
+    } else if (type === 'table') {
+        return baseUrl + 'streamer-table-overlay.html';
+    }
+    return '';
+}
+
+// URL 복사 기능
+async function copyOverlayURL(type) {
+    const url = getOverlayURL(type);
+    
+    try {
+        await navigator.clipboard.writeText(url);
+        showStatus(`${type === 'donor' ? '후원자' : '테이블'} 오버레이 URL이 클립보드에 복사되었습니다!`, 'success');
+    } catch (err) {
+        // 클립보드 API가 안 되면 텍스트 선택
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showStatus(`${type === 'donor' ? '후원자' : '테이블'} 오버레이 URL이 복사되었습니다!`, 'success');
+    }
+}
+
+// QR코드 생성 및 표시
+function showQRCode(type) {
+    const url = getOverlayURL(type);
+    const typeName = type === 'donor' ? '후원자별 총액' : '스트리머 테이블';
+    
+    // QR코드 생성 (Google Charts API 사용)
+    const qrUrl = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(url)}`;
+    
+    // 모달 생성
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.8); display: flex; justify-content: center; 
+        align-items: center; z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px;">
+            <h3 style="margin: 0 0 15px 0; color: #333;">📱 ${typeName} 오버레이</h3>
+            <img src="${qrUrl}" alt="QR Code" style="width: 250px; height: 250px; border: 1px solid #ddd; border-radius: 8px;">
+            <p style="margin: 15px 0 10px 0; font-size: 12px; color: #666; word-break: break-all;">${url}</p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button onclick="copyOverlayURL('${type}')" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">📋 URL 복사</button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">닫기</button>
+            </div>
+        </div>
+    `;
+    
+    // 배경 클릭 시 모달 닫기
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    document.body.appendChild(modal);
+}
+
+// 모든 오버레이 한번에 열기
+function openAllOverlays() {
+    openOverlay('donor');
+    setTimeout(() => openOverlay('table'), 500); // 약간의 딜레이
+    showStatus('모든 오버레이가 새 창에서 열렸습니다!', 'info');
+}
+
+// 실시간 미리보기 토글
+let previewEnabled = false;
+function togglePreview() {
+    const previewArea = document.getElementById('preview-area');
+    const toggleButton = document.getElementById('preview-toggle');
+    
+    previewEnabled = !previewEnabled;
+    
+    if (previewEnabled) {
+        previewArea.style.display = 'block';
+        toggleButton.textContent = '👁️ 실시간 미리보기 끄기';
+        toggleButton.className = 'btn btn-danger';
+        
+        // iframe 소스 설정
+        document.getElementById('donor-preview').src = getOverlayURL('donor');
+        document.getElementById('table-preview').src = getOverlayURL('table');
+        
+        showStatus('실시간 미리보기가 활성화되었습니다', 'info');
+    } else {
+        previewArea.style.display = 'none';
+        toggleButton.textContent = '👁️ 실시간 미리보기 켜기';
+        toggleButton.className = 'btn btn-info';
+        
+        // iframe 소스 제거 (성능 향상)
+        document.getElementById('donor-preview').src = '';
+        document.getElementById('table-preview').src = '';
+        
+        showStatus('실시간 미리보기가 비활성화되었습니다', 'info');
+    }
+}
+
 function updateOverlayFontSize(value) {
     document.getElementById('overlay-font-size-value').textContent = value + 'px';
-    localStorage.setItem('overlay-font-size', value);
     updateServerSettings({ 'overlay-font-size': value });
 }
 
 function updateOverlayStrokeWidth(value) {
     document.getElementById('overlay-stroke-width-value').textContent = value + 'px';
-    localStorage.setItem('overlay-stroke-width', value);
     updateServerSettings({ 'overlay-stroke-width': value });
 }
 
@@ -3620,31 +3843,26 @@ function setOverlayTextAlign(align) {
     document.getElementById(`overlay-align-${align}`).style.background = '#1877f2';
     document.getElementById(`overlay-align-${align}`).style.color = 'white';
     
-    // 실시간 적용
-    localStorage.setItem('overlay-text-align', align);
+    // 실시간 적용 - 서버로만 전송
     updateServerSettings({ 'overlay-text-align': align });
 }
 
 function updateTableOpacity(value) {
     document.getElementById('table-opacity-value').textContent = value + '%';
-    localStorage.setItem('table-opacity', value);
     updateServerSettings({ 'table-opacity': value });
 }
 
 function updateTableNumberSize(value) {
     document.getElementById('table-number-size-value').textContent = value + 'px';
-    localStorage.setItem('table-number-size', value);
     updateServerSettings({ 'table-number-size': value });
 }
 
 function updateTableFontSize(value) {
     document.getElementById('table-font-size-value').textContent = value + 'px';
-    localStorage.setItem('table-font-size', value);
     updateServerSettings({ 'table-font-size': value });
 }
 
 function setTableTextColor(color) {
-    localStorage.setItem('table-text-color', color);
     updateServerSettings({ 'table-text-color': color });
     showStatus(`테이블 글자 색상이 변경되었습니다`, 'success');
 }
@@ -3682,15 +3900,17 @@ function resetOverlaySettings() {
     updateOverlayStrokeWidth('2');
     setOverlayTextAlign('left');
     
-    localStorage.removeItem('overlay-font-size');
-    localStorage.removeItem('overlay-stroke-width');
-    localStorage.removeItem('overlay-text-align');
+    // 기본값으로 서버 설정 업데이트
+    updateServerSettings({ 
+        'overlay-font-size': '16',
+        'overlay-stroke-width': '2',
+        'overlay-text-align': 'left'
+    });
     
     showStatus('후원자별 총액 오버레이 설정이 기본값으로 복원되었습니다', 'info');
 }
 
 function setTableColorPreset(preset) {
-    localStorage.setItem('table-color-preset', preset);
     updateServerSettings({ 'table-color-preset': preset });
     showStatus(`테이블 색상이 ${preset}로 설정되었습니다`, 'success');
 }
@@ -3707,37 +3927,36 @@ function resetTableSettings() {
     updateTableNumberSize('16');
     updateTableFontSize('14');
     
-    localStorage.removeItem('table-opacity');
-    localStorage.removeItem('table-number-size');
-    localStorage.removeItem('table-font-size');
-    localStorage.removeItem('table-text-color');
-    localStorage.removeItem('table-color-preset');
+    // 기본값으로 서버 설정 업데이트
+    updateServerSettings({
+        'table-opacity': '85',
+        'table-number-size': '16', 
+        'table-font-size': '14',
+        'table-text-color': 'white',
+        'table-color-preset': 'dark'
+    });
     
     showStatus('스트리머 테이블 오버레이 설정이 기본값으로 복원되었습니다', 'info');
 }
 
 function loadOverlaySettings() {
-    // 후원자별 총액 오버레이 설정 로드
-    const savedFontSize = localStorage.getItem('overlay-font-size') || '16';
-    const savedStrokeWidth = localStorage.getItem('overlay-stroke-width') || '2';
-    const savedTextAlign = localStorage.getItem('overlay-text-align') || 'left';
+    // 서버 설정이 Socket.IO를 통해 로드되므로 기본값만 설정
+    // 실제 값은 socket.on('initialData') 에서 처리됨
     
-    document.getElementById('overlay-font-size-range').value = savedFontSize;
-    document.getElementById('overlay-stroke-width-range').value = savedStrokeWidth;
-    updateOverlayFontSize(savedFontSize);
-    updateOverlayStrokeWidth(savedStrokeWidth);
-    setOverlayTextAlign(savedTextAlign);
+    // 후원자별 총액 오버레이 기본값
+    document.getElementById('overlay-font-size-range').value = '18';
+    document.getElementById('overlay-stroke-width-range').value = '3';
+    document.getElementById('overlay-font-size-value').textContent = '18px';
+    document.getElementById('overlay-stroke-width-value').textContent = '3px';
+    setOverlayTextAlign('left');
     
-    // 스트리머 테이블 오버레이 설정 로드
-    const savedOpacity = localStorage.getItem('table-opacity') || '85';
-    const savedNumberSize = localStorage.getItem('table-number-size') || '16';
-    const savedFontSize2 = localStorage.getItem('table-font-size') || '14';
-    document.getElementById('table-opacity-range').value = savedOpacity;
-    document.getElementById('table-number-size-range').value = savedNumberSize;
-    document.getElementById('table-font-size-range').value = savedFontSize2;
-    updateTableOpacity(savedOpacity);
-    updateTableNumberSize(savedNumberSize);
-    updateTableFontSize(savedFontSize2);
+    // 스트리머 테이블 오버레이 기본값
+    document.getElementById('table-opacity-range').value = '85';
+    document.getElementById('table-number-size-range').value = '16';
+    document.getElementById('table-font-size-range').value = '14';
+    document.getElementById('table-opacity-value').textContent = '85%';
+    document.getElementById('table-number-size-value').textContent = '16px';
+    document.getElementById('table-font-size-value').textContent = '14px';
     
     // 그룹화 임계값 로드
     const savedGroupThreshold = localStorage.getItem('group-threshold') || '2';

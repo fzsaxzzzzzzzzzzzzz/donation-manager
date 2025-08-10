@@ -161,15 +161,7 @@ app.post('/api/donations', async (req, res) => {
   res.json({ success: true, donation: newDonation });
 });
 
-app.post('/api/settings', async (req, res) => {
-  currentData.settings = { ...currentData.settings, ...req.body };
-  await saveData();
-  
-  // 설정 변경 시에도 실시간 업데이트
-  io.emit('settingsUpdate', currentData.settings);
-  
-  res.json({ success: true, settings: currentData.settings });
-});
+// 중복된 설정 API 제거됨 (아래에 올바른 버전 존재)
 
 // 후원 삭제 API
 app.delete('/api/donations/:id', async (req, res) => {

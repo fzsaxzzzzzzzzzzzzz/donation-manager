@@ -265,11 +265,18 @@ class RealtimeStreamerTable {
     applySettings() {
         const root = document.documentElement;
         
-        // CSS 변수 설정
-        root.style.setProperty('--table-font-size', (this.settings['table-font-size'] || 14) + 'px');
-        root.style.setProperty('--table-number-size', this.settings['table-number-size'] || 16);
-        root.style.setProperty('--table-text-color', this.settings['table-text-color'] || 'white');
-        root.style.setProperty('--table-opacity', this.settings['table-opacity'] || 85);
+        // CSS 변수 설정 (문자열을 숫자로 변환)
+        const fontSize = parseInt(this.settings['table-font-size']) || 14;
+        const numberSize = parseInt(this.settings['table-number-size']) || 16;
+        const textColor = this.settings['table-text-color'] || 'white';
+        const opacity = parseInt(this.settings['table-opacity']) || 85;
+        
+        root.style.setProperty('--table-font-size', fontSize + 'px');
+        root.style.setProperty('--table-number-size', numberSize);
+        root.style.setProperty('--table-text-color', textColor);
+        root.style.setProperty('--table-opacity', opacity);
+        
+        console.log('🔧 테이블 설정 적용됨:', { fontSize, numberSize, textColor, opacity });
 
         // 테이블 제목
         const titleElement = document.getElementById('tableTitle');

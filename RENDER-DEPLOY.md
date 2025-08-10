@@ -34,23 +34,24 @@ PORT = (자동 할당됨)
 
 ## 🌐 배포 후 주소 예시
 
-**Render가 제공하는 URL:**
+**현재 Render 배포 URL:**
 ```
-https://donation-tracker-xxxx.onrender.com
+https://donation-manager-ufm1.onrender.com
 ```
 
 **접속 페이지들:**
-- **관리자**: `https://[URL]/donation-manager-realtime.html`
-- **설정**: `https://[URL]/admin-settings.html`
-- **오버레이**: `https://[URL]/overlay-realtime.html`
-- **테이블**: `https://[URL]/table-realtime.html`
+- **통합 관리**: `https://donation-manager-ufm1.onrender.com/all-in-one.html`
+- **관리자**: `https://donation-manager-ufm1.onrender.com/donation-manager.html`
+- **설정**: `https://donation-manager-ufm1.onrender.com/admin-settings.html`
+- **오버레이**: `https://donation-manager-ufm1.onrender.com/donor-overlay.html`
+- **테이블**: `https://donation-manager-ufm1.onrender.com/streamer-table-overlay.html`
 
 ## 🎯 OBS 설정
 
 **브라우저 소스 URL:**
 ```
-https://[실제URL]/overlay-realtime.html
-https://[실제URL]/table-realtime.html
+https://donation-manager-ufm1.onrender.com/donor-overlay.html
+https://donation-manager-ufm1.onrender.com/streamer-table-overlay.html
 ```
 
 ## ⚙️ 자동 배포 설정
