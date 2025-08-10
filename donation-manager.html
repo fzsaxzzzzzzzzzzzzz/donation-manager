@@ -1474,24 +1474,39 @@ function updateSummary() {
     const footerText = localStorage.getItem('streamer-summary-footer') || '🏧투네/계좌 [8:2] 🎉슈퍼챗은 국고로~!';
     const excludeGukgo = localStorage.getItem('exclude-gukgo') !== 'false'; // 기본값: true
     
+    // 상세 테이블과 동일한 로직으로 스트리머 데이터 계산
     const hiddenStreamers = JSON.parse(localStorage.getItem('hidden-streamers') || '[]');
-    let sortedStreamers = (streamers || []).filter(s => s !== '국고' && s !== '엄삼용' && s !== '후원자조정' && !hiddenStreamers.includes(s)).sort((a,b) => streamerTotals[b] - streamerTotals[a]);
-    if ((streamers || []).includes('엄삼용') && !hiddenStreamers.includes('엄삼용')) { sortedStreamers.unshift('엄삼용'); }
-    const samyongSchool = sortedStreamers.map(s => `${emojis[s] || ''}${s}(${parseFloat(streamerTotals[s] || 0)})`).join(' ');
+    const summaryStreamers = (streamers || []).filter(s => s !== '국고' && s !== '후원자조정' && !hiddenStreamers.includes(s));
+    const streamerDetailData = {};
+    summaryStreamers.forEach(s => { streamerDetailData[s] = { name: s, account: 0, toonation: 0, total: 0 }; });
+    donations.forEach(d => {
+        if (streamerDetailData.hasOwnProperty(d.streamer)) {
+            const amount = parseFloat(d.amount) || 0;
+            if (d.type === '계좌') streamerDetailData[d.streamer].account += amount;
+            else if (d.type === '투네') streamerDetailData[d.streamer].toonation += amount;
+        }
+    });
     
-    // 총합 계산 (국고 제외 옵션에 따라)
-    const displayTotalAmount = excludeGukgo ? 
-        totalAmount - (streamerTotals['국고'] || 0) : 
-        totalAmount;
+    // 총액 계산 후 정렬 (상세 테이블과 동일)
+    let sortedDetailStreamers = Object.values(streamerDetailData).map(data => { 
+        data.total = data.account + data.toonation; 
+        return data; 
+    }).sort((a, b) => b.total - a.total);
     
-    // 국고 포함 여부에 따른 출력 형식
-    let summaryText = `${headerText}| ${samyongSchool}`;
-    
-    if (!excludeGukgo) {
-        summaryText += ` | 🏦국고(${parseFloat(streamerTotals['국고']||0)})`;
+    // 엄삼용 우선 배치 (있는 경우)
+    if (sortedDetailStreamers.find(s => s.name === '엄삼용')) {
+        const samyongData = sortedDetailStreamers.find(s => s.name === '엄삼용');
+        sortedDetailStreamers = sortedDetailStreamers.filter(s => s.name !== '엄삼용');
+        sortedDetailStreamers.unshift(samyongData);
     }
     
-    summaryText += ` | 💵총합(${parseFloat(displayTotalAmount)}) | ${footerText}`;
+    const samyongSchool = sortedDetailStreamers.map(s => `${emojis[s.name] || ''}${s.name}(${s.total})`).join(' ');
+    
+    // 총합 계산 (상세 테이블과 동일 - 국고 항상 제외)
+    const displayTotalAmount = sortedDetailStreamers.reduce((sum, s) => sum + s.total, 0);
+    
+    // 출력 형식 (국고 제외 옵션 무시 - 상세 테이블과 일치)
+    let summaryText = `${headerText}| ${samyongSchool} | 💵총합(${displayTotalAmount}) | ${footerText}`;
     
     document.getElementById('summary-output').textContent = summaryText;
     
