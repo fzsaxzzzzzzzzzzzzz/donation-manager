@@ -1350,6 +1350,31 @@ async function deleteSelected() {
     showStatus(`${deleteCount}개 항목이 삭제되었습니다`, 'success');
 }
 
+// --- 서버 동기화 함수 ---
+async function syncToServer() {
+    if (!isSocketConnected) {
+        console.log('⚠️ 서버 연결 없음, 동기화 생략');
+        return;
+    }
+    
+    try {
+        console.log('🔄 서버 동기화 시작...');
+        const response = await fetch('/api/donations/bulk', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ donations })
+        });
+        
+        if (response.ok) {
+            console.log('✅ 서버 동기화 성공');
+        } else {
+            console.error('❌ 서버 동기화 실패:', response.status);
+        }
+    } catch (error) {
+        console.error('❌ 서버 동기화 오류:', error);
+    }
+}
+
 // --- UI 업데이트 함수 ---
 function updateAllUI() {
     updateStreamerInputs();
@@ -1868,6 +1893,9 @@ function makeCellEditable(cell, index) {
         updateAllUI();
         showStatus('수정이 저장되었습니다.', 'success');
         currentlyEditing = null;
+        
+        // 실시간 서버 동기화
+        syncToServer();
     };
     
     inputElement.addEventListener('blur', saveEdit);
