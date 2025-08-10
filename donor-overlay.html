@@ -192,9 +192,9 @@ class RealtimeDonorOverlay {
             return;
         }
         
-        // 화면 표시용 텍스트 생성
+        // 화면 표시용 텍스트 생성 (원본 숫자 그대로 표시)
         const displayText = sortedDonors
-            .map(([donor, amount]) => `${donor}: ${amount.toLocaleString()}원`)
+            .map(([donor, amount]) => `${donor}: ${amount}원`)
             .join('\n');
         
         contentEl.innerHTML = `<div>${displayText}</div>`;
