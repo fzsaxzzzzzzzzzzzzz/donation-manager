@@ -229,7 +229,7 @@ class RealtimeDonorOverlay {
         
         // 정산요약과 동일한 형식으로 텍스트 생성
         const donorTotalText = sortedGroups.map(([amount, donors]) => {
-            const amountStr = `${(parseFloat(amount) / 10000)}만`;
+            const amountStr = `${parseFloat(amount)}만`;
             if (donors.length >= groupThreshold && groupThreshold > 1) {
                 return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
             } else {

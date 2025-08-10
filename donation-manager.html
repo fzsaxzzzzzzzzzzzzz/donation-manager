@@ -1512,7 +1512,7 @@ function updateSummary() {
     const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 0.1);
     const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
     const donorTotalText = sortedGroups.map(([amount, donors]) => {
-        const amountStr = `${(parseFloat(amount) / 10000)}만`;
+        const amountStr = `${parseFloat(amount)}만`;
         if (donors.length >= groupThreshold && groupThreshold > 1) {
             return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
         } else {
