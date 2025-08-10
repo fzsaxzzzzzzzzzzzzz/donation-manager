@@ -56,21 +56,7 @@ body {
     50% { opacity: 1; }
 }
 
-.connection-status {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    padding: 5px 10px;
-    font-size: 12px;
-    border-radius: 20px;
-    background: rgba(0, 255, 0, 0.8);
-    color: white;
-    z-index: 1000;
-}
-
-.connection-status.disconnected {
-    background: rgba(255, 0, 0, 0.8);
-}
+/* 연결 상태 표시 제거됨 */
 
 /* 크로마키 지원 */
 .transparent-mode {
@@ -86,7 +72,7 @@ body {
     </div>
 </div>
 
-<div class="connection-status" id="connectionStatus">연결 중...</div>
+<!-- 연결 상태 표시 제거됨 -->
 
 <script>
 class RealtimeDonorOverlay {
@@ -107,13 +93,11 @@ class RealtimeDonorOverlay {
     initializeSocket() {
         this.socket.on('connect', () => {
             this.isConnected = true;
-            this.updateConnectionStatus();
             console.log('🔗 실시간 서버 연결됨');
         });
         
         this.socket.on('disconnect', () => {
             this.isConnected = false;
-            this.updateConnectionStatus();
             console.log('❌ 실시간 서버 연결 끊어짐');
             this.showError('서버와의 연결이 끊어졌습니다.');
         });
@@ -141,16 +125,7 @@ class RealtimeDonorOverlay {
         });
     }
     
-    updateConnectionStatus() {
-        const statusEl = document.getElementById('connectionStatus');
-        if (this.isConnected) {
-            statusEl.textContent = '🟢 연결됨';
-            statusEl.className = 'connection-status';
-        } else {
-            statusEl.textContent = '🔴 연결 끊어짐';
-            statusEl.className = 'connection-status disconnected';
-        }
-    }
+    // 연결 상태 표시 제거됨
     
     applySettings() {
         const root = document.documentElement;
