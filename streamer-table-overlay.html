@@ -455,7 +455,7 @@ class RealtimeStreamerTable {
             const grandTotal = totalAccount + totalToonation;
             
             document.getElementById('totalSummary').innerHTML = 
-                `총 후원액: <strong>₩${grandTotal.toLocaleString('ko-KR')}</strong> (계좌: ₩${totalAccount.toLocaleString('ko-KR')}, 투네: ₩${totalToonation.toLocaleString('ko-KR')})`;
+                `총 후원액: <strong>${grandTotal.toLocaleString('ko-KR')}원</strong> (계좌: ${totalAccount.toLocaleString('ko-KR')}원, 투네: ${totalToonation.toLocaleString('ko-KR')}원)`;
         }
     }
 
