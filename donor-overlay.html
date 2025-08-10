@@ -176,47 +176,73 @@ class RealtimeDonorOverlay {
             return;
         }
         
-        // 후원자별 총액 계산 (계좌 타입만)
-        const donorTotals = {};
-        this.donations.forEach(donation => {
-            if (donation.type === '계좌') {
-                let cleanName = donation.donor || '익명';
+        // 후원자별 총액 계산 (계좌 타입만) - 정산요약과 동일한 로직
+        const donorAccountTotals = {};
+        this.donations.forEach(d => {
+            const amount = parseFloat(d.amount) || 0;
+            if (d.type === '계좌') {
+                // 스트리머별 조정은 제외, 후원자별 조정은 포함
+                if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
+                    // 스트리머별 조정 → 제외
+                    return;
+                }
                 
-                // 조정 항목 처리
-                if (cleanName.includes('(조정')) {
-                    cleanName = cleanName.replace(/\(조정[^)]*\)/g, '').trim();
+                // 후원자명에서 (조정+금액) 부분 제거
+                let cleanDonorName = d.donor;
+                if (cleanDonorName.includes('(조정')) {
+                    cleanDonorName = cleanDonorName.replace(/\(조정[^)]*\)/g, '');
                 }
                 
                 // 계좌후원자님은 그대로 표시 (특별 처리)
-                if (cleanName === '계좌후원자님' || cleanName === '계좌후원자') {
-                    cleanName = '계좌후원자님';
+                if (cleanDonorName === '계좌후원자님' || cleanDonorName === '계좌후원자') {
+                    cleanDonorName = '계좌후원자님';
                 }
                 
-                donorTotals[cleanName] = (donorTotals[cleanName] || 0) + (parseFloat(donation.amount) || 0);
+                donorAccountTotals[cleanDonorName] = (donorAccountTotals[cleanDonorName] || 0) + amount;
             }
         });
+
+        // 그룹화 임계값 로드 (정산요약과 동일)
+        const groupThreshold = parseInt(localStorage.getItem('group-threshold') || '2');
         
-        // 소액 필터링 (1000원 미만 제외) 및 금액 순으로 정렬
-        const sortedDonors = Object.entries(donorTotals)
-            .filter(([donor, amount]) => amount >= 1000)
-            .sort((a, b) => b[1] - a[1]);
+        // 금액별 그룹화
+        const amountGroups = {};
+        for (const donor in donorAccountTotals) {
+            const amount = donorAccountTotals[donor];
+            if (amount > 0) {
+                if (!amountGroups[amount]) { 
+                    amountGroups[amount] = []; 
+                }
+                amountGroups[amount].push(donor);
+            }
+        }
+
+        // 소액 필터링 (1000원 미만 제외)
+        const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 1000);
+        const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
         
-        if (sortedDonors.length === 0) {
+        if (sortedGroups.length === 0) {
             contentEl.textContent = '사랑해요♡\n후원자가 없습니다';
             contentEl.className = 'no-data';
             return;
         }
         
-        // 화면 표시용 텍스트 생성 (만원 단위로 표시)
-        const displayText = sortedDonors
-            .map(([donor, amount]) => `${donor}님 ${(amount / 10000)}만`)
-            .join('\n');
+        // 정산요약과 동일한 형식으로 텍스트 생성
+        const donorTotalText = sortedGroups.map(([amount, donors]) => {
+            const amountStr = `${(parseFloat(amount) / 10000)}만`;
+            if (donors.length >= groupThreshold && groupThreshold > 1) {
+                return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
+            } else {
+                return donors.map(d => `${d}님 ${amountStr}`).join('\n');
+            }
+        }).join('\n');
         
-        // "사랑해요♡" 인사말과 함께 표시
-        contentEl.textContent = `사랑해요♡\n${displayText}`;
+        // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
+        const finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡\n후원자가 없습니다';
+        contentEl.textContent = finalText;
         contentEl.className = 'donor-content';
         
-        console.log('📊 화면 업데이트 완료:', sortedDonors.length, '명의 후원자');
+        console.log('📊 화면 업데이트 완료:', sortedGroups.length, '개 그룹의 후원자');
     }
     
     showError(message) {
