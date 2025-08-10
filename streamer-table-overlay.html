@@ -190,9 +190,9 @@ body {
             <tr>
                 <th>순위</th>
                 <th>스트리머</th>
-                <th>계좌후원(만)</th>
-                <th>투네후원(만)</th>
-                <th>총 후원(만)</th>
+                <th>계좌후원</th>
+                <th>투네후원</th>
+                <th>총 후원</th>
             </tr>
         </thead>
         <tbody id="streamerTableBody">
@@ -334,9 +334,9 @@ class RealtimeStreamerTable {
         // 후원 데이터 집계 (계좌/투네 분리)
         (this.data.donations || []).forEach(d => {
             if (streamerData.hasOwnProperty(d.streamer)) {
-                const amount = parseFloat(d.amount) || 0;
-                if (d.type === '계좌') streamerData[d.streamer].account += amount;
-                else if (d.type === '투네') streamerData[d.streamer].toonation += amount;
+                const amountInWon = (parseFloat(d.amount) || 0) * 10000; // 만원 → 원 변환
+                if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
+                else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
             }
         });
         
@@ -455,7 +455,7 @@ class RealtimeStreamerTable {
             const grandTotal = totalAccount + totalToonation;
             
             document.getElementById('totalSummary').innerHTML = 
-                `총 후원액: <strong>${grandTotal.toLocaleString('ko-KR')}만원</strong> (계좌: ${totalAccount.toLocaleString('ko-KR')}만, 투네: ${totalToonation.toLocaleString('ko-KR')}만)`;
+                `총 후원액: <strong>₩${grandTotal.toLocaleString('ko-KR')}</strong> (계좌: ₩${totalAccount.toLocaleString('ko-KR')}, 투네: ₩${totalToonation.toLocaleString('ko-KR')})`;
         }
     }
 

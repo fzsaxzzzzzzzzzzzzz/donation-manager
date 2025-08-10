@@ -1671,9 +1671,9 @@ function updateDetailedSummaryTable() {
     summaryStreamers.forEach(s => { streamerData[s] = { name: s, account: 0, toonation: 0, total: 0 }; });
     donations.forEach(d => {
         if (streamerData.hasOwnProperty(d.streamer)) {
-            const amount = parseFloat(d.amount) || 0;
-            if (d.type === '계좌') streamerData[d.streamer].account += amount;
-            else if (d.type === '투네') streamerData[d.streamer].toonation += amount;
+            const amountInWon = (parseFloat(d.amount) || 0) * 10000; // 만원 → 원 변환
+            if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
+            else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
         }
     });
     
@@ -1694,7 +1694,7 @@ function updateDetailedSummaryTable() {
         return rankNumber.toString();
     }
     
-    const headerHtml = `<tr><th>순위</th><th>스트리머</th><th>계좌후원(만)</th><th>투네후원(만)</th><th>총 후원(만)</th></tr>`;
+    const headerHtml = `<tr><th>순위</th><th>스트리머</th><th>계좌후원</th><th>투네후원</th><th>총 후원</th></tr>`;
     const bodyHtml = sortedStreamers.map((data, index) => { 
         const rankName = getRankName(index);
         return `<tr><td>${rankName}</td><td>${emojis[data.name] || ''} ${data.name}</td><td>${data.account.toLocaleString('ko-KR')}</td><td>${data.toonation.toLocaleString('ko-KR')}</td><td>${data.total.toLocaleString('ko-KR')}</td></tr>`; 
@@ -1718,7 +1718,7 @@ function updateDetailedSummaryTable() {
         `<tr><td colspan="5">계좌/투네 후원 내역이 없습니다.</td></tr>` : 
         bodyHtml + totalRowHtml;
     
-    tableContainer.innerHTML = `<p style="font-size: 13px; color: #606770; margin-bottom: 10px;">※ 슈퍼챗(국고)을 제외한 후원 내역입니다. (단위: 만원)</p><table class="table"><thead>${headerHtml}</thead><tbody>${finalBodyHtml}</tbody></table>`;
+    tableContainer.innerHTML = `<p style="font-size: 13px; color: #606770; margin-bottom: 10px;">※ 슈퍼챗(국고)을 제외한 후원 내역입니다.</p><table class="table"><thead>${headerHtml}</thead><tbody>${finalBodyHtml}</tbody></table>`;
 }
 
 function updateMissionSettingsUI() { 
