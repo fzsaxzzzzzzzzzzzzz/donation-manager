@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔧 설정 수정 도구</title>
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: #f5f5f5;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+    color: #dc3545;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.info-box {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger { background: #dc3545; color: white; }
+.btn-success { background: #28a745; color: white; }
+.btn-primary { background: #007bff; color: white; }
+.btn-warning { background: #ffc107; color: #212529; }
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.status {
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+    font-weight: 600;
+    display: none;
+}
+
+.status.success { background: #d4edda; color: #155724; }
+.status.error { background: #f8d7da; color: #721c24; }
+.status.info { background: #d1ecf1; color: #0c5460; }
+
+.debug-output {
+    background: #2d3748;
+    color: #e2e8f0;
+    padding: 15px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    margin-top: 20px;
+}
+
+.current-settings {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔧 설정 구조 수정 도구</h1>
+    
+    <div class="info-box">
+        <strong>⚠️ 문제:</strong> 설정이 중첩 저장되어 다른 컴퓨터에서 설정이 안 먹는 문제<br>
+        <strong>✅ 해결:</strong> 아래 "설정 구조 수정" 버튼을 클릭하면 즉시 해결됩니다.
+    </div>
+
+    <button class="btn btn-danger" onclick="fixSettingsStructure()">
+        🔧 설정 구조 수정 (중첩 해결)
+    </button>
+
+    <button class="btn btn-success" onclick="loadCurrentSettings()">
+        📊 현재 설정 상태 확인
+    </button>
+
+    <button class="btn btn-primary" onclick="testSettingsSync()">
+        🧪 설정 동기화 테스트
+    </button>
+
+    <button class="btn btn-warning" onclick="resetAllSettings()">
+        🔄 모든 설정 초기화
+    </button>
+
+    <div id="statusMessage" class="status"></div>
+
+    <div class="current-settings">
+        <h3>📋 현재 서버 설정:</h3>
+        <div id="currentSettings">로딩 중...</div>
+    </div>
+
+    <div id="debugOutput" class="debug-output" style="display: none;"></div>
+</div>
+
+<script>
+let debugLogs = [];
+
+// 설정 구조 수정
+async function fixSettingsStructure() {
+    try {
+        showStatus('🔧 설정 구조 수정 중...', 'info');
+        log('설정 구조 수정 요청 시작');
+        
+        const response = await fetch('/api/fix-settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('✅ 설정 구조가 성공적으로 수정되었습니다!', 'success');
+            log('설정 구조 수정 성공: ' + JSON.stringify(result, null, 2));
+            
+            // 현재 설정 다시 로드
+            setTimeout(loadCurrentSettings, 1000);
+        } else {
+            showStatus('❌ 설정 구조 수정 실패: ' + result.error, 'error');
+            log('설정 구조 수정 실패: ' + JSON.stringify(result));
+        }
+        
+    } catch (error) {
+        showStatus('❌ 서버 통신 오류: ' + error.message, 'error');
+        log('설정 구조 수정 오류: ' + error.message);
+    }
+}
+
+// 현재 설정 로드
+async function loadCurrentSettings() {
+    try {
+        showStatus('📊 현재 설정 로드 중...', 'info');
+        log('현재 설정 로드 요청');
+        
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        
+        log('서버 응답: ' + JSON.stringify(data.settings, null, 2));
+        
+        const settingsEl = document.getElementById('currentSettings');
+        
+        if (data.settings) {
+            // 중첩 설정인지 확인
+            const isNested = data.settings.settings !== undefined;
+            
+            let displayHtml = '<pre style="margin: 0; font-size: 12px;">';
+            displayHtml += JSON.stringify(data.settings, null, 2);
+            displayHtml += '</pre>';
+            
+            if (isNested) {
+                displayHtml = '<div style="color: #dc3545; font-weight: bold; margin-bottom: 10px;">⚠️ 중첩 설정 발견! 수정이 필요합니다.</div>' + displayHtml;
+            } else {
+                displayHtml = '<div style="color: #28a745; font-weight: bold; margin-bottom: 10px;">✅ 설정 구조가 정상입니다.</div>' + displayHtml;
+            }
+            
+            settingsEl.innerHTML = displayHtml;
+            showStatus('✅ 현재 설정을 성공적으로 로드했습니다.', 'success');
+        } else {
+            settingsEl.innerHTML = '설정이 없습니다.';
+            showStatus('⚠️ 서버에 설정이 없습니다.', 'info');
+        }
+        
+    } catch (error) {
+        showStatus('❌ 설정 로드 실패: ' + error.message, 'error');
+        log('설정 로드 오류: ' + error.message);
+    }
+}
+
+// 설정 동기화 테스트
+async function testSettingsSync() {
+    try {
+        showStatus('🧪 설정 동기화 테스트 중...', 'info');
+        log('설정 동기화 테스트 시작');
+        
+        const testSettings = {
+            'overlay-font-size': '30',
+            'overlay-text-align': 'center',
+            'overlay-stroke-width': '4'
+        };
+        
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ settings: testSettings })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('✅ 설정 동기화 테스트 성공!', 'success');
+            log('테스트 설정 전송 성공: ' + JSON.stringify(result, null, 2));
+            
+            // 현재 설정 다시 로드
+            setTimeout(loadCurrentSettings, 1000);
+        } else {
+            showStatus('❌ 설정 동기화 테스트 실패: ' + result.error, 'error');
+            log('테스트 설정 전송 실패: ' + JSON.stringify(result));
+        }
+        
+    } catch (error) {
+        showStatus('❌ 테스트 오류: ' + error.message, 'error');
+        log('설정 동기화 테스트 오류: ' + error.message);
+    }
+}
+
+// 모든 설정 초기화
+async function resetAllSettings() {
+    if (!confirm('모든 설정을 기본값으로 초기화하시겠습니까?')) {
+        return;
+    }
+    
+    try {
+        showStatus('🔄 설정 초기화 중...', 'info');
+        log('설정 초기화 요청');
+        
+        const defaultSettings = {
+            'overlay-font-size': '24',
+            'overlay-text-align': 'center',
+            'overlay-stroke-width': '3',
+            'table-opacity': '85',
+            'table-number-size': '16',
+            'table-font-size': '14',
+            'table-text-color': '#ffffff',
+            'group-threshold': '2',
+            'show-total-row': 'true',
+            'show-update-time': 'false',
+            'table-title': '🏆 스트리머별 후원 현황 🏆'
+        };
+        
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ settings: defaultSettings })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('✅ 모든 설정이 기본값으로 초기화되었습니다!', 'success');
+            log('설정 초기화 성공: ' + JSON.stringify(result, null, 2));
+            
+            // 현재 설정 다시 로드
+            setTimeout(loadCurrentSettings, 1000);
+        } else {
+            showStatus('❌ 설정 초기화 실패: ' + result.error, 'error');
+            log('설정 초기화 실패: ' + JSON.stringify(result));
+        }
+        
+    } catch (error) {
+        showStatus('❌ 초기화 오류: ' + error.message, 'error');
+        log('설정 초기화 오류: ' + error.message);
+    }
+}
+
+// 상태 메시지 표시
+function showStatus(message, type) {
+    const statusEl = document.getElementById('statusMessage');
+    statusEl.textContent = message;
+    statusEl.className = 'status ' + type;
+    statusEl.style.display = 'block';
+    
+    if (type !== 'info') {
+        setTimeout(() => {
+            statusEl.style.display = 'none';
+        }, 5000);
+    }
+}
+
+// 로그 출력
+function log(message) {
+    const timestamp = new Date().toLocaleTimeString();
+    debugLogs.push(`[${timestamp}] ${message}`);
+    
+    const debugEl = document.getElementById('debugOutput');
+    debugEl.textContent = debugLogs.slice(-50).join('\n');
+    debugEl.scrollTop = debugEl.scrollHeight;
+    
+    console.log(`[SettingsFix] ${message}`);
+}
+
+// 디버그 출력 토글
+function toggleDebug() {
+    const debugEl = document.getElementById('debugOutput');
+    debugEl.style.display = debugEl.style.display === 'none' ? 'block' : 'none';
+}
+
+// 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    loadCurrentSettings();
+    
+    // 디버그 출력 토글 키
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'F12' || e.key === '`') {
+            toggleDebug();
+        }
+    });
+});
+</script>
+
+</body>
+</html>

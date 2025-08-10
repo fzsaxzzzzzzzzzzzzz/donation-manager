@@ -102,6 +102,7 @@ app.get('/', (req, res) => {
       <li><a href="/settings-sheet.html">⚙️ 설정 관리 시트</a> <span style="color: #28a745; font-weight: bold;">NEW!</span></li>
       <li><a href="/settings-debug.html">🔧 설정 디버그 테스트</a> <span style="color: #dc3545; font-weight: bold;">DEBUG</span></li>
       <li><a href="/simple-overlay-test.html">🧪 간단 오버레이 테스트</a> <span style="color: #ff6b6b; font-weight: bold;">TEST</span></li>
+      <li><a href="/fix-settings.html">🔧 설정 구조 수정 도구</a> <span style="color: #dc3545; font-weight: bold;">FIX!</span></li>
       <li><a href="/admin-settings.html">⚙️ 관리자 설정</a></li>
       <li><a href="/donor-overlay.html">🎥 후원자 오버레이</a></li>
       <li><a href="/donor-overlay-simple.html">🎥 후원자 오버레이 (Simple)</a> <span style="color: #28a745; font-weight: bold;">SIMPLE!</span></li>
@@ -301,6 +302,44 @@ app.delete('/api/streamers/:name', async (req, res) => {
     res.json({ success: true, message: '스트리머가 삭제되었습니다.' });
   } catch (error) {
     console.error('스트리머 삭제 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
+// 설정 구조 수정 API (중첩 설정 해결)
+app.post('/api/fix-settings', async (req, res) => {
+  try {
+    console.log('🔧 설정 구조 수정 시작...');
+    console.log('수정 전 설정:', JSON.stringify(currentData.settings, null, 2));
+    
+    // 중첩된 설정을 평면화
+    if (currentData.settings && currentData.settings.settings) {
+      console.log('⚠️ 중첩 설정 발견, 평면화 진행...');
+      currentData.settings = {
+        ...currentData.settings,
+        ...currentData.settings.settings  // 중첩된 설정을 끌어올림
+      };
+      // 중첩 키 삭제
+      delete currentData.settings.settings;
+    }
+    
+    // 파일에 저장
+    await saveData();
+    
+    console.log('수정 후 설정:', JSON.stringify(currentData.settings, null, 2));
+    
+    // 모든 클라이언트에게 업데이트 전송
+    console.log('📡 [서버] 설정 수정 후 데이터 전송');
+    io.emit('settingsUpdate', currentData.settings);
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ 
+      success: true, 
+      message: '설정 구조가 수정되었습니다.',
+      settings: currentData.settings
+    });
+  } catch (error) {
+    console.error('설정 구조 수정 실패:', error);
     res.status(500).json({ error: '서버 오류' });
   }
 });
