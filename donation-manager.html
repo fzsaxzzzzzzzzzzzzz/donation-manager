@@ -1423,7 +1423,7 @@ function updateTable() {
         <td data-field="donor" ondblclick="makeCellEditable(this, ${i})">${d.donor}</td>
         <td data-field="streamer" ondblclick="makeCellEditable(this, ${i})">${emojis[d.streamer] || ''}${d.streamer}</td>
         <td data-field="type" ondblclick="makeCellEditable(this, ${i})">${d.type}</td>
-        <td data-field="amount" ondblclick="makeCellEditable(this, ${i})">${formatAmount(d.amount)}</td>
+        <td data-field="amount" ondblclick="makeCellEditable(this, ${i})">${parseFloat(d.amount)}</td>
         <td data-field="time">${d.time ? new Date(d.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</td>
     </tr>`).join('') || `<tr><td colspan="7">데이터 없음</td></tr>`;
 }
@@ -1472,7 +1472,7 @@ function updateSummary() {
     const hiddenStreamers = JSON.parse(localStorage.getItem('hidden-streamers') || '[]');
     let sortedStreamers = (streamers || []).filter(s => s !== '국고' && s !== '엄삼용' && s !== '후원자조정' && !hiddenStreamers.includes(s)).sort((a,b) => streamerTotals[b] - streamerTotals[a]);
     if ((streamers || []).includes('엄삼용') && !hiddenStreamers.includes('엄삼용')) { sortedStreamers.unshift('엄삼용'); }
-    const samyongSchool = sortedStreamers.map(s => `${emojis[s] || ''}${s}(${formatAmount(streamerTotals[s] || 0)})`).join(' ');
+    const samyongSchool = sortedStreamers.map(s => `${emojis[s] || ''}${s}(${parseFloat(streamerTotals[s] || 0)})`).join(' ');
     
     // 총합 계산 (국고 제외 옵션에 따라)
     const displayTotalAmount = excludeGukgo ? 
@@ -1483,10 +1483,10 @@ function updateSummary() {
     let summaryText = `${headerText}| ${samyongSchool}`;
     
     if (!excludeGukgo) {
-        summaryText += ` | 🏦국고(${formatAmount(streamerTotals['국고']||0)})`;
+        summaryText += ` | 🏦국고(${parseFloat(streamerTotals['국고']||0)})`;
     }
     
-    summaryText += ` | 💵총합(${formatAmount(displayTotalAmount)}) | ${footerText}`;
+    summaryText += ` | 💵총합(${parseFloat(displayTotalAmount)}) | ${footerText}`;
     
     document.getElementById('summary-output').textContent = summaryText;
     
@@ -1523,8 +1523,8 @@ function updateSummary() {
     }, {});
     document.getElementById('recent-log').textContent = Object.values(groupedDonations).sort((a,b) => b.time - a.time).map(group => {
         const donationTexts = group.donations.map(d => {
-            const totalForStreamer = formatAmount(streamerTotals[d.streamer] || 0);
-            return `${emojis[d.streamer] || ''}${d.streamer} (+${formatAmount(d.amount)}/${totalForStreamer})`;
+            const totalForStreamer = parseFloat(streamerTotals[d.streamer] || 0);
+            return `${emojis[d.streamer] || ''}${d.streamer} (+${parseFloat(d.amount)}/${totalForStreamer})`;
         }).join(', ');
         return `${group.donor} > ${donationTexts}`;
     }).join('\n');
@@ -1726,12 +1726,12 @@ function updateMissionSummary() {
             mission.status = 'success'; 
             mission.completedTime = Date.now(); 
         }
-        const currentAmountStr = formatAmount(currentAmount);
+        const currentAmountStr = parseFloat(currentAmount);
         if (mission.status === 'success') { return `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/성공!)`; }
-        const remainingStr = formatAmount(remaining > 0 ? remaining : 0);
+        const remainingStr = parseFloat(remaining > 0 ? remaining : 0);
         return `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/-${remainingStr})`;
     });
-    container.textContent = `🎄퇴근미션(${formatAmount(totalMissionAmount)}만)🎄 | ${missionTexts.join(' | ')}`;
+    container.textContent = `🎄퇴근미션(${parseFloat(totalMissionAmount)}만)🎄 | ${missionTexts.join(' | ')}`;
 }
 
 // --- 유틸리티 및 이벤트 핸들러 ---
