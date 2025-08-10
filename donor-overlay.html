@@ -183,23 +183,24 @@ class RealtimeDonorOverlay {
             donorTotals[donor] = (donorTotals[donor] || 0) + (parseFloat(donation.amount) || 0);
         });
         
-        // 금액 순으로 정렬
+        // 소액 필터링 (1000원 미만 제외) 및 금액 순으로 정렬
         const sortedDonors = Object.entries(donorTotals)
-            .filter(([donor, amount]) => amount > 0)
+            .filter(([donor, amount]) => amount >= 1000)
             .sort((a, b) => b[1] - a[1]);
         
         if (sortedDonors.length === 0) {
-            contentEl.textContent = '후원 데이터가 없습니다';
+            contentEl.textContent = '사랑해요♡\n후원자가 없습니다';
             contentEl.className = 'no-data';
             return;
         }
         
-        // 화면 표시용 텍스트 생성 (원본 숫자 그대로 표시)
+        // 화면 표시용 텍스트 생성 (만원 단위로 표시)
         const displayText = sortedDonors
-            .map(([donor, amount]) => `${donor}: ${amount}원`)
+            .map(([donor, amount]) => `${donor}님 ${(amount / 10000)}만`)
             .join('\n');
         
-        contentEl.textContent = displayText;
+        // "사랑해요♡" 인사말과 함께 표시
+        contentEl.textContent = `사랑해요♡\n${displayText}`;
         contentEl.className = 'donor-content';
         
         console.log('📊 화면 업데이트 완료:', sortedDonors.length, '명의 후원자');

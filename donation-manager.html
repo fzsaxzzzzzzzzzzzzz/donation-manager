@@ -1503,7 +1503,9 @@ function updateSummary() {
         }
     }
 
-    const sortedGroups = Object.entries(amountGroups).sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
+    // 소액 필터링 (1000원 미만 제외)
+    const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 0.1);
+    const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
     const donorTotalText = sortedGroups.map(([amount, donors]) => {
         const amountStr = `${parseFloat(amount)}만`;
         if (donors.length >= groupThreshold && groupThreshold > 1) {
@@ -1512,7 +1514,10 @@ function updateSummary() {
             return donors.map(d => `${d}님 ${amountStr}`).join('\n');
         }
     }).join('\n');
-    document.getElementById('donor-total').textContent = donorTotalText;
+    
+    // "사랑해요♡" 인사말과 함께 표시
+    const finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡\n후원자가 없습니다';
+    document.getElementById('donor-total').textContent = finalText;
 
     const minutes = parseInt(document.getElementById('recent-minutes').value, 10);
     const recentDonations = (donations || []).filter(d => (Date.now() - new Date(d.time).getTime()) < minutes * 60 * 1000);
