@@ -101,8 +101,10 @@ app.get('/', (req, res) => {
       <li><a href="/donation-sheet.html">📊 엑셀 스타일 시트</a></li>
       <li><a href="/settings-sheet.html">⚙️ 설정 관리 시트</a> <span style="color: #28a745; font-weight: bold;">NEW!</span></li>
       <li><a href="/settings-debug.html">🔧 설정 디버그 테스트</a> <span style="color: #dc3545; font-weight: bold;">DEBUG</span></li>
+      <li><a href="/simple-overlay-test.html">🧪 간단 오버레이 테스트</a> <span style="color: #ff6b6b; font-weight: bold;">TEST</span></li>
       <li><a href="/admin-settings.html">⚙️ 관리자 설정</a></li>
       <li><a href="/donor-overlay.html">🎥 후원자 오버레이</a></li>
+      <li><a href="/donor-overlay-simple.html">🎥 후원자 오버레이 (Simple)</a> <span style="color: #28a745; font-weight: bold;">SIMPLE!</span></li>
       <li><a href="/streamer-table-overlay.html">📊 스트리머 테이블</a></li>
     </ul>
   `);

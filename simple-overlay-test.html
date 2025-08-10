@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧪 간단 오버레이 테스트</title>
+
+<style>
+body {
+    margin: 0;
+    padding: 20px;
+    background: transparent;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    color: white;
+}
+
+.test-content {
+    padding: 20px;
+    background: rgba(0,0,0,0.8);
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.control-panel {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.9);
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #fff;
+}
+
+.control-panel button {
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-left { background: #ff6b6b; color: white; }
+.btn-center { background: #4ecdc4; color: white; }
+.btn-right { background: #45b7d1; color: white; }
+.btn-size { background: #96ceb4; color: white; }
+
+#testText {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000;
+    text-align: left;
+    transition: all 0.3s ease;
+    line-height: 1.5;
+    white-space: pre-line;
+}
+</style>
+</head>
+<body>
+
+<div class="control-panel">
+    <h4 style="color: white; margin: 0 0 10px 0;">🎛️ 즉시 테스트</h4>
+    <button class="btn-left" onclick="setAlign('left')">← 왼쪽</button>
+    <button class="btn-center" onclick="setAlign('center')">⚬ 가운데</button>
+    <button class="btn-right" onclick="setAlign('right')">→ 오른쪽</button>
+    <button class="btn-size" onclick="changeSize('+')">🔍 크게</button>
+    <button class="btn-size" onclick="changeSize('-')">🔎 작게</button>
+    <button onclick="showInfo()" style="background: #feca57; color: black;">ℹ️ 정보</button>
+</div>
+
+<div class="test-content">
+    <div id="testText">사랑해요♡
+홍길동님 10만원
+김철수님 5만원
+이영희님 3만원</div>
+</div>
+
+<div class="test-content">
+    <h3 style="color: #feca57;">📊 현재 설정 상태:</h3>
+    <div id="statusInfo" style="color: #ddd; font-family: monospace;"></div>
+</div>
+
+<script>
+let currentSize = 24;
+
+// 정렬 변경
+function setAlign(align) {
+    console.log('🎯 정렬 변경:', align);
+    
+    const textEl = document.getElementById('testText');
+    
+    // 1. CSS style 직접 적용
+    textEl.style.textAlign = align;
+    
+    // 2. cssText로 강제 적용
+    textEl.style.cssText = `
+        font-size: ${currentSize}px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000;
+        text-align: ${align};
+        transition: all 0.3s ease;
+        line-height: 1.5;
+        white-space: pre-line;
+    `;
+    
+    // 3. localStorage에 저장
+    localStorage.setItem('overlay-text-align', align);
+    localStorage.setItem('overlay-font-size', currentSize.toString());
+    
+    // 4. 서버에 전송
+    sendToServer(align, currentSize);
+    
+    updateStatus();
+    
+    // 시각적 피드백
+    textEl.style.backgroundColor = 'rgba(255,255,255,0.1)';
+    setTimeout(() => {
+        textEl.style.backgroundColor = 'transparent';
+    }, 500);
+}
+
+// 크기 변경
+function changeSize(direction) {
+    if (direction === '+') {
+        currentSize += 4;
+    } else {
+        currentSize = Math.max(12, currentSize - 4);
+    }
+    
+    console.log('📏 크기 변경:', currentSize);
+    
+    const textEl = document.getElementById('testText');
+    const align = textEl.style.textAlign || 'left';
+    
+    // cssText로 모든 스타일 다시 적용
+    textEl.style.cssText = `
+        font-size: ${currentSize}px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000;
+        text-align: ${align};
+        transition: all 0.3s ease;
+        line-height: 1.5;
+        white-space: pre-line;
+    `;
+    
+    localStorage.setItem('overlay-font-size', currentSize.toString());
+    localStorage.setItem('overlay-text-align', align);
+    
+    sendToServer(align, currentSize);
+    updateStatus();
+}
+
+// 서버에 설정 전송
+async function sendToServer(align, size) {
+    try {
+        console.log('📡 서버 전송:', { align, size });
+        
+        const settings = {
+            'overlay-text-align': align,
+            'overlay-font-size': size.toString(),
+            'overlay-stroke-width': '3'
+        };
+        
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ settings })
+        });
+        
+        if (response.ok) {
+            console.log('✅ 서버 전송 성공');
+        } else {
+            console.warn('⚠️ 서버 전송 실패');
+        }
+        
+    } catch (error) {
+        console.error('❌ 서버 전송 오류:', error);
+    }
+}
+
+// 상태 정보 업데이트
+function updateStatus() {
+    const textEl = document.getElementById('testText');
+    const computed = window.getComputedStyle(textEl);
+    
+    const info = `현재 적용된 스타일:
+• 폰트 크기: ${computed.fontSize}
+• 텍스트 정렬: ${computed.textAlign}
+• 폰트 굵기: ${computed.fontWeight}
+• 색상: ${computed.color}
+
+localStorage:
+• overlay-font-size: ${localStorage.getItem('overlay-font-size') || '없음'}
+• overlay-text-align: ${localStorage.getItem('overlay-text-align') || '없음'}
+
+inline style:
+${textEl.style.cssText}
+
+변수:
+• currentSize: ${currentSize}px`;
+
+    document.getElementById('statusInfo').textContent = info;
+}
+
+// 정보 표시
+function showInfo() {
+    alert(`🧪 간단 오버레이 테스트
+
+이 페이지는 설정이 제대로 적용되는지 테스트하기 위한 간단한 오버레이입니다.
+
+사용법:
+• 버튼을 클릭하여 즉시 스타일 변경
+• 변경사항은 localStorage와 서버에 저장
+• 실시간으로 적용된 스타일 확인 가능
+
+만약 이 페이지에서도 설정이 안 된다면 브라우저 캐시나 다른 문제일 수 있습니다.`);
+}
+
+// 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    // localStorage에서 설정 로드
+    const savedSize = localStorage.getItem('overlay-font-size');
+    const savedAlign = localStorage.getItem('overlay-text-align');
+    
+    if (savedSize) {
+        currentSize = parseInt(savedSize);
+    }
+    
+    if (savedAlign) {
+        setAlign(savedAlign);
+    } else {
+        updateStatus();
+    }
+    
+    console.log('🚀 간단 테스트 오버레이 시작');
+    console.log('저장된 설정:', { savedSize, savedAlign });
+});
+
+// 1초마다 상태 업데이트
+setInterval(updateStatus, 1000);
+
+// 키보드 단축키
+document.addEventListener('keydown', (e) => {
+    switch(e.key) {
+        case '1':
+            setAlign('left');
+            break;
+        case '2':
+            setAlign('center');
+            break;
+        case '3':
+            setAlign('right');
+            break;
+        case '+':
+            changeSize('+');
+            break;
+        case '-':
+            changeSize('-');
+            break;
+        case 'i':
+        case 'I':
+            showInfo();
+            break;
+    }
+});
+</script>
+
+</body>
+</html>
