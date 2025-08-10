@@ -1460,6 +1460,11 @@ function updateSummary() {
                 cleanDonorName = cleanDonorName.replace(/\(조정[^)]*\)/g, '');
             }
             
+            // 계좌후원자님은 그대로 표시 (특별 처리)
+            if (cleanDonorName === '계좌후원자님' || cleanDonorName === '계좌후원자') {
+                cleanDonorName = '계좌후원자님';
+            }
+            
             donorAccountTotals[cleanDonorName] = (donorAccountTotals[cleanDonorName] || 0) + amount;
         }
     });

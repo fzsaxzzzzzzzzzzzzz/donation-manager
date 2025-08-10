@@ -176,11 +176,24 @@ class RealtimeDonorOverlay {
             return;
         }
         
-        // 후원자별 총액 계산
+        // 후원자별 총액 계산 (계좌 타입만)
         const donorTotals = {};
         this.donations.forEach(donation => {
-            const donor = donation.donor || '익명';
-            donorTotals[donor] = (donorTotals[donor] || 0) + (parseFloat(donation.amount) || 0);
+            if (donation.type === '계좌') {
+                let cleanName = donation.donor || '익명';
+                
+                // 조정 항목 처리
+                if (cleanName.includes('(조정')) {
+                    cleanName = cleanName.replace(/\(조정[^)]*\)/g, '').trim();
+                }
+                
+                // 계좌후원자님은 그대로 표시 (특별 처리)
+                if (cleanName === '계좌후원자님' || cleanName === '계좌후원자') {
+                    cleanName = '계좌후원자님';
+                }
+                
+                donorTotals[cleanName] = (donorTotals[cleanName] || 0) + (parseFloat(donation.amount) || 0);
+            }
         });
         
         // 소액 필터링 (1000원 미만 제외) 및 금액 순으로 정렬

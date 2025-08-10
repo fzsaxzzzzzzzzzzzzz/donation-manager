@@ -943,6 +943,12 @@ function updateOverlayPreview() {
     donations.forEach(d => {
         if (d.type === '계좌') {
             let cleanName = d.donor.replace(/\(조정[^)]*\)/g, '').trim();
+            
+            // 계좌후원자님은 그대로 표시 (특별 처리)
+            if (cleanName === '계좌후원자님' || cleanName === '계좌후원자') {
+                cleanName = '계좌후원자님';
+            }
+            
             const amount = parseFloat(d.amount) || 0;
             if (amount > 0 && cleanName) {
                 donorTotals[cleanName] = (donorTotals[cleanName] || 0) + amount;
