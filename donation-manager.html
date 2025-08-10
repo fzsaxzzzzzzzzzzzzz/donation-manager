@@ -2961,27 +2961,58 @@ async function initGoogleAPI() {
             await fallbackOAuthInit();
         }
         
-        // authInstance 설정 (안전하게)
+        // authInstance 설정 (안전하고 상세한 로깅)
         try {
+            console.log('🔧 OAuth 인스턴스 설정 시작...');
+            
+            // gapi.auth2 상태 확인
+            if (!gapi.auth2) {
+                throw new Error('gapi.auth2가 로드되지 않았습니다');
+            }
+            
             authInstance = gapi.auth2.getAuthInstance();
+            console.log('authInstance 객체:', authInstance);
+            
             if (authInstance) {
+                // 현재 로그인 상태 확인
                 isOAuthSignedIn = authInstance.isSignedIn.get();
+                const currentUser = authInstance.currentUser.get();
+                
+                console.log('✅ OAuth 초기 상태:', {
+                    isSignedIn: isOAuthSignedIn,
+                    hasCurrentUser: !!currentUser,
+                    userProfile: currentUser ? currentUser.getBasicProfile()?.getName() : 'N/A',
+                    grantedScopes: currentUser ? currentUser.getGrantedScopes() : 'N/A'
+                });
                 
                 // 인증 상태 변경 리스너
                 authInstance.isSignedIn.listen((signedIn) => {
                     isOAuthSignedIn = signedIn;
+                    console.log('🔄 OAuth 인증 상태 변경:', {
+                        newState: signedIn ? '로그인됨' : '로그아웃됨',
+                        timestamp: new Date().toISOString()
+                    });
+                    
                     setTimeout(() => {
                         updateGoogleAuthStatus();
-                    }, 50);
-                    console.log('OAuth 인증 상태 변경:', signedIn ? '로그인됨' : '로그아웃됨');
+                    }, 100);
                 });
                 
                 console.log('✅ OAuth 인스턴스 설정 완료');
             } else {
-                console.warn('OAuth 인스턴스를 가져올 수 없습니다');
+                console.error('❌ OAuth 인스턴스를 가져올 수 없습니다');
+                console.error('gapi.auth2 상태:', typeof gapi.auth2);
+                console.error('사용 가능한 메소드:', gapi.auth2 ? Object.getOwnPropertyNames(gapi.auth2) : 'N/A');
             }
         } catch (error) {
-            console.error('OAuth 인스턴스 설정 실패:', error);
+            console.error('🚨 OAuth 인스턴스 설정 실패 - 상세 정보:');
+            console.error('에러 타입:', typeof error);
+            console.error('에러 객체:', error);
+            console.error('gapi 상태:', {
+                gapi: typeof gapi,
+                'gapi.auth2': typeof gapi?.auth2,
+                'gapi.client': typeof gapi?.client
+            });
         }
         
         console.log('🎉 Google API 초기화 성공!');
@@ -4289,16 +4320,60 @@ async function signInGoogleOAuth() {
         showStatus('✅ Google OAuth 로그인 성공!', 'success');
         
     } catch (error) {
-        console.error('Google OAuth 로그인 실패:', error);
+        // 상세한 에러 정보 로깅
+        console.error('🚨 Google OAuth 로그인 실패 - 상세 정보:');
+        console.error('에러 타입:', typeof error);
+        console.error('에러 객체:', error);
+        console.error('에러 문자열:', JSON.stringify(error, null, 2));
+        
+        // 에러 속성들 개별 확인
+        if (error) {
+            console.error('error.error:', error.error);
+            console.error('error.message:', error.message);
+            console.error('error.details:', error.details);
+            console.error('error.code:', error.code);
+            console.error('error.status:', error.status);
+        }
+        
+        // authInstance 상태 확인
+        console.error('authInstance 상태:', {
+            exists: !!authInstance,
+            isSignedIn: authInstance ? authInstance.isSignedIn.get() : 'N/A',
+            currentUser: authInstance ? authInstance.currentUser.get() : 'N/A'
+        });
         
         // 더 자세한 오류 정보 제공
-        if (error.error === 'popup_closed_by_user') {
-            showStatus('로그인이 취소되었습니다', 'warning');
-        } else if (error.error === 'access_denied') {
-            showStatus('접근이 거부되었습니다. 권한을 확인하세요', 'error');
+        let errorMessage = 'OAuth 로그인 실패';
+        let errorType = 'error';
+        
+        if (error?.error === 'popup_closed_by_user' || error?.message?.includes('closed_by_user')) {
+            errorMessage = '❌ 로그인 팝업이 닫혔습니다. 다시 시도해주세요.';
+            errorType = 'warning';
+        } else if (error?.error === 'access_denied' || error?.message?.includes('access_denied')) {
+            errorMessage = '❌ 접근이 거부되었습니다. 권한을 다시 확인해주세요.';
+            errorType = 'error';
+        } else if (error?.error === 'popup_blocked' || error?.message?.includes('popup')) {
+            errorMessage = '❌ 팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.';
+            errorType = 'warning';
+        } else if (error?.error === 'network_error' || error?.message?.includes('network')) {
+            errorMessage = '❌ 네트워크 연결 문제가 발생했습니다. 인터넷 연결을 확인해주세요.';
+            errorType = 'warning';
         } else {
-            showStatus(`Google OAuth 로그인 실패: ${error.error || error.message}`, 'error');
+            // 일반적인 오류 메시지
+            const errorText = error?.error || error?.message || error?.toString() || 'Unknown error';
+            errorMessage = `❌ OAuth 로그인 실패: ${errorText}`;
         }
+        
+        showStatus(errorMessage, errorType);
+        
+        // 해결방법 안내
+        setTimeout(() => {
+            showStatus('💡 해결방법: 1) 팝업 허용, 2) 시크릿 모드 시도, 3) 다른 브라우저 사용, 4) 페이지 새로고침', 'info', 15000);
+        }, 3000);
+        
+        // OAuth 상태 업데이트
+        isOAuthSignedIn = false;
+        updateGoogleAuthStatus();
     }
 }
 
