@@ -171,7 +171,8 @@ class RealtimeDonorOverlay {
         const contentEl = document.getElementById('donor-content');
         
         if (!this.donations || this.donations.length === 0) {
-            contentEl.innerHTML = '<div class="no-data">후원 데이터가 없습니다</div>';
+            contentEl.textContent = '후원 데이터가 없습니다';
+            contentEl.className = 'no-data';
             return;
         }
         
@@ -188,7 +189,8 @@ class RealtimeDonorOverlay {
             .sort((a, b) => b[1] - a[1]);
         
         if (sortedDonors.length === 0) {
-            contentEl.innerHTML = '<div class="no-data">후원 데이터가 없습니다</div>';
+            contentEl.textContent = '후원 데이터가 없습니다';
+            contentEl.className = 'no-data';
             return;
         }
         
@@ -197,14 +199,17 @@ class RealtimeDonorOverlay {
             .map(([donor, amount]) => `${donor}: ${amount}원`)
             .join('\n');
         
-        contentEl.innerHTML = `<div>${displayText}</div>`;
+        contentEl.textContent = displayText;
+        contentEl.className = 'donor-content';
         
         console.log('📊 화면 업데이트 완료:', sortedDonors.length, '명의 후원자');
     }
     
     showError(message) {
         const contentEl = document.getElementById('donor-content');
-        contentEl.innerHTML = `<div class="no-data" style="color: #ffcccb;">${message}</div>`;
+        contentEl.textContent = message;
+        contentEl.className = 'no-data';
+        contentEl.style.color = '#ffcccb';
     }
     
     flashUpdate() {
