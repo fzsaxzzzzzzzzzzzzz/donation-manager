@@ -2790,10 +2790,11 @@ const GOOGLE_CONFIG = {
     CLIENT_ID: '493287022430-4mmnh4stu22p13lr0sjgvpg0nbkouova.apps.googleusercontent.com', // OAuth 2.0 클라이언트 ID (새로 생성됨)
     API_KEY: 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4', // YouTube Data API v3 키 (업데이트됨)
     DISCOVERY_DOCS: [
-        'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+        // Drive API 제거 - 502 에러 원인
         'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'
     ],
-    SCOPES: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl'
+    // Drive 권한 제거하여 권한 요청 단순화
+    SCOPES: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl'
 };
 
 // OAuth 관련 변수
@@ -2903,24 +2904,27 @@ async function initGoogleAPI() {
             }
         }
         
-        // Drive API 초기화 (간소화)
+        // Drive API 초기화 비활성화 (502 에러 방지)
+        console.log('ℹ️ Google Drive API 초기화 건너뜀 (챗봇 기능만 사용)');
+        
+        // 기본 클라이언트만 초기화 (YouTube용)
         try {
             await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => reject(new Error('Drive API 초기화 시간 초과')), 10000);
+                const timeout = setTimeout(() => reject(new Error('기본 클라이언트 초기화 시간 초과')), 10000);
                 
                 gapi.load('client', async () => {
                     try {
                         clearTimeout(timeout);
                         await gapi.client.init({
-                            apiKey: GOOGLE_CONFIG.API_KEY,
-                            discoveryDocs: [GOOGLE_CONFIG.DISCOVERY_DOCS[0]]
+                            apiKey: GOOGLE_CONFIG.API_KEY
+                            // discoveryDocs 제거하여 502 에러 방지
                         });
-                        console.log('✅ Google Drive API 초기화 완료');
+                        console.log('✅ Google 기본 클라이언트 초기화 완료');
                         resolve();
                     } catch (error) {
                         clearTimeout(timeout);
-                        console.error('Drive API 초기화 실패:', error);
-                        resolve(); // Drive API 실패해도 계속 진행
+                        console.error('기본 클라이언트 초기화 실패:', error);
+                        resolve(); // 실패해도 계속 진행
                     }
                 });
             });
@@ -2937,13 +2941,22 @@ async function initGoogleAPI() {
                     try {
                         clearTimeout(timeout);
                         
-                        // 단계별 초기화
+                        // 단계별 초기화 (간소화)
                         await gapi.client.init({
                             apiKey: GOOGLE_CONFIG.API_KEY,
                             clientId: GOOGLE_CONFIG.CLIENT_ID,
-                            discoveryDocs: GOOGLE_CONFIG.DISCOVERY_DOCS,
+                            // discoveryDocs 제거 - 502 에러 방지
                             scope: GOOGLE_CONFIG.SCOPES
                         });
+                        
+                        // YouTube API 수동 로드
+                        try {
+                            await gapi.client.load('youtube', 'v3');
+                            console.log('✅ YouTube API 로드 완료');
+                        } catch (ytError) {
+                            console.warn('YouTube API 로드 실패:', ytError);
+                            // 계속 진행
+                        }
                         
                         console.log('✅ Google OAuth API 초기화 완료');
                         resolve();
@@ -4310,13 +4323,26 @@ async function signInGoogleOAuth() {
         
         showStatus('Google 로그인 중...', 'info');
         
-        // 명시적으로 로그인 팝업 옵션 설정
+        // Cross-Origin-Opener-Policy 대응을 위한 개선된 로그인 옵션
         const signInOptions = {
-            prompt: 'select_account'
+            prompt: 'select_account',
+            ux_mode: 'popup',  // 명시적 팝업 모드
+            include_granted_scopes: true  // 점진적 권한 승인
         };
         
+        console.log('🔐 OAuth 로그인 시도 중...', signInOptions);
+        
+        // 더 안전한 로그인 시도
         const user = await authInstance.signIn(signInOptions);
-        console.log('OAuth 로그인 사용자:', user);
+        console.log('✅ OAuth 로그인 성공 - 사용자 정보:', {
+            name: user.getBasicProfile()?.getName(),
+            email: user.getBasicProfile()?.getEmail(),
+            scopes: user.getGrantedScopes()
+        });
+        
+        // 상태 업데이트
+        isOAuthSignedIn = true;
+        updateGoogleAuthStatus();
         showStatus('✅ Google OAuth 로그인 성공!', 'success');
         
     } catch (error) {
