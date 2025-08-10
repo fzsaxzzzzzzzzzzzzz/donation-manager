@@ -190,13 +190,14 @@ body {
             <tr>
                 <th>순위</th>
                 <th>스트리머</th>
-                <th>후원액</th>
-                <th>후원 건수</th>
+                <th>계좌후원(만)</th>
+                <th>투네후원(만)</th>
+                <th>총 후원(만)</th>
             </tr>
         </thead>
         <tbody id="streamerTableBody">
             <tr>
-                <td colspan="4" class="no-data">실시간 연결 중...</td>
+                <td colspan="5" class="no-data">실시간 연결 중...</td>
             </tr>
         </tbody>
     </table>
@@ -320,32 +321,46 @@ class RealtimeStreamerTable {
     }
 
     calculateStreamerStats() {
-        const stats = new Map();
+        // 상세 테이블과 동일한 로직 적용
+        const hiddenStreamers = this.getHiddenStreamers();
+        const summaryStreamers = (this.data.streamers || []).filter(s => s !== '국고' && s !== '후원자조정' && !hiddenStreamers.includes(s));
+        const streamerData = {};
         
-        // 모든 스트리머 초기화
-        this.data.streamers.forEach(streamer => {
-            stats.set(streamer, { total: 0, count: 0, donations: [] });
+        // 스트리머 데이터 초기화
+        summaryStreamers.forEach(s => { 
+            streamerData[s] = { name: s, account: 0, toonation: 0, total: 0 }; 
         });
         
-        // 후원 데이터 집계
-        this.data.donations.forEach(donation => {
-            if (stats.has(donation.streamer)) {
-                const stat = stats.get(donation.streamer);
-                stat.total += donation.amount;
-                stat.count += 1;
-                stat.donations.push(donation);
+        // 후원 데이터 집계 (계좌/투네 분리)
+        (this.data.donations || []).forEach(d => {
+            if (streamerData.hasOwnProperty(d.streamer)) {
+                const amount = parseFloat(d.amount) || 0;
+                if (d.type === '계좌') streamerData[d.streamer].account += amount;
+                else if (d.type === '투네') streamerData[d.streamer].toonation += amount;
             }
         });
+        
+        // 총액 계산 후 정렬 (상세 테이블과 동일)
+        let sortedStreamers = Object.values(streamerData).map(data => { 
+            data.total = data.account + data.toonation; 
+            return data; 
+        }).sort((a, b) => b.total - a.total);
+        
+        // 엄삼용 우선 배치 (있는 경우)
+        if (sortedStreamers.find(s => s.name === '엄삼용')) {
+            const samyongData = sortedStreamers.find(s => s.name === '엄삼용');
+            sortedStreamers = sortedStreamers.filter(s => s.name !== '엄삼용');
+            sortedStreamers.unshift(samyongData);
+        }
 
-        // 배열로 변환하고 후원액 순으로 정렬
-        const result = Array.from(stats.entries())
-            .map(([streamer, stat]) => ({
-                streamer,
-                total: stat.total,
-                count: stat.count,
-                emoji: this.data.emojis?.[streamer] || ''
-            }))
-            .sort((a, b) => b.total - a.total);
+        // 기존 형식에 맞게 변환
+        const result = sortedStreamers.map(data => ({
+            streamer: data.name,
+            account: data.account,
+            toonation: data.toonation,
+            total: data.total,
+            emoji: this.data.emojis?.[data.name] || ''
+        }));
         
         return result;
     }
@@ -396,35 +411,51 @@ class RealtimeStreamerTable {
         const tbody = document.getElementById('streamerTableBody');
         
         if (streamerStats.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="no-data">표시할 스트리머가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="no-data">표시할 스트리머가 없습니다.</td></tr>';
             return;
         }
 
         let html = '';
         streamerStats.forEach((stat, index) => {
-            const rank = index + 1;
+            // 커스텀 순번명 적용 (상세 테이블과 동일)
+            const rankName = this.getRankName(index);
             const isChanged = changedStreamers.has(stat.streamer);
             const highlightClass = isChanged ? ' highlighted' : '';
-            const rankClass = ` rank-${rank <= 3 ? rank : 'other'}`;
+            const rankClass = ` rank-${(index + 1) <= 3 ? (index + 1) : 'other'}`;
             
             html += `<tr class="${highlightClass}${rankClass}">`;
-            html += `<td><span class="rank-number">${rank}</span></td>`;
+            html += `<td><span class="rank-number">${rankName}</span></td>`;
             html += `<td class="streamer-name">${stat.emoji} ${stat.streamer}</td>`;
-            html += `<td class="amount">₩${stat.total.toLocaleString()}</td>`;
-            html += `<td class="donation-count">${stat.count}건</td>`;
+            html += `<td class="amount">${stat.account.toLocaleString('ko-KR')}</td>`;
+            html += `<td class="amount">${stat.toonation.toLocaleString('ko-KR')}</td>`;
+            html += `<td class="amount">${stat.total.toLocaleString('ko-KR')}</td>`;
             html += `</tr>`;
         });
         
         tbody.innerHTML = html;
     }
 
+    getRankName(index) {
+        const rankNumber = index + 1;
+        
+        // 설정된 순번명이 있는지 확인
+        const customRankName = localStorage.getItem(`rank-${rankNumber}-name`);
+        if (customRankName && customRankName.trim() !== '') {
+            return customRankName.trim();
+        }
+        
+        // 설정되지 않은 경우 숫자로 표시
+        return rankNumber.toString();
+    }
+
     updateSummary(streamerStats) {
         if (this.settings['show-total-row'] === 'true') {
-            const totalAmount = streamerStats.reduce((sum, stat) => sum + stat.total, 0);
-            const totalCount = streamerStats.reduce((sum, stat) => sum + stat.count, 0);
+            const totalAccount = streamerStats.reduce((sum, stat) => sum + stat.account, 0);
+            const totalToonation = streamerStats.reduce((sum, stat) => sum + stat.toonation, 0);
+            const grandTotal = totalAccount + totalToonation;
             
             document.getElementById('totalSummary').innerHTML = 
-                `총 후원액: <strong>₩${totalAmount.toLocaleString()}</strong> (${totalCount}건)`;
+                `총 후원액: <strong>${grandTotal.toLocaleString('ko-KR')}만원</strong> (계좌: ${totalAccount.toLocaleString('ko-KR')}만, 투네: ${totalToonation.toLocaleString('ko-KR')}만)`;
         }
     }
 
