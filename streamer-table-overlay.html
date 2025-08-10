@@ -334,13 +334,6 @@ class RealtimeStreamerTable {
             data.total = data.account + data.toonation; 
             return data; 
         }).sort((a, b) => b.total - a.total);
-        
-        // 엄삼용 우선 배치 (있는 경우)
-        if (sortedStreamers.find(s => s.name === '엄삼용')) {
-            const samyongData = sortedStreamers.find(s => s.name === '엄삼용');
-            sortedStreamers = sortedStreamers.filter(s => s.name !== '엄삼용');
-            sortedStreamers.unshift(samyongData);
-        }
 
         // 기존 형식에 맞게 변환
         const result = sortedStreamers.map(data => ({
