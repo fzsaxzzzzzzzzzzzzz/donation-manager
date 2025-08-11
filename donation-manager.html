@@ -68,6 +68,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .summary-header { display: flex; justify-content: space-between; align-items: center; }
 .summary-header h4 { margin: 0; }
 .summary-actions .btn { font-size:12px; padding:4px 8px; margin-left: 5px; }
+
+/* 챗봇 관련 스타일 */
+.chatbot-step { margin-bottom: 25px; }
+.btn-outline { background: transparent; border: 1px solid #1877f2; color: #1877f2; }
+.btn-outline:hover { background: #1877f2; color: white; }
+#advanced-settings { transition: all 0.3s ease; }
+.chatbot-step .status { font-size: 14px; }
+.chatbot-step h5 { color: #1877f2; font-weight: 600; }
+
 @media (max-width: 1200px) { .container { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 900px) { .container { grid-template-columns: 1fr !important; } .panel { min-height: auto !important; resize: none !important; } }
 </style>
@@ -381,75 +390,99 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 
 <div class="tab-content" id="chatbot-tab">
+<!-- 단계별 설정 -->
+<div class="chatbot-step" id="step-1">
+<div class="status status-info" style="margin-bottom: 20px;">
+<strong>1단계:</strong> 🔐 Google 계정 로그인
+</div>
 <div id="google-auth-status" class="status status-warning">
 🔐 <strong>Google 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요.
 </div>
-
-<div style="margin-bottom: 20px;">
-<h4 style="margin-bottom: 10px;">🔧 YouTube API 테스트</h4>
-<button onclick="testYouTubeOAuth()" class="btn btn-primary">API 연결 테스트</button>
 </div>
 
-<div style="margin-bottom: 20px;">
-<h4 style="margin-bottom: 10px;">📺 라이브 채팅 연결</h4>
+<div class="chatbot-step" id="step-2" style="display: none;">
+<div class="status status-info" style="margin-bottom: 20px;">
+<strong>2단계:</strong> 📺 YouTube 라이브 방송 연결
+</div>
 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-<input type="text" id="youtube-video-id" placeholder="YouTube 영상 ID" class="form-input">
+<input type="text" id="youtube-video-id" placeholder="YouTube 영상 ID 입력" class="form-input" style="flex: 1;">
 <button onclick="connectToLiveChatOAuth()" class="btn btn-success">연결</button>
 </div>
-<p style="font-size: 12px; color: #666; margin: 0;">
-💡 YouTube 라이브 방송 URL에서 watch?v= 뒤의 ID를 입력하세요
+<p style="font-size: 12px; color: #666; margin-bottom: 20px;">
+💡 YouTube 라이브 방송 URL: youtube.com/watch?v=<strong>여기부분</strong> ← 이 ID를 복사하세요
 </p>
 </div>
 
-<!-- API 설정 섹션 (기존 API 키 방식 유지) -->
-<div class="form-group" style="border: 1px solid #ddd; padding: 15px; border-radius: 6px; background: #f9f9f9; margin-top: 20px;">
-<h4 style="margin: 0 0 15px 0;">🔑 YouTube API 키 방식 (대안)</h4>
+<div class="chatbot-step" id="step-3" style="display: none;">
+<div class="status status-success" style="margin-bottom: 20px;">
+<strong>3단계:</strong> 🚀 메시지 전송하기
+</div>
+
+<!-- 빠른 메시지 버튼들 -->
+<div class="form-group">
+<label class="form-label">⚡ 빠른 메시지</label>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+<button onclick="generateQuickMessage('welcome')" class="btn btn-outline">👋 인사</button>
+<button onclick="generateQuickMessage('thanks')" class="btn btn-outline">💝 감사</button>
+<button onclick="generateQuickMessage('goal')" class="btn btn-outline">🎯 목표</button>
+<button onclick="generateQuickMessage('mission')" class="btn btn-outline">🎄 미션</button>
+</div>
+</div>
+
+<!-- 메시지 입력 -->
+<div class="form-group">
+<label for="manual-message" class="form-label">💬 메시지 내용</label>
+<textarea id="manual-message" class="form-input" rows="3" placeholder="메시지를 직접 입력하거나 위 버튼으로 자동 생성"></textarea>
+</div>
+
+<!-- 전송 버튼 -->
+<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+<button onclick="sendToYouTube()" class="btn btn-success" style="flex: 1;" id="youtube-send-btn">🚀 전송</button>
+<button onclick="clearMessage()" class="btn btn-secondary">🗑️</button>
+</div>
+
+<!-- 실시간 후원 현황 -->
+<div class="form-group">
+<label class="form-label">🔥 실시간 후원 현황</label>
+<div class="copy-box" id="live-summary" style="min-height: 60px; font-size: 14px;"></div>
+<button onclick="updateLiveSummary()" class="btn btn-primary" style="width: 100%; margin-top: 10px;">🔄 업데이트</button>
+</div>
+</div>
+
+<!-- 고급 설정 (접기/펼치기) -->
+<div style="margin-top: 30px;">
+<button onclick="toggleAdvancedSettings()" class="btn btn-secondary" style="width: 100%;" id="advanced-toggle">
+⚙️ 고급 설정 표시
+</button>
+</div>
+
+<div id="advanced-settings" style="display: none; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+<h4 style="margin: 0 0 15px 0;">🔧 고급 설정</h4>
+
+<!-- API 키 방식 (백업용) -->
+<div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border-radius: 6px; border: 1px solid #ffeaa7;">
+<h5 style="margin: 0 0 10px 0;">🔑 API 키 방식 (백업)</h5>
 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-<input type="password" id="youtube-api-key" placeholder="YouTube API 키 입력" class="form-input" style="flex: 2;">
-<button onclick="testApiKey()" class="btn btn-secondary">🧪 테스트</button>
-<button onclick="saveApiKey()" class="btn btn-primary">💾 저장</button>
-</div>
-<div style="display: flex; gap: 10px; margin-bottom: 10px;">
-<input type="text" id="youtube-video-id" placeholder="유튜브 영상 ID (예: dQw4w9WgXcQ)" class="form-input" style="flex: 2;">
-<button onclick="connectToLiveChat()" class="btn btn-success">🔗 라이브 연결</button>
-</div>
-<div style="display: flex; gap: 10px;">
-<input type="number" id="auto-send-interval" placeholder="자동전송 간격(초)" class="form-input" style="flex: 1;" min="30" value="300">
-<button onclick="startAutoSend()" class="btn btn-success" id="auto-start-btn">🚀 자동시작</button>
-<button onclick="stopAutoSend()" class="btn btn-danger" id="auto-stop-btn" disabled>🛑 자동중지</button>
+<input type="password" id="youtube-api-key" placeholder="YouTube API 키" class="form-input" style="flex: 1;">
+<button onclick="testApiKey()" class="btn btn-secondary">테스트</button>
 </div>
 </div>
 
-<div class="form-group">
-<label class="form-label">🔥 실시간 후원 현황 메시지</label>
-<div class="copy-box" id="live-summary" style="min-height: 80px;"></div>
-<button onclick="updateLiveSummary()" class="btn btn-primary" style="width: 100%; margin-top: 5px;">🔄 실시간 업데이트</button>
-</div>
-
-<div class="form-group">
-<label class="form-label">⚡ 빠른 메시지 템플릿</label>
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
-<button onclick="generateQuickMessage('welcome')" class="btn btn-secondary">👋 인사</button>
-<button onclick="generateQuickMessage('thanks')" class="btn btn-secondary">💝 감사</button>
-<button onclick="generateQuickMessage('goal')" class="btn btn-secondary">🎯 목표</button>
-<button onclick="generateQuickMessage('mission')" class="btn btn-secondary">🎄 미션</button>
+<!-- 자동 전송 설정 -->
+<div style="margin-bottom: 20px;">
+<h5 style="margin: 0 0 10px 0;">🔄 자동 전송</h5>
+<div style="display: flex; gap: 10px; align-items: center;">
+<input type="number" id="auto-send-interval" placeholder="간격(초)" class="form-input" style="width: 100px;" min="30" value="300">
+<button onclick="startAutoSend()" class="btn btn-success" id="auto-start-btn">시작</button>
+<button onclick="stopAutoSend()" class="btn btn-danger" id="auto-stop-btn" disabled>중지</button>
 </div>
 </div>
 
-<div class="form-group">
-<label for="manual-message" class="form-label">📝 커스텀 메시지</label>
-<textarea id="manual-message" class="form-input" rows="4" placeholder="직접 메시지를 입력하거나 위의 버튼으로 자동 생성하세요"></textarea>
+<!-- 디버그 도구 -->
+<div>
+<h5 style="margin: 0 0 10px 0;">🔧 테스트 도구</h5>
+<button onclick="testYouTubeOAuth()" class="btn btn-outline">API 연결 테스트</button>
 </div>
-
-<div style="display: flex; gap: 10px;">
-<button onclick="sendToYouTube()" class="btn btn-success" style="flex: 1;" id="youtube-send-btn" disabled>🚀 유튜브 전송</button>
-<button onclick="copyMessageToClipboard()" class="btn btn-secondary">📋 복사</button>
-<button onclick="clearMessage()" class="btn btn-secondary">🧹 지우기</button>
-</div>
-
-<div class="status status-info" style="margin-top: 15px; font-size: 12px;">
-💡 <strong>API 키 발급:</strong> Google Cloud Console → YouTube Data API v3 활성화 → API 키 생성<br>
-🔗 <strong>영상 ID:</strong> youtube.com/watch?v=<strong>dQw4w9WgXcQ</strong> ← 이 부분
 </div>
 </div>
 
@@ -4285,13 +4318,50 @@ function updateGoogleAuthStatus() {
     try {
         if (isOAuthSignedIn) {
             statusElement.className = 'status status-success';
-            statusElement.innerHTML = '✅ <strong>Google OAuth 로그인됨</strong>: YouTube API를 사용할 수 있습니다! <button onclick="signOutGoogleOAuth()" class="btn btn-secondary" style="margin-left:10px;">로그아웃</button>';
+            statusElement.innerHTML = '✅ <strong>Google OAuth 로그인됨</strong>: 다음 단계로 진행하세요! <button onclick="signOutGoogleOAuth()" class="btn btn-secondary" style="margin-left:10px;">로그아웃</button>';
+            // 2단계로 이동
+            showChatbotStep(2);
         } else {
             statusElement.className = 'status status-warning';
             statusElement.innerHTML = '🔐 <strong>Google OAuth 로그인 필요</strong>: YouTube API 사용을 위해 로그인하세요. <button onclick="signInGoogleOAuth()" class="btn btn-primary" style="margin-left:10px;">로그인</button>';
+            // 1단계로 이동
+            showChatbotStep(1);
         }
     } catch (error) {
         console.error('Google Auth 상태 업데이트 실패:', error);
+    }
+}
+
+// 챗봇 단계별 UI 전환
+function showChatbotStep(step) {
+    // 모든 단계 숨기기
+    for (let i = 1; i <= 3; i++) {
+        const stepElement = document.getElementById(`step-${i}`);
+        if (stepElement) {
+            stepElement.style.display = 'none';
+        }
+    }
+    
+    // 현재 단계까지 보이기
+    for (let i = 1; i <= step; i++) {
+        const stepElement = document.getElementById(`step-${i}`);
+        if (stepElement) {
+            stepElement.style.display = 'block';
+        }
+    }
+}
+
+// 고급 설정 토글
+function toggleAdvancedSettings() {
+    const settingsDiv = document.getElementById('advanced-settings');
+    const toggleBtn = document.getElementById('advanced-toggle');
+    
+    if (settingsDiv.style.display === 'none') {
+        settingsDiv.style.display = 'block';
+        toggleBtn.innerHTML = '⚙️ 고급 설정 숨기기';
+    } else {
+        settingsDiv.style.display = 'none';
+        toggleBtn.innerHTML = '⚙️ 고급 설정 표시';
     }
 }
 
@@ -4374,6 +4444,9 @@ async function connectToLiveChatOAuth() {
         
         showStatus('✅ OAuth 방식으로 라이브 채팅에 연결되었습니다!', 'success');
         updateChatbotPermissionUI();
+        
+        // 3단계로 이동
+        showChatbotStep(3);
         
     } catch (error) {
         console.error('OAuth 라이브 채팅 연결 실패:', error);
