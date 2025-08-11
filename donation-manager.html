@@ -456,11 +456,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <label class="form-label" style="margin-bottom: 15px;">⏰ 자동 총액 전송</label>
 <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
 <select id="auto-interval-select" class="form-input" style="flex: 1;">
-<option value="300">5분마다</option>
+<option value="30">30초마다</option>
+<option value="45">45초마다</option>
+<option value="60">1분마다</option>
+<option value="120">2분마다</option>
+<option value="180">3분마다</option>
+<option value="300" selected>5분마다</option>
 <option value="600">10분마다</option>
 <option value="900">15분마다</option>
 <option value="1200">20분마다</option>
 <option value="1800">30분마다</option>
+<option value="3600">1시간마다</option>
 </select>
 <button onclick="toggleAutoSend()" class="btn btn-success" id="auto-send-toggle">🚀 시작</button>
 </div>
@@ -4482,9 +4488,15 @@ function toggleAutoSend() {
         toggleBtn.innerHTML = '⏹️ 중지';
         toggleBtn.className = 'btn btn-danger';
         
-        const intervalText = intervalSeconds >= 60 
-            ? `${Math.floor(intervalSeconds / 60)}분`
-            : `${intervalSeconds}초`;
+        // 시간 표시 로직 개선
+        let intervalText;
+        if (intervalSeconds >= 3600) {
+            intervalText = `${Math.floor(intervalSeconds / 3600)}시간`;
+        } else if (intervalSeconds >= 60) {
+            intervalText = `${Math.floor(intervalSeconds / 60)}분`;
+        } else {
+            intervalText = `${intervalSeconds}초`;
+        }
         
         statusDiv.innerHTML = `자동 전송 활성화 중 (${intervalText}마다 전송)`;
         statusDiv.className = 'status status-success';
