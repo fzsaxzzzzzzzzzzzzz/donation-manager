@@ -235,6 +235,14 @@ class RealtimeStreamerTable {
         this.socket.on('dataUpdate', (data) => {
             const previousData = this.data;
             this.data = data;
+            
+            // 설정 데이터가 포함된 경우 설정도 업데이트
+            if (data.settings) {
+                console.log('⚙️ [스트리머 테이블] 설정 업데이트 포함:', Object.keys(data.settings));
+                this.settings = { ...this.settings, ...data.settings };
+                this.applySettings();
+            }
+            
             this.renderStreamerTable(previousData);
         });
 
