@@ -141,8 +141,11 @@ async function loadExistingData() {
 }
 
 // 통합 데이터 저장 (Firebase 우선, 로컬 백업)
-async function saveData() {
-  currentData.lastUpdated = new Date().toISOString();
+async function saveData(updateTimestamp = true) {
+  // 실제 데이터 변경시에만 타임스탬프 업데이트
+  if (updateTimestamp) {
+    currentData.lastUpdated = new Date().toISOString();
+  }
   
   // 1. Firebase에 저장 시도
   await saveToFirebase();
@@ -451,17 +454,27 @@ app.post('/api/settings', async (req, res) => {
       return res.status(400).json({ error: '잘못된 설정 데이터입니다.' });
     }
     
-    // 현재 설정 업데이트
-    currentData.settings = {
-      ...currentData.settings,
-      ...settings
-    };
+    // 설정 변경 사항 확인
+    const currentSettings = JSON.stringify(currentData.settings);
+    const newSettings = JSON.stringify({ ...currentData.settings, ...settings });
     
-    await saveData();
-    
-    // 모든 클라이언트에게 설정 업데이트 전송
-    console.log('⚙️ [서버] 설정 업데이트 전송:', Object.keys(settings).join(', '));
-    io.emit('dataUpdate', currentData);
+    // 실제 변경이 있는 경우에만 처리
+    if (currentSettings !== newSettings) {
+      // 현재 설정 업데이트
+      currentData.settings = {
+        ...currentData.settings,
+        ...settings
+      };
+      
+      // 설정 변경은 타임스탬프 업데이트하지 않음 (무한루프 방지)
+      await saveData(false);
+      
+      // 모든 클라이언트에게 설정 업데이트 전송
+      console.log('⚙️ [서버] 설정 업데이트 전송:', Object.keys(settings).join(', '));
+      io.emit('dataUpdate', currentData);
+    } else {
+      console.log('⚙️ [서버] 설정 변경 없음, 업데이트 건너뜀');
+    }
     
     res.json({ 
       success: true, 
