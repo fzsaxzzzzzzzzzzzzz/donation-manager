@@ -2908,9 +2908,11 @@ async function initGoogleAPI() {
                 gapi.load('client', async () => {
                     try {
                         await gapi.client.init({
-                            apiKey: GOOGLE_CONFIG.API_KEY
+                            apiKey: GOOGLE_CONFIG.API_KEY,
+                            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest']
                         });
                         console.log('✅ gapi.client 초기화 완료 (YouTube API용)');
+                        console.log('✅ YouTube API v3 discoveryDoc 로드 완료');
                         resolve();
                     } catch (error) {
                         console.warn('gapi.client 초기화 실패:', error);
@@ -4303,6 +4305,13 @@ async function testYouTubeOAuth() {
         
         showStatus('YouTube API 테스트 중...', 'info');
         
+        // YouTube API 클라이언트가 로드되지 않았다면 다시 로드
+        if (!gapi.client.youtube) {
+            console.log('YouTube API 클라이언트 재로드 중...');
+            await gapi.client.load('youtube', 'v3');
+            console.log('✅ YouTube API v3 클라이언트 로드 완료');
+        }
+        
         const response = await gapi.client.youtube.search.list({
             part: 'snippet',
             q: 'test',
@@ -4336,6 +4345,13 @@ async function connectToLiveChatOAuth() {
     
     try {
         showStatus('라이브 채팅 연결 중...', 'info');
+        
+        // YouTube API 클라이언트가 로드되지 않았다면 다시 로드
+        if (!gapi.client.youtube) {
+            console.log('YouTube API 클라이언트 재로드 중...');
+            await gapi.client.load('youtube', 'v3');
+            console.log('✅ YouTube API v3 클라이언트 로드 완료');
+        }
         
         const response = await gapi.client.youtube.videos.list({
             part: 'liveStreamingDetails',
@@ -4397,6 +4413,13 @@ async function sendToYouTubeOAuth(message) {
         }
         
         showStatus('YouTube 채팅에 전송 중...', 'info');
+        
+        // YouTube API 클라이언트가 로드되지 않았다면 다시 로드
+        if (!gapi.client.youtube) {
+            console.log('YouTube API 클라이언트 재로드 중...');
+            await gapi.client.load('youtube', 'v3');
+            console.log('✅ YouTube API v3 클라이언트 로드 완료');
+        }
         
         const response = await gapi.client.youtube.liveChatMessages.insert({
             part: 'snippet',
