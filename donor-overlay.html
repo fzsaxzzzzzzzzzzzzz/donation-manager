@@ -177,8 +177,8 @@ class RealtimeDonorOverlay {
             }
         });
 
-        // 그룹화 임계값 로드 (정산요약과 동일)
-        const groupThreshold = parseInt(localStorage.getItem('group-threshold') || '2');
+        // 그룹화 임계값 로드 (서버 설정 우선, 없으면 로컬 설정)
+        const groupThreshold = this.settings.groupThreshold || parseInt(localStorage.getItem('group-threshold') || '2');
         
         // 금액별 그룹화
         const amountGroups = {};

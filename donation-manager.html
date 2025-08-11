@@ -1613,6 +1613,19 @@ function updateSummary() {
     
     // 그룹화 임계값을 localStorage에 저장 (오버레이에서 사용)
     localStorage.setItem('group-threshold', groupThreshold.toString());
+    
+    // 서버에도 그룹화 임계값 저장
+    try {
+        fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                settings: { groupThreshold: groupThreshold }
+            })
+        }).catch(error => console.log('그룹화 설정 서버 저장 실패:', error));
+    } catch (error) {
+        console.log('그룹화 설정 서버 저장 실패:', error);
+    }
     const amountGroups = {};
     for (const donor in donorAccountTotals) {
         const amount = donorAccountTotals[donor];
@@ -3925,9 +3938,7 @@ function loadOverlaySettings() {
     document.getElementById('table-number-size-value').textContent = '16px';
     document.getElementById('table-font-size-value').textContent = '14px';
     
-    // 그룹화 임계값 로드
-    const savedGroupThreshold = localStorage.getItem('group-threshold') || '2';
-    document.getElementById('group-threshold').value = savedGroupThreshold;
+    // 그룹화 임계값은 loadTableSettings에서 처리
     
     // 스트리머 총액 설정 로드
     loadStreamerSummarySettings();
@@ -4018,6 +4029,11 @@ async function loadTableSettings() {
             localStorage.setItem(`rank-${rank}-name`, name); // 로컬에도 백업
         }
     }
+    
+    // 그룹화 임계값 로드 (서버 설정 우선)
+    const savedGroupThreshold = serverSettings?.groupThreshold || parseInt(localStorage.getItem('group-threshold') || '2');
+    document.getElementById('group-threshold').value = savedGroupThreshold;
+    localStorage.setItem('group-threshold', savedGroupThreshold.toString()); // 로컬에도 백업
     
     // 순번명 입력 필드 생성 및 로드
     updateRankInputs();
