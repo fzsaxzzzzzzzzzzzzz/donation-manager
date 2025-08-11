@@ -831,6 +831,12 @@ function initializeRealtimeConnection() {
             console.log('🔄 [관리자] 실시간 데이터 업데이트 수신:', data);
             console.log('🔄 [관리자] 수신된 후원 데이터:', data.donations?.length || 0, '건');
             donations = data.donations || [];
+            
+            // 설정도 함께 업데이트 (중복 이벤트 방지)
+            if (data.settings) {
+                applyServerSettingsToUI(data.settings);
+            }
+            
             updateAllUI();
             showStatus('✨ 새 후원 데이터 동기화!', 'success', 2000);
             
@@ -843,11 +849,7 @@ function initializeRealtimeConnection() {
             console.log('✅ [관리자] 실시간 UI 업데이트 완료');
         });
         
-        socket.on('settingsUpdate', (settings) => {
-            console.log('⚙️ [관리자] 실시간 설정 업데이트 수신:', settings);
-            applyServerSettingsToUI(settings);
-            showStatus('⚙️ 설정이 업데이트되었습니다', 'info', 2000);
-        });
+        // settingsUpdate 이벤트는 dataUpdate에서 함께 처리하므로 제거
         
     } catch (error) {
         console.error('Socket.io 초기화 실패:', error);

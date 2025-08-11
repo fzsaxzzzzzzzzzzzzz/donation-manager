@@ -391,7 +391,6 @@ app.post('/api/fix-settings', async (req, res) => {
     
     // 모든 클라이언트에게 업데이트 전송
     console.log('📡 [서버] 설정 수정 후 데이터 전송');
-    io.emit('settingsUpdate', currentData.settings);
     io.emit('dataUpdate', currentData);
     
     res.json({ 
@@ -462,7 +461,6 @@ app.post('/api/settings', async (req, res) => {
     
     // 모든 클라이언트에게 설정 업데이트 전송
     console.log('⚙️ [서버] 설정 업데이트 전송:', Object.keys(settings).join(', '));
-    io.emit('settingsUpdate', currentData.settings);
     io.emit('dataUpdate', currentData);
     
     res.json({ 
