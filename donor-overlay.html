@@ -146,7 +146,7 @@ class RealtimeDonorOverlay {
         const contentEl = document.getElementById('donor-content');
         
         if (!this.donations || this.donations.length === 0) {
-            contentEl.textContent = '후원 데이터가 없습니다';
+            contentEl.textContent = '사랑해요♡';
             contentEl.className = 'no-data';
             return;
         }
@@ -197,7 +197,7 @@ class RealtimeDonorOverlay {
         const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
         
         if (sortedGroups.length === 0) {
-            contentEl.textContent = '사랑해요♡\n후원자가 없습니다';
+            contentEl.textContent = '사랑해요♡';
             contentEl.className = 'no-data';
             return;
         }
