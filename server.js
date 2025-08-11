@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs').promises;
+const admin = require('firebase-admin');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +18,25 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+
+// Firebase Admin SDK 초기화
+let firebaseDB = null;
+try {
+  // 환경변수에서 Firebase 설정 읽기
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: process.env.FIREBASE_DATABASE_URL || "https://donation-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/"
+    });
+    firebaseDB = admin.database();
+    console.log('🔥 Firebase 연결 성공');
+  } else {
+    console.log('⚠️ Firebase 환경변수 없음 - 로컬 저장만 사용');
+  }
+} catch (error) {
+  console.log('⚠️ Firebase 초기화 실패 - 로컬 저장만 사용:', error.message);
+}
 
 // 미들웨어
 app.use(cors());
@@ -52,42 +72,87 @@ let currentData = {
   lastUpdated: new Date().toISOString()
 };
 
-// 기존 data.json 로드
+// Firebase에서 데이터 로드
+async function loadFromFirebase() {
+  if (!firebaseDB) return null;
+  
+  try {
+    const snapshot = await firebaseDB.ref('/').once('value');
+    const firebaseData = snapshot.val();
+    
+    if (firebaseData) {
+      console.log('🔥 Firebase에서 데이터 로드 성공');
+      return firebaseData;
+    }
+  } catch (error) {
+    console.log('❌ Firebase 로드 실패:', error.message);
+  }
+  return null;
+}
+
+// Firebase에 데이터 저장
+async function saveToFirebase() {
+  if (!firebaseDB) return;
+  
+  try {
+    await firebaseDB.ref('/').set(currentData);
+    console.log('🔥 Firebase 저장 성공');
+  } catch (error) {
+    console.log('❌ Firebase 저장 실패:', error.message);
+  }
+}
+
+// 통합 데이터 로드 (Firebase 우선, 그 다음 로컬)
 async function loadExistingData() {
+  // 1. Firebase에서 먼저 시도
+  const firebaseData = await loadFromFirebase();
+  if (firebaseData) {
+    currentData = {
+      ...currentData,
+      ...firebaseData,
+      emojis: firebaseData.emojis || currentData.emojis,
+      settings: firebaseData.settings?.settings || firebaseData.settings || currentData.settings
+    };
+    console.log('📊 스트리머:', currentData.streamers.length + '명');
+    console.log('💸 후원:', currentData.donations.length + '건');
+    return;
+  }
+  
+  // 2. Firebase 실패 시 로컬 파일 시도
   try {
     const data = await fs.readFile('./data.json', 'utf8');
     const loadedData = JSON.parse(data);
     
-    // 데이터 병합 (기본값 유지)
     currentData = {
       ...currentData,
       ...loadedData,
-      // 빈 이모지 객체가 있다면 기본값으로 교체
       emojis: loadedData.emojis && Object.keys(loadedData.emojis).length > 0 
         ? loadedData.emojis 
         : currentData.emojis,
-      // 중첩된 설정 문제 해결
       settings: loadedData.settings?.settings || loadedData.settings || currentData.settings
     };
     
-    console.log('✅ 기존 데이터 로드 완료');
+    console.log('✅ 로컬 데이터 로드 완료');
     console.log('📊 스트리머:', currentData.streamers.length + '명');
-    console.log('😀 이모지:', Object.keys(currentData.emojis).length + '개');
     console.log('💸 후원:', currentData.donations.length + '건');
   } catch (error) {
     console.log('⚠️ 기존 데이터 없음, 새로 시작');
   }
 }
 
-// 데이터 저장 (에러 방지)
+// 통합 데이터 저장 (Firebase 우선, 로컬 백업)
 async function saveData() {
+  currentData.lastUpdated = new Date().toISOString();
+  
+  // 1. Firebase에 저장 시도
+  await saveToFirebase();
+  
+  // 2. 로컬 파일에도 백업 저장
   try {
-    currentData.lastUpdated = new Date().toISOString();
     await fs.writeFile('./data.json', JSON.stringify(currentData, null, 2));
-    console.log('✅ 데이터 저장 성공:', currentData.donations.length, '건');
+    console.log('✅ 로컬 백업 저장 성공:', currentData.donations.length, '건');
   } catch (error) {
-    console.error('❌ 데이터 저장 실패 (계속 진행):', error.message);
-    // 파일 저장 실패해도 메모리 데이터는 유지
+    console.error('❌ 로컬 저장 실패 (계속 진행):', error.message);
   }
 }
 
