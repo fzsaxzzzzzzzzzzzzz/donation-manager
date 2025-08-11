@@ -113,6 +113,14 @@ class RealtimeDonorOverlay {
         this.socket.on('dataUpdate', (data) => {
             console.log('🔄 실시간 데이터 업데이트 수신:', data.donations?.length || 0, '건');
             this.donations = data.donations || [];
+            
+            // 설정 데이터가 포함된 경우 설정도 업데이트
+            if (data.settings) {
+                console.log('⚙️ 설정 업데이트 포함:', Object.keys(data.settings));
+                this.settings = { ...this.settings, ...data.settings };
+                this.applySettings();
+            }
+            
             this.updateDisplay();
             this.flashUpdate();
         });
