@@ -97,7 +97,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button class="tab-button" onclick="switchTab(event, 'overlay')">🎨 오버레이</button>
 <button class="tab-button" onclick="switchTab(event, 'password')" id="password-tab-btn" style="display: none;">비밀번호</button>
 <button class="tab-button" onclick="switchTab(event, 'data')">데이터</button>
-<button class="tab-button" onclick="switchTab(event, 'debug')">🔧 디버그</button>
 <button class="tab-button" onclick="switchTab(event, 'chatbot')">🤖 챗봇</button>
 <button class="tab-button" onclick="switchTab(event, 'simple')" id="simple-tab-btn">🎯 조정</button>
 </div>
@@ -328,10 +327,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div style="margin-bottom: 20px; padding: 15px; border: 2px solid #dc3545; border-radius: 8px; background: #f8d7da;">
 <h4 style="color: #721c24; margin: 0 0 10px 0;">🔒 관리자 전용</h4>
 <div style="margin-bottom: 15px;">
-<strong style="color: #721c24;">고정 관리자 비밀번호:</strong>
-<div id="current-password" style="font-size:18px; font-weight:bold; margin:5px 0; color: #721c24;">2749</div>
-</div>
-<div style="margin-bottom: 15px;">
 <label style="display: flex; align-items: center; gap: 10px; color: #721c24;">
 <input type="checkbox" id="admin-verified" onchange="toggleAdminMode()" style="transform: scale(1.2);">
 <strong>관리자 인증 완료</strong>
@@ -377,16 +372,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 <input type="file" id="import-file" accept=".json" style="display: none;" onchange="handleFileImport(event)">
-</div>
-<div class="tab-content" id="debug-tab">
-<div style="margin-bottom: 20px;">
-<h4>🔧 서버 상태 디버그</h4>
-<button onclick="checkServerData()" class="btn btn-primary">서버 데이터 확인</button>
-<button onclick="forceInitEmojis()" class="btn btn-warning">이모지 강제 초기화</button>
-<button onclick="testStreamerAdd()" class="btn btn-success">스트리머 추가 테스트</button>
-</div>
-
-<div id="debug-output" style="background: #f5f6f7; padding: 15px; border-radius: 6px; margin-top: 15px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap;"></div>
 </div>
 
 <div class="tab-content" id="chatbot-tab">
@@ -464,7 +449,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <!-- 빠른 권한 활성화 -->
 <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
 <button onclick="quickEnableAdmin()" class="btn btn-primary" style="flex: 1;" id="quick-admin-btn">
-🔓 관리자 권한 활성화 (비밀번호: 2749)
+🔓 관리자 권한 활성화
 </button>
 </div>
 
@@ -792,7 +777,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 let streamers = ['엄삼용','손덕배','연기','주옥','불곰','이효팔','동동','남붕','옥긔','국고'];
 let emojis = {'엄삼용': '🫅', '손덕배':'🌺', '연기': '🐧', '동동': '😎', '주옥': '👺', '불곰':'🎬', '이효팔': '🏝', '남붕': '🤠', '옥긔':'🦆', '국고':'🏦'};
 let donations = [], missionData = {}, user = { email: 'local@user.com', isAdmin: false };
-let currentPassword = '2749'; // 관리자 전용 고정 비밀번호
+let currentPassword = '2749'; // 관리자 전용 비밀번호
 let isAdminVerified = false; // 관리자 인증 상태
 let autoSaveEnabled = true, selectedRows = new Set(), todayDonors = new Set();
 let activeAutocompleteIndex = -1;
@@ -977,6 +962,7 @@ async function initializeApp() {
         try { loadFromLocalStorage(); } catch (e) { console.error('로컬 스토리지 로드 실패:', e); }
         try { loadYouTubeSettings(); } catch (e) { console.error('YouTube 설정 로드 실패:', e); }
         try { loadOverlaySettings(); } catch (e) { console.error('오버레이 설정 로드 실패:', e); }
+        try { await loadTableSettings(); } catch (e) { console.error('테이블 설정 로드 실패:', e); }
         
         try { 
             await updateUserInfo(); 
@@ -2441,127 +2427,6 @@ async function addStreamerSimple() {
     }
 }
 
-// === 디버그 함수들 ===
-function debugLog(message) {
-    const output = document.getElementById('debug-output');
-    if (output) {
-        const timestamp = new Date().toLocaleTimeString();
-        output.textContent += `[${timestamp}] ${message}\n`;
-        output.scrollTop = output.scrollHeight;
-    }
-    console.log(`[디버그] ${message}`);
-}
-
-async function checkServerData() {
-    debugLog('서버 데이터 확인 시작...');
-    
-    try {
-        const response = await fetch('/api/data');
-        const data = await response.json();
-        
-        debugLog(`✅ 서버 응답 성공`);
-        debugLog(`📊 스트리머 수: ${data.streamers?.length || 0}`);
-        debugLog(`😀 이모지 수: ${Object.keys(data.emojis || {}).length}`);
-        debugLog(`💸 후원 수: ${data.donations?.length || 0}`);
-        
-        if (data.emojis && Object.keys(data.emojis).length > 0) {
-            debugLog('🎉 이모지 데이터 존재함:');
-            Object.entries(data.emojis).forEach(([name, emoji]) => {
-                debugLog(`  ${name}: ${emoji}`);
-            });
-        } else {
-            debugLog('❌ 이모지 데이터 없음');
-        }
-        
-        if (data.streamers) {
-            debugLog('👤 스트리머 목록:');
-            data.streamers.forEach(name => {
-                debugLog(`  - ${name}`);
-            });
-        }
-        
-    } catch (error) {
-        debugLog(`❌ 서버 데이터 확인 실패: ${error.message}`);
-    }
-}
-
-async function forceInitEmojis() {
-    debugLog('이모지 강제 초기화 시작...');
-    
-    const emojiData = {
-        "엄삼용": "🫅", 
-        "손덕배": "🌺", 
-        "연기": "🐧", 
-        "동동": "😎", 
-        "주옥": "👺", 
-        "불곰": "🎬", 
-        "이효팔": "🏝", 
-        "남붕": "🤠", 
-        "옥긔": "🦆", 
-        "국고": "🏦"
-    };
-    
-    try {
-        // 로컬에 먼저 설정
-        emojis = { ...emojiData };
-        saveToLocalStorage();
-        debugLog('✅ 로컬 이모지 데이터 설정 완료');
-        
-        updateAllUI();
-        debugLog('🔄 UI 업데이트 완료');
-        
-        showStatus('이모지 데이터가 강제로 설정되었습니다', 'success');
-        
-    } catch (error) {
-        debugLog(`❌ 이모지 초기화 실패: ${error.message}`);
-    }
-}
-
-async function testStreamerAdd() {
-    debugLog('스트리머 추가 테스트 시작...');
-    
-    const testName = 'TEST' + Math.floor(Math.random() * 100);
-    const testEmoji = '🧪';
-    
-    debugLog(`테스트 스트리머: ${testName} ${testEmoji}`);
-    
-    try {
-        // 먼저 스트리머 추가 API 시도
-        const response = await fetch('/api/streamers', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ name: testName, emoji: testEmoji })
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            debugLog('✅ 서버 API 추가 성공');
-            debugLog(`응답: ${JSON.stringify(result)}`);
-        } else {
-            debugLog('❌ 서버 API 추가 실패, 로컬만 추가');
-            // 로컬에만 추가
-            if (!streamers.includes(testName)) {
-                streamers.push(testName);
-                emojis[testName] = testEmoji;
-                saveToLocalStorage();
-                updateAllUI();
-            }
-        }
-        
-    } catch (error) {
-        debugLog(`❌ 테스트 실패: ${error.message}`);
-        // 로컬에만 추가
-        if (!streamers.includes(testName)) {
-            streamers.push(testName);
-            emojis[testName] = testEmoji;
-            saveToLocalStorage();
-            updateAllUI();
-            debugLog('✅ 로컬에만 추가 완료');
-        }
-    }
-}
 
 // === 간단한 스트리머 관리 함수들 ===
 function simpleAddStreamer() {
@@ -4125,16 +3990,34 @@ function toggleTableSettings() {
     settingsDiv.style.display = isVisible ? 'none' : 'block';
 }
 
-function loadTableSettings() {
-    const savedTitle = localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆';
-    const savedShowTotalRow = localStorage.getItem('show-total-row') !== 'false'; // 기본값: true
-    const savedShowUpdateTime = localStorage.getItem('show-update-time') === 'true'; // 기본값: false
-    const savedRankCount = parseInt(localStorage.getItem('rank-count') || '10');
+async function loadTableSettings() {
+    // 먼저 서버에서 설정 로드 시도
+    let serverSettings = null;
+    try {
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        serverSettings = data.settings || {};
+    } catch (error) {
+        console.log('서버 설정 로드 실패, 로컬 설정 사용:', error);
+    }
+    
+    // 서버 설정이 있으면 우선 사용, 없으면 로컬 설정 사용
+    const savedTitle = serverSettings?.tableTitle || localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆';
+    const savedShowTotalRow = serverSettings?.showTotalRow ?? (localStorage.getItem('show-total-row') !== 'false'); // 기본값: true
+    const savedShowUpdateTime = serverSettings?.showUpdateTime ?? (localStorage.getItem('show-update-time') === 'true'); // 기본값: false
+    const savedRankCount = serverSettings?.rankCount || parseInt(localStorage.getItem('rank-count') || '10');
     
     document.getElementById('table-title-input').value = savedTitle;
     document.getElementById('show-total-row').checked = savedShowTotalRow;
     document.getElementById('show-update-time').checked = savedShowUpdateTime;
     document.getElementById('rank-count').value = savedRankCount;
+    
+    // 서버에서 순번명도 로드
+    if (serverSettings?.rankNames) {
+        for (const [rank, name] of Object.entries(serverSettings.rankNames)) {
+            localStorage.setItem(`rank-${rank}-name`, name); // 로컬에도 백업
+        }
+    }
     
     // 순번명 입력 필드 생성 및 로드
     updateRankInputs();
@@ -4174,30 +4057,61 @@ function getRankPresetExample(preset, rank) {
     return presetArray[rank - 1] || `${rank}등`;
 }
 
-function saveTableSettings() {
+async function saveTableSettings() {
     const tableTitle = document.getElementById('table-title-input').value.trim();
     const showTotalRow = document.getElementById('show-total-row').checked;
     const showUpdateTime = document.getElementById('show-update-time').checked;
     const rankCount = parseInt(document.getElementById('rank-count').value) || 10;
     
+    // 로컬에도 저장 (호환성)
     localStorage.setItem('table-title', tableTitle);
     localStorage.setItem('show-total-row', showTotalRow.toString());
     localStorage.setItem('show-update-time', showUpdateTime.toString());
     localStorage.setItem('rank-count', rankCount.toString());
     
-    // 모든 순번명 저장
+    // 순번명 수집
+    const rankNames = {};
     for (let i = 1; i <= rankCount; i++) {
         const rankInput = document.getElementById(`rank-${i}-name`);
         if (rankInput) {
             const rankName = rankInput.value.trim();
-            localStorage.setItem(`rank-${i}-name`, rankName);
+            localStorage.setItem(`rank-${i}-name`, rankName); // 로컬에도 저장
+            if (rankName) {
+                rankNames[i] = rankName;
+            }
         }
+    }
+    
+    // 서버에 설정 저장
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                settings: {
+                    tableTitle: tableTitle,
+                    showTotalRow: showTotalRow,
+                    showUpdateTime: showUpdateTime,
+                    rankCount: rankCount,
+                    rankNames: rankNames
+                }
+            })
+        });
+        
+        if (response.ok) {
+            showStatus('테이블 설정이 서버에 저장되었습니다', 'success');
+        } else {
+            showStatus('서버 저장 실패, 로컬에만 저장되었습니다', 'warning');
+        }
+    } catch (error) {
+        console.error('서버 설정 저장 실패:', error);
+        showStatus('서버 저장 실패, 로컬에만 저장되었습니다', 'warning');
     }
     
     // 설정 적용을 위해 테이블 업데이트
     updateDetailedSummaryTable();
-    
-    showStatus('테이블 설정이 저장되었습니다', 'success');
 }
 
 function resetTableSettings() {
@@ -4634,7 +4548,7 @@ function updateQuickAdminButton() {
             quickAdminBtn.className = 'btn btn-success';
             quickAdminBtn.disabled = true;
         } else {
-            quickAdminBtn.innerHTML = '🔓 관리자 권한 활성화 (비밀번호: 2749)';
+            quickAdminBtn.innerHTML = '🔓 관리자 권한 활성화';
             quickAdminBtn.className = 'btn btn-primary';
             quickAdminBtn.disabled = false;
         }
