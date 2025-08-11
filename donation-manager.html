@@ -1616,17 +1616,19 @@ function updateSummary() {
     // 그룹화 임계값을 localStorage에 저장 (오버레이에서 사용)
     localStorage.setItem('group-threshold', groupThreshold.toString());
     
-    // 서버에도 그룹화 임계값 저장
-    try {
-        fetch('/api/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                settings: { groupThreshold: groupThreshold }
-            })
-        }).catch(error => console.log('그룹화 설정 서버 저장 실패:', error));
-    } catch (error) {
-        console.log('그룹화 설정 서버 저장 실패:', error);
+    // 서버에도 그룹화 임계값 저장 (서버 설정 적용 중이 아닐 때만)
+    if (!isApplyingServerSettings) {
+        try {
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    settings: { groupThreshold: groupThreshold }
+                })
+            }).catch(error => console.log('그룹화 설정 서버 저장 실패:', error));
+        } catch (error) {
+            console.log('그룹화 설정 서버 저장 실패:', error);
+        }
     }
     const amountGroups = {};
     for (const donor in donorAccountTotals) {
@@ -3633,9 +3635,15 @@ async function stopAllMissions() {
 
 // --- 오버레이 관리 함수 ---
 
+// 서버 설정 적용 중인지 확인하는 플래그
+let isApplyingServerSettings = false;
+
 // 서버 설정을 UI에 적용하는 함수
 function applyServerSettingsToUI(settings) {
     if (!settings) return;
+    
+    // 무한 루프 방지를 위한 플래그 설정
+    isApplyingServerSettings = true;
     
     try {
         // 후원자 오버레이 설정
@@ -3688,6 +3696,9 @@ function applyServerSettingsToUI(settings) {
         
     } catch (error) {
         console.error('❌ [관리자] 서버 설정 UI 적용 실패:', error);
+    } finally {
+        // 플래그 해제
+        isApplyingServerSettings = false;
     }
 }
 
@@ -3851,6 +3862,12 @@ function setTableTextColor(color) {
 
 // 서버에 설정 업데이트 전송
 async function updateServerSettings(settings) {
+    // 서버 설정 적용 중이면 무한 루프 방지
+    if (isApplyingServerSettings) {
+        console.log('🚫 [관리자] 서버 설정 적용 중이므로 업데이트 건너뜀:', settings);
+        return;
+    }
+    
     try {
         console.log('⚙️ [관리자] 서버 설정 업데이트 전송:', settings);
         const response = await fetch('/api/settings', {
