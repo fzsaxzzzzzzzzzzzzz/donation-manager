@@ -271,16 +271,16 @@ class RealtimeStreamerTable {
         
         console.log('🔧 테이블 설정 적용됨:', { fontSize, numberSize, textColor, opacity });
 
-        // 테이블 제목
+        // 테이블 제목 (서버 설정 우선)
         const titleElement = document.getElementById('tableTitle');
-        titleElement.textContent = this.settings['table-title'] || '🏆 스트리머별 후원 현황 🏆';
+        titleElement.textContent = this.settings.tableTitle || this.settings['table-title'] || '🏆 스트리머별 후원 현황 🏆';
         
-        // 업데이트 시간 표시 여부
-        const showUpdateTime = this.settings['show-update-time'] === 'true';
+        // 업데이트 시간 표시 여부 (서버 설정 우선)
+        const showUpdateTime = this.settings.showUpdateTime ?? (this.settings['show-update-time'] === 'true');
         document.getElementById('updateTime').style.display = showUpdateTime ? 'block' : 'none';
         
-        // 총합 행 표시 여부
-        const showTotalRow = this.settings['show-total-row'] === 'true';
+        // 총합 행 표시 여부 (서버 설정 우선)
+        const showTotalRow = this.settings.showTotalRow ?? (this.settings['show-total-row'] === 'true');
         document.getElementById('totalSummary').style.display = showTotalRow ? 'block' : 'none';
     }
 
@@ -386,7 +386,12 @@ class RealtimeStreamerTable {
     getRankName(index) {
         const rankNumber = index + 1;
         
-        // 설정된 순번명이 있는지 확인
+        // 서버 설정에서 순번명 확인 (우선)
+        if (this.settings.rankNames && this.settings.rankNames[rankNumber]) {
+            return this.settings.rankNames[rankNumber].trim();
+        }
+        
+        // 로컬 설정에서 순번명 확인 (백업)
         const customRankName = localStorage.getItem(`rank-${rankNumber}-name`);
         if (customRankName && customRankName.trim() !== '') {
             return customRankName.trim();
@@ -397,7 +402,7 @@ class RealtimeStreamerTable {
     }
 
     updateSummary(streamerStats) {
-        if (this.settings['show-total-row'] === 'true') {
+        if (this.settings.showTotalRow ?? (this.settings['show-total-row'] === 'true')) {
             const totalAccount = streamerStats.reduce((sum, stat) => sum + stat.account, 0);
             const totalToonation = streamerStats.reduce((sum, stat) => sum + stat.toonation, 0);
             const grandTotal = totalAccount + totalToonation;
@@ -408,7 +413,7 @@ class RealtimeStreamerTable {
     }
 
     updateLastUpdate() {
-        if (this.settings['show-update-time'] === 'true' && this.data?.lastUpdated) {
+        if ((this.settings.showUpdateTime ?? (this.settings['show-update-time'] === 'true')) && this.data?.lastUpdated) {
             document.getElementById('lastUpdate').textContent = 
                 new Date(this.data.lastUpdated).toLocaleTimeString('ko-KR');
         }
