@@ -3692,6 +3692,13 @@ function applyServerSettingsToUI(settings) {
             document.getElementById('table-font-size-value').textContent = fontSize + 'px';
         }
         
+        // 같은 금액 묶기 설정 (중요: 무한루프 방지)
+        if (settings.groupThreshold !== undefined) {
+            const groupThreshold = String(settings.groupThreshold);
+            document.getElementById('group-threshold').value = groupThreshold;
+            localStorage.setItem('group-threshold', groupThreshold);
+        }
+        
         console.log('✅ [관리자] 서버 설정이 UI에 적용되었습니다:', settings);
         
     } catch (error) {
