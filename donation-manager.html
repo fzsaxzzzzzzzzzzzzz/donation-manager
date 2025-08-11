@@ -327,10 +327,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div style="margin-bottom: 20px; padding: 15px; border: 2px solid #dc3545; border-radius: 8px; background: #f8d7da;">
 <h4 style="color: #721c24; margin: 0 0 10px 0;">🔒 관리자 전용</h4>
 <div style="margin-bottom: 15px;">
-<strong style="color: #721c24;">고정 관리자 비밀번호:</strong>
-<div id="current-password" style="font-size:18px; font-weight:bold; margin:5px 0; color: #721c24;">2749</div>
-</div>
-<div style="margin-bottom: 15px;">
 <label style="display: flex; align-items: center; gap: 10px; color: #721c24;">
 <input type="checkbox" id="admin-verified" onchange="toggleAdminMode()" style="transform: scale(1.2);">
 <strong>관리자 인증 완료</strong>
@@ -781,7 +777,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 let streamers = ['엄삼용','손덕배','연기','주옥','불곰','이효팔','동동','남붕','옥긔','국고'];
 let emojis = {'엄삼용': '🫅', '손덕배':'🌺', '연기': '🐧', '동동': '😎', '주옥': '👺', '불곰':'🎬', '이효팔': '🏝', '남붕': '🤠', '옥긔':'🦆', '국고':'🏦'};
 let donations = [], missionData = {}, user = { email: 'local@user.com', isAdmin: false };
-let currentPassword = '2749'; // 관리자 전용 고정 비밀번호
+let currentPassword = '2749'; // 관리자 전용 비밀번호
 let isAdminVerified = false; // 관리자 인증 상태
 let autoSaveEnabled = true, selectedRows = new Set(), todayDonors = new Set();
 let activeAutocompleteIndex = -1;
@@ -966,6 +962,7 @@ async function initializeApp() {
         try { loadFromLocalStorage(); } catch (e) { console.error('로컬 스토리지 로드 실패:', e); }
         try { loadYouTubeSettings(); } catch (e) { console.error('YouTube 설정 로드 실패:', e); }
         try { loadOverlaySettings(); } catch (e) { console.error('오버레이 설정 로드 실패:', e); }
+        try { await loadTableSettings(); } catch (e) { console.error('테이블 설정 로드 실패:', e); }
         
         try { 
             await updateUserInfo(); 
@@ -3993,16 +3990,34 @@ function toggleTableSettings() {
     settingsDiv.style.display = isVisible ? 'none' : 'block';
 }
 
-function loadTableSettings() {
-    const savedTitle = localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆';
-    const savedShowTotalRow = localStorage.getItem('show-total-row') !== 'false'; // 기본값: true
-    const savedShowUpdateTime = localStorage.getItem('show-update-time') === 'true'; // 기본값: false
-    const savedRankCount = parseInt(localStorage.getItem('rank-count') || '10');
+async function loadTableSettings() {
+    // 먼저 서버에서 설정 로드 시도
+    let serverSettings = null;
+    try {
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        serverSettings = data.settings || {};
+    } catch (error) {
+        console.log('서버 설정 로드 실패, 로컬 설정 사용:', error);
+    }
+    
+    // 서버 설정이 있으면 우선 사용, 없으면 로컬 설정 사용
+    const savedTitle = serverSettings?.tableTitle || localStorage.getItem('table-title') || '🏆 스트리머별 후원 현황 🏆';
+    const savedShowTotalRow = serverSettings?.showTotalRow ?? (localStorage.getItem('show-total-row') !== 'false'); // 기본값: true
+    const savedShowUpdateTime = serverSettings?.showUpdateTime ?? (localStorage.getItem('show-update-time') === 'true'); // 기본값: false
+    const savedRankCount = serverSettings?.rankCount || parseInt(localStorage.getItem('rank-count') || '10');
     
     document.getElementById('table-title-input').value = savedTitle;
     document.getElementById('show-total-row').checked = savedShowTotalRow;
     document.getElementById('show-update-time').checked = savedShowUpdateTime;
     document.getElementById('rank-count').value = savedRankCount;
+    
+    // 서버에서 순번명도 로드
+    if (serverSettings?.rankNames) {
+        for (const [rank, name] of Object.entries(serverSettings.rankNames)) {
+            localStorage.setItem(`rank-${rank}-name`, name); // 로컬에도 백업
+        }
+    }
     
     // 순번명 입력 필드 생성 및 로드
     updateRankInputs();
@@ -4042,30 +4057,61 @@ function getRankPresetExample(preset, rank) {
     return presetArray[rank - 1] || `${rank}등`;
 }
 
-function saveTableSettings() {
+async function saveTableSettings() {
     const tableTitle = document.getElementById('table-title-input').value.trim();
     const showTotalRow = document.getElementById('show-total-row').checked;
     const showUpdateTime = document.getElementById('show-update-time').checked;
     const rankCount = parseInt(document.getElementById('rank-count').value) || 10;
     
+    // 로컬에도 저장 (호환성)
     localStorage.setItem('table-title', tableTitle);
     localStorage.setItem('show-total-row', showTotalRow.toString());
     localStorage.setItem('show-update-time', showUpdateTime.toString());
     localStorage.setItem('rank-count', rankCount.toString());
     
-    // 모든 순번명 저장
+    // 순번명 수집
+    const rankNames = {};
     for (let i = 1; i <= rankCount; i++) {
         const rankInput = document.getElementById(`rank-${i}-name`);
         if (rankInput) {
             const rankName = rankInput.value.trim();
-            localStorage.setItem(`rank-${i}-name`, rankName);
+            localStorage.setItem(`rank-${i}-name`, rankName); // 로컬에도 저장
+            if (rankName) {
+                rankNames[i] = rankName;
+            }
         }
+    }
+    
+    // 서버에 설정 저장
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                settings: {
+                    tableTitle: tableTitle,
+                    showTotalRow: showTotalRow,
+                    showUpdateTime: showUpdateTime,
+                    rankCount: rankCount,
+                    rankNames: rankNames
+                }
+            })
+        });
+        
+        if (response.ok) {
+            showStatus('테이블 설정이 서버에 저장되었습니다', 'success');
+        } else {
+            showStatus('서버 저장 실패, 로컬에만 저장되었습니다', 'warning');
+        }
+    } catch (error) {
+        console.error('서버 설정 저장 실패:', error);
+        showStatus('서버 저장 실패, 로컬에만 저장되었습니다', 'warning');
     }
     
     // 설정 적용을 위해 테이블 업데이트
     updateDetailedSummaryTable();
-    
-    showStatus('테이블 설정이 저장되었습니다', 'success');
 }
 
 function resetTableSettings() {
