@@ -1,0 +1,20 @@
+user ok0303 Wind%&$2749
+binary
+pwd
+ls
+cd htdocs
+put cafe24-upload\server.js
+put cafe24-upload\package.json
+put cafe24-upload\package-lock.json
+put cafe24-upload\firebase-config.js
+put cafe24-upload\data.json
+put cafe24-upload\all-in-one.html
+put cafe24-upload\donation-manager-realtime.html
+put cafe24-upload\table-realtime.html
+put cafe24-upload\admin-settings.html
+put cafe24-upload\donation-sheet.html
+put cafe24-upload\settings-sheet.html
+put cafe24-upload\donor-overlay.html
+put cafe24-upload\streamer-table-overlay.html
+ls
+quit

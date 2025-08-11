@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔴 실시간 후원자별 총액 오버레이</title>
+
+<!-- Socket.IO for Real-time -->
+<script src="/socket.io/socket.io.js"></script>
+<style>
+body {
+    margin: 0;
+    padding: 20px;
+    background: transparent;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    color: white;
+    overflow: hidden;
+}
+
+.overlay-container {
+    background: transparent;
+    max-width: 800px;
+    width: 100%;
+}
+
+.donor-content {
+    font-size: var(--overlay-font-size, 18px) !important;
+    font-weight: bold;
+    color: white;
+    text-shadow: var(--overlay-text-shadow, 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000, 3px 0px 0 #000000, -3px 0px 0 #000000, 0px 3px 0 #000000, 0px -3px 0 #000000) !important;
+    line-height: 1.5;
+    white-space: pre-line;
+    padding: 0;
+    text-align: var(--overlay-text-align, left) !important;
+    transition: opacity 0.3s ease;
+}
+
+.no-data {
+    font-size: var(--overlay-font-size, 20px) !important;
+    font-weight: bold;
+    color: white !important;
+    text-shadow: var(--overlay-text-shadow, 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000) !important;
+    text-align: var(--overlay-text-align, center) !important;
+    padding: 40px 20px;
+}
+
+.loading {
+    color: #87CEEB;
+    text-align: center;
+    font-size: 16px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* 연결 상태 표시 제거됨 */
+
+/* 크로마키 지원 */
+.transparent-mode {
+    background: #00FF00;
+}
+</style>
+</head>
+<body>
+
+<div class="overlay-container">
+    <div class="donor-content" id="donor-content">
+        <div class="loading">실시간 서버 연결 중...</div>
+    </div>
+</div>
+
+<!-- 연결 상태 표시 제거됨 -->
+
+<script>
+class RealtimeDonorOverlay {
+    constructor() {
+        this.socket = io();
+        this.donations = [];
+        this.settings = {
+            'overlay-font-size': 18,
+            'overlay-stroke-width': 3,
+            'overlay-text-align': 'left'
+        };
+        this.isConnected = false;
+        
+        this.initializeSocket();
+        this.setupKeyboardControls();
+    }
+    
+    initializeSocket() {
+        this.socket.on('connect', () => {
+            this.isConnected = true;
+            console.log('🔗 실시간 서버 연결됨');
+        });
+        
+        this.socket.on('disconnect', () => {
+            this.isConnected = false;
+            console.log('❌ 실시간 서버 연결 끊어짐');
+            this.showError('서버와의 연결이 끊어졌습니다.');
+        });
+        
+        this.socket.on('initialData', (data) => {
+            console.log('📊 초기 데이터 수신:', data);
+            this.donations = data.donations || [];
+            this.settings = { ...this.settings, ...(data.settings || {}) };
+            this.applySettings();
+            this.updateDisplay();
+        });
+        
+        this.socket.on('dataUpdate', (data) => {
+            console.log('🔄 실시간 데이터 업데이트 수신:', data.donations?.length || 0, '건');
+            this.donations = data.donations || [];
+            this.updateDisplay();
+            this.flashUpdate();
+        });
+        
+        this.socket.on('settingsUpdate', (settings) => {
+            console.log('⚙️ 설정 업데이트 수신:', settings);
+            this.settings = { ...this.settings, ...settings };
+            this.applySettings();
+            this.updateDisplay();
+        });
+    }
+    
+    // 연결 상태 표시 제거됨
+    
+    applySettings() {
+        const root = document.documentElement;
+        const fontSize = parseInt(this.settings['overlay-font-size']) || 18;
+        const strokeWidth = parseFloat(this.settings['overlay-stroke-width']) || 3;
+        const textAlign = this.settings['overlay-text-align'] || 'left';
+        
+        root.style.setProperty('--overlay-font-size', fontSize + 'px');
+        root.style.setProperty('--overlay-text-align', textAlign);
+        root.style.setProperty('--overlay-text-shadow', 
+            `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000`
+        );
+        
+        console.log('🔧 설정 적용됨:', { fontSize, strokeWidth, textAlign });
+    }
+    
+    updateDisplay() {
+        const contentEl = document.getElementById('donor-content');
+        
+        if (!this.donations || this.donations.length === 0) {
+            contentEl.textContent = '후원 데이터가 없습니다';
+            contentEl.className = 'no-data';
+            return;
+        }
+        
+        // 후원자별 총액 계산 (계좌 타입만) - 정산요약과 동일한 로직
+        const donorAccountTotals = {};
+        this.donations.forEach(d => {
+            const amount = parseFloat(d.amount) || 0;
+            if (d.type === '계좌') {
+                // 스트리머별 조정은 제외, 후원자별 조정은 포함
+                if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
+                    // 스트리머별 조정 → 제외
+                    return;
+                }
+                
+                // 후원자명에서 (조정+금액) 부분 제거
+                let cleanDonorName = d.donor;
+                if (cleanDonorName.includes('(조정')) {
+                    cleanDonorName = cleanDonorName.replace(/\(조정[^)]*\)/g, '');
+                }
+                
+                // 계좌후원자님은 그대로 표시 (특별 처리)
+                if (cleanDonorName === '계좌후원자님' || cleanDonorName === '계좌후원자') {
+                    cleanDonorName = '계좌후원자님';
+                }
+                
+                donorAccountTotals[cleanDonorName] = (donorAccountTotals[cleanDonorName] || 0) + amount;
+            }
+        });
+
+        // 그룹화 임계값 로드 (정산요약과 동일)
+        const groupThreshold = parseInt(localStorage.getItem('group-threshold') || '2');
+        
+        // 금액별 그룹화
+        const amountGroups = {};
+        for (const donor in donorAccountTotals) {
+            const amount = donorAccountTotals[donor];
+            if (amount > 0) {
+                if (!amountGroups[amount]) { 
+                    amountGroups[amount] = []; 
+                }
+                amountGroups[amount].push(donor);
+            }
+        }
+
+        // 소액 필터링 (0.1만원 미만 제외)
+        const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 0.1);
+        const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
+        
+        if (sortedGroups.length === 0) {
+            contentEl.textContent = '사랑해요♡\n후원자가 없습니다';
+            contentEl.className = 'no-data';
+            return;
+        }
+        
+        // 정산요약과 동일한 형식으로 텍스트 생성
+        const donorTotalText = sortedGroups.map(([amount, donors]) => {
+            const amountStr = `${parseFloat(amount)}만`;
+            if (donors.length >= groupThreshold && groupThreshold > 1) {
+                return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
+            } else {
+                return donors.map(d => `${d}님 ${amountStr}`).join('\n');
+            }
+        }).join('\n');
+        
+        // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
+        const finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡\n후원자가 없습니다';
+        contentEl.textContent = finalText;
+        contentEl.className = 'donor-content';
+        
+        console.log('📊 화면 업데이트 완료:', sortedGroups.length, '개 그룹의 후원자');
+    }
+    
+    showError(message) {
+        const contentEl = document.getElementById('donor-content');
+        contentEl.textContent = message;
+        contentEl.className = 'no-data';
+        contentEl.style.color = '#ffcccb';
+    }
+    
+    flashUpdate() {
+        const container = document.querySelector('.overlay-container');
+        if (container) {
+            container.style.opacity = '0.7';
+            setTimeout(() => {
+                container.style.opacity = '1';
+            }, 200);
+        }
+    }
+    
+    setupKeyboardControls() {
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey) {
+                switch(e.key) {
+                    case '1': // Alt+1: 왼쪽 정렬
+                        this.settings['overlay-text-align'] = 'left';
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('정렬: 왼쪽');
+                        break;
+                    case '2': // Alt+2: 가운데 정렬
+                        this.settings['overlay-text-align'] = 'center';
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('정렬: 가운데');
+                        break;
+                    case '3': // Alt+3: 오른쪽 정렬
+                        this.settings['overlay-text-align'] = 'right';
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('정렬: 오른쪽');
+                        break;
+                    case '=': // Alt+=: 폰트 크기 증가
+                        this.settings['overlay-font-size'] = Math.min(50, (this.settings['overlay-font-size'] || 18) + 2);
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('폰트 크기:', this.settings['overlay-font-size']);
+                        break;
+                    case '-': // Alt+-: 폰트 크기 감소
+                        this.settings['overlay-font-size'] = Math.max(10, (this.settings['overlay-font-size'] || 18) - 2);
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('폰트 크기:', this.settings['overlay-font-size']);
+                        break;
+                }
+                e.preventDefault();
+            }
+        });
+    }
+}
+
+// 페이지 로드 시 시작
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎬 실시간 후원자 오버레이 시작');
+    new RealtimeDonorOverlay();
+});
+</script>
+
+</body>
+</html>

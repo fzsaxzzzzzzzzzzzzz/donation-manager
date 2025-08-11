@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실시간 스트리머 테이블 오버레이</title>
+
+<!-- Socket.IO -->
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: transparent;
+    color: var(--table-text-color, white);
+    overflow: hidden;
+    font-size: var(--table-font-size, 14px);
+}
+
+.overlay-container {
+    position: relative;
+    margin: 20px auto;
+    max-width: 800px;
+    width: calc(100vw - 40px);
+    min-width: 400px;
+    background: rgba(0, 0, 0, calc(var(--table-opacity, 85) / 100));
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease-in-out;
+}
+
+.section-title {
+    font-size: calc(var(--table-font-size, 14px) + 6px);
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #FFD700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    border-bottom: 2px solid #FFD700;
+    padding-bottom: 8px;
+    text-align: center;
+}
+
+.update-time {
+    text-align: center;
+    font-size: calc(var(--table-font-size, 14px) - 2px);
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 0 #000000;
+}
+
+.streamer-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+.streamer-table th {
+    background: rgba(255,215,0,0.2);
+    color: #FFD700;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 2px solid #FFD700;
+    font-size: var(--table-font-size, 14px);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.streamer-table td {
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: var(--table-font-size, 14px);
+    color: var(--table-text-color, white);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    transition: background-color 0.3s ease;
+}
+
+.streamer-table tr:nth-child(even) {
+    background: rgba(255,255,255,0.05);
+}
+
+/* 하이라이트 애니메이션 제거됨 */
+
+.rank-number {
+    font-weight: bold;
+    color: #FFD700;
+    font-size: calc(var(--table-number-size, 16px) * 1px);
+}
+
+.rank-1 .rank-number { color: #FFD700; }
+.rank-2 .rank-number { color: #C0C0C0; }
+.rank-3 .rank-number { color: #CD7F32; }
+
+.streamer-name {
+    font-weight: 600;
+}
+
+.amount {
+    font-weight: bold;
+    color: #42b72a;
+}
+
+.donation-count {
+    font-size: calc(var(--table-font-size, 14px) - 1px);
+    opacity: 0.9;
+}
+
+.total-summary {
+    text-align: center;
+    font-size: calc(var(--table-font-size, 14px) + 2px);
+    font-weight: bold;
+    color: #FFD700;
+    background: rgba(255,215,0,0.1);
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid #FFD700;
+    margin-bottom: 15px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.info-text {
+    font-size: calc(var(--table-font-size, 14px) - 2px);
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 10px;
+    text-align: center;
+    text-shadow: 1px 1px 0 #000000;
+}
+
+.connection-indicator {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #42b72a;
+    z-index: 1000;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 10px rgba(66, 183, 42, 0.5);
+}
+
+.connection-indicator.disconnected {
+    background: #fa383e;
+    animation: none;
+    box-shadow: 0 0 10px rgba(250, 56, 62, 0.5);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(255,255,255,0.7);
+    font-size: calc(var(--table-font-size, 14px) + 2px);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+</style>
+</head>
+<body>
+
+<div class="overlay-container">
+    <div class="section-title" id="tableTitle">🏆 스트리머별 후원 현황 🏆</div>
+    
+    <div class="update-time" id="updateTime" style="display: none;">
+        마지막 업데이트: <span id="lastUpdate">-</span>
+    </div>
+    
+    <div class="total-summary" id="totalSummary" style="display: none;">
+        총 후원액: ₩0 (0건)
+    </div>
+    
+    <table class="streamer-table" id="streamerTable">
+        <thead>
+            <tr>
+                <th>순위</th>
+                <th>스트리머</th>
+                <th>계좌후원</th>
+                <th>투네후원</th>
+                <th>총 후원</th>
+            </tr>
+        </thead>
+        <tbody id="streamerTableBody">
+            <tr>
+                <td colspan="5" class="no-data">실시간 연결 중...</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="info-text">실시간으로 업데이트됩니다</div>
+</div>
+
+<div class="connection-indicator" id="connectionIndicator"></div>
+
+<script>
+class RealtimeStreamerTable {
+    constructor() {
+        this.socket = io();
+        this.data = null;
+        this.settings = {};
+        this.isConnected = false;
+        this.previousStreamerTotals = new Map();
+        
+        this.initializeSocketEvents();
+        this.updateConnectionStatus();
+    }
+
+    initializeSocketEvents() {
+        this.socket.on('connect', () => {
+            this.isConnected = true;
+            this.updateConnectionStatus();
+            console.log('실시간 서버에 연결됨');
+        });
+
+        this.socket.on('disconnect', () => {
+            this.isConnected = false;
+            this.updateConnectionStatus();
+            this.showNoConnection();
+        });
+
+        this.socket.on('initialData', (data) => {
+            this.data = data;
+            this.settings = data.settings || {};
+            this.applySettings();
+            this.renderStreamerTable();
+        });
+
+        this.socket.on('dataUpdate', (data) => {
+            const previousData = this.data;
+            this.data = data;
+            this.renderStreamerTable(previousData);
+        });
+
+        this.socket.on('settingsUpdate', (settings) => {
+            this.settings = settings;
+            this.applySettings();
+            this.renderStreamerTable();
+        });
+    }
+
+    updateConnectionStatus() {
+        const indicator = document.getElementById('connectionIndicator');
+        
+        if (this.isConnected) {
+            indicator.classList.remove('disconnected');
+        } else {
+            indicator.classList.add('disconnected');
+        }
+    }
+
+    applySettings() {
+        const root = document.documentElement;
+        
+        // CSS 변수 설정 (문자열을 숫자로 변환)
+        const fontSize = parseInt(this.settings['table-font-size']) || 14;
+        const numberSize = parseInt(this.settings['table-number-size']) || 16;
+        const textColor = this.settings['table-text-color'] || 'white';
+        const opacity = parseInt(this.settings['table-opacity']) || 85;
+        
+        root.style.setProperty('--table-font-size', fontSize + 'px');
+        root.style.setProperty('--table-number-size', numberSize);
+        root.style.setProperty('--table-text-color', textColor);
+        root.style.setProperty('--table-opacity', opacity);
+        
+        console.log('🔧 테이블 설정 적용됨:', { fontSize, numberSize, textColor, opacity });
+
+        // 테이블 제목
+        const titleElement = document.getElementById('tableTitle');
+        titleElement.textContent = this.settings['table-title'] || '🏆 스트리머별 후원 현황 🏆';
+        
+        // 업데이트 시간 표시 여부
+        const showUpdateTime = this.settings['show-update-time'] === 'true';
+        document.getElementById('updateTime').style.display = showUpdateTime ? 'block' : 'none';
+        
+        // 총합 행 표시 여부
+        const showTotalRow = this.settings['show-total-row'] === 'true';
+        document.getElementById('totalSummary').style.display = showTotalRow ? 'block' : 'none';
+    }
+
+    renderStreamerTable(previousData = null) {
+        if (!this.data || !this.data.donations || !this.data.streamers) {
+            this.showNoData();
+            return;
+        }
+
+        // 스트리머별 통계 계산
+        const streamerStats = this.calculateStreamerStats();
+        
+        if (streamerStats.length === 0) {
+            this.showNoData();
+            return;
+        }
+
+        // 숨겨진 스트리머 필터링
+        const hiddenStreamers = this.getHiddenStreamers();
+        const visibleStats = streamerStats.filter(stat => 
+            !hiddenStreamers.includes(stat.streamer)
+        );
+
+        this.displayStreamerTable(visibleStats);
+        this.updateSummary(visibleStats);
+        this.updateLastUpdate();
+    }
+
+    calculateStreamerStats() {
+        // 상세 테이블과 동일한 로직 적용
+        const hiddenStreamers = this.getHiddenStreamers();
+        const summaryStreamers = (this.data.streamers || []).filter(s => s !== '국고' && s !== '후원자조정' && !hiddenStreamers.includes(s));
+        const streamerData = {};
+        
+        // 스트리머 데이터 초기화
+        summaryStreamers.forEach(s => { 
+            streamerData[s] = { name: s, account: 0, toonation: 0, total: 0 }; 
+        });
+        
+        // 후원 데이터 집계 (계좌/투네 분리)
+        (this.data.donations || []).forEach(d => {
+            if (streamerData.hasOwnProperty(d.streamer)) {
+                const amountInWon = (parseFloat(d.amount) || 0) * 10000; // 만원 → 원 변환
+                if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
+                else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
+            }
+        });
+        
+        // 총액 계산 후 정렬 (상세 테이블과 동일)
+        let sortedStreamers = Object.values(streamerData).map(data => { 
+            data.total = data.account + data.toonation; 
+            return data; 
+        }).sort((a, b) => b.total - a.total);
+
+        // 기존 형식에 맞게 변환
+        const result = sortedStreamers.map(data => ({
+            streamer: data.name,
+            account: data.account,
+            toonation: data.toonation,
+            total: data.total,
+            emoji: this.data.emojis?.[data.name] || ''
+        }));
+        
+        return result;
+    }
+
+    getHiddenStreamers() {
+        try {
+            return JSON.parse(this.settings['hidden-streamers'] || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    // 변경 감지 기능 제거됨
+
+    displayStreamerTable(streamerStats) {
+        const tbody = document.getElementById('streamerTableBody');
+        
+        if (streamerStats.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="no-data">표시할 스트리머가 없습니다.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        streamerStats.forEach((stat, index) => {
+            // 커스텀 순번명 적용 (상세 테이블과 동일)
+            const rankName = this.getRankName(index);
+            const rankClass = ` rank-${(index + 1) <= 3 ? (index + 1) : 'other'}`;
+            
+            html += `<tr class="${rankClass}">`;
+            html += `<td><span class="rank-number">${rankName}</span></td>`;
+            html += `<td class="streamer-name">${stat.emoji} ${stat.streamer}</td>`;
+            html += `<td class="amount">${stat.account.toLocaleString('ko-KR')}</td>`;
+            html += `<td class="amount">${stat.toonation.toLocaleString('ko-KR')}</td>`;
+            html += `<td class="amount">${stat.total.toLocaleString('ko-KR')}</td>`;
+            html += `</tr>`;
+        });
+        
+        tbody.innerHTML = html;
+    }
+
+    getRankName(index) {
+        const rankNumber = index + 1;
+        
+        // 설정된 순번명이 있는지 확인
+        const customRankName = localStorage.getItem(`rank-${rankNumber}-name`);
+        if (customRankName && customRankName.trim() !== '') {
+            return customRankName.trim();
+        }
+        
+        // 설정되지 않은 경우 숫자로 표시
+        return rankNumber.toString();
+    }
+
+    updateSummary(streamerStats) {
+        if (this.settings['show-total-row'] === 'true') {
+            const totalAccount = streamerStats.reduce((sum, stat) => sum + stat.account, 0);
+            const totalToonation = streamerStats.reduce((sum, stat) => sum + stat.toonation, 0);
+            const grandTotal = totalAccount + totalToonation;
+            
+            document.getElementById('totalSummary').innerHTML = 
+                `총 후원액: <strong>${grandTotal.toLocaleString('ko-KR')}원</strong> (계좌: ${totalAccount.toLocaleString('ko-KR')}원, 투네: ${totalToonation.toLocaleString('ko-KR')}원)`;
+        }
+    }
+
+    updateLastUpdate() {
+        if (this.settings['show-update-time'] === 'true' && this.data?.lastUpdated) {
+            document.getElementById('lastUpdate').textContent = 
+                new Date(this.data.lastUpdated).toLocaleTimeString('ko-KR');
+        }
+    }
+
+    showNoData() {
+        const tbody = document.getElementById('streamerTableBody');
+        tbody.innerHTML = '<tr><td colspan="4" class="no-data">아직 후원이 없습니다.</td></tr>';
+        
+        document.getElementById('totalSummary').innerHTML = '총 후원액: ₩0 (0건)';
+    }
+
+    showNoConnection() {
+        const tbody = document.getElementById('streamerTableBody');
+        tbody.innerHTML = '<tr><td colspan="4" class="no-data">서버 연결이 끊어졌습니다...</td></tr>';
+    }
+}
+
+// URL 파라미터 확인 (테스트용)
+function getUrlParameter(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    const results = regex.exec(location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+}
+
+// 앱 시작
+document.addEventListener('DOMContentLoaded', () => {
+    // 테스트 모드 확인
+    const testMode = getUrlParameter('test') === '1';
+    if (testMode) {
+        console.log('테스트 모드로 실행됩니다.');
+    }
+    
+    window.streamerTable = new RealtimeStreamerTable();
+});
+
+// OBS에서 사용할 수 있도록 전역 함수 제공
+window.refreshTable = () => {
+    if (window.streamerTable && window.streamerTable.data) {
+        window.streamerTable.renderStreamerTable();
+    }
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,29 @@
+# 카페24 업로드 제외 파일 목록
+
+# 개발/디버그 파일
+node_modules/
+*.bat
+*.md
+render.yaml
+
+# 백업/테스트 파일
+*.backup
+*-backup.html
+*-debug.html
+*-test*.html
+debug-*.html
+oauth-*.html
+quick-fix.html
+simple-test.html
+obs-test.html
+test-*.html
+
+# 문서 파일
+README-REALTIME.md
+RENDER-DEPLOY.md
+WORK-LOG-2025-08-09.md
+cafe24-deploy.md
+
+# 임시 파일
+.git/
+.gitignore
