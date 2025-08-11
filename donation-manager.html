@@ -627,6 +627,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div class="summary-actions">
 <button onclick="toggleStreamerSummarySettings()" class="btn btn-secondary">⚙️ 설정</button>
 <button onclick="copyText('summary-output')" class="btn btn-secondary">복사</button>
+<button onclick="sendStreamerSummaryToChatbot()" class="btn btn-success" id="streamer-summary-chatbot-btn">📤 챗봇 전송</button>
 </div>
 </div>
 
@@ -684,6 +685,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <h4>🎄 퇴근미션 현황</h4>
 <div class="summary-actions">
 <button onclick="copyText('mission-summary-output')" class="btn btn-secondary">복사</button>
+<button onclick="sendMissionSummaryToChatbot()" class="btn btn-success" id="mission-summary-chatbot-btn">📤 챗봇 전송</button>
 </div>
 </div>
 <div class="copy-box" id="mission-summary-output">진행 중인 미션이 없습니다.</div>
@@ -4566,6 +4568,112 @@ function initializeAutoNotifySync() {
         // 기존 설정을 챗봇 탭에 반영
         chatbotCheckbox.checked = originalCheckbox.checked;
         syncAutoNotifySettings();
+    }
+}
+
+// 스트리머 총액을 챗봇으로 전송
+async function sendStreamerSummaryToChatbot() {
+    const btn = document.getElementById('streamer-summary-chatbot-btn');
+    
+    if (!liveChatId) {
+        showStatus('먼저 라이브 채팅에 연결하세요', 'error');
+        return;
+    }
+    
+    try {
+        // 버튼 비활성화
+        btn.disabled = true;
+        btn.innerHTML = '📤 전송 중...';
+        
+        // 스트리머 총액 메시지 가져오기
+        const summaryElement = document.getElementById('summary-output');
+        let summaryMessage = summaryElement.textContent.trim();
+        
+        if (!summaryMessage) {
+            updateSummary(); // 총액 업데이트 시도
+            summaryMessage = summaryElement.textContent.trim();
+        }
+        
+        if (!summaryMessage) {
+            showStatus('전송할 스트리머 총액 데이터가 없습니다', 'warning');
+            return;
+        }
+        
+        showStatus('스트리머 총액 전송 중...', 'info');
+        
+        // OAuth 방식 우선 시도
+        if (isOAuthSignedIn) {
+            const success = await sendToYouTubeOAuth(summaryMessage);
+            if (success) {
+                showStatus('✅ 스트리머 총액이 성공적으로 전송되었습니다!', 'success');
+                return;
+            }
+        }
+        
+        // 백업으로 API 키 방식 시도
+        await sendMessageToYouTube(summaryMessage);
+        showStatus('✅ 스트리머 총액이 성공적으로 전송되었습니다!', 'success');
+        
+    } catch (error) {
+        console.error('스트리머 총액 전송 실패:', error);
+        showStatus(`❌ 스트리머 총액 전송 실패: ${error.message}`, 'error');
+    } finally {
+        // 버튼 복원
+        btn.disabled = false;
+        btn.innerHTML = '📤 챗봇 전송';
+    }
+}
+
+// 퇴근미션을 챗봇으로 전송
+async function sendMissionSummaryToChatbot() {
+    const btn = document.getElementById('mission-summary-chatbot-btn');
+    
+    if (!liveChatId) {
+        showStatus('먼저 라이브 채팅에 연결하세요', 'error');
+        return;
+    }
+    
+    try {
+        // 버튼 비활성화
+        btn.disabled = true;
+        btn.innerHTML = '📤 전송 중...';
+        
+        // 퇴근미션 메시지 가져오기
+        const missionElement = document.getElementById('mission-summary-output');
+        let missionMessage = missionElement.textContent.trim();
+        
+        if (!missionMessage) {
+            updateMissionSummary(); // 미션 업데이트 시도
+            missionMessage = missionElement.textContent.trim();
+        }
+        
+        if (!missionMessage || missionMessage === '진행 중인 미션이 없습니다.') {
+            showStatus('현재 진행중인 퇴근미션이 없습니다', 'warning');
+            return;
+        }
+        
+        showStatus('퇴근미션 전송 중...', 'info');
+        
+        // OAuth 방식 우선 시도
+        if (isOAuthSignedIn) {
+            const success = await sendToYouTubeOAuth(missionMessage);
+            if (success) {
+                showStatus('✅ 퇴근미션이 성공적으로 전송되었습니다!', 'success');
+                return;
+            }
+        }
+        
+        // 백업으로 API 키 방식 시도
+        await sendMessageToYouTube(missionMessage);
+        showStatus('✅ 퇴근미션이 성공적으로 전송되었습니다!', 'success');
+        
+    } catch (error) {
+        console.error('퇴근미션 전송 실패:', error);
+        showStatus(`❌ 퇴근미션 전송 실패: ${error.message}`, 'error');
+    } finally {
+        // 버튼 복원
+        btn.disabled = false;
+        btn.innerHTML = '📤 챗봇 전송';
     }
 }
 
