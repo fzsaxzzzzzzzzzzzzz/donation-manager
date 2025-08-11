@@ -460,6 +460,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <span style="font-weight: 500;">후원 등록하면 바로 챗봇에 알림 전송</span>
 </label>
 </div>
+
+<!-- 빠른 권한 활성화 -->
+<div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+<button onclick="quickEnableAdmin()" class="btn btn-primary" style="flex: 1;" id="quick-admin-btn">
+🔓 관리자 권한 활성화 (비밀번호: 2749)
+</button>
+</div>
+
 <div id="auto-notify-status" class="status status-warning" style="font-size: 12px; margin: 0;">
 후원 자동 알림이 비활성화되어 있습니다.
 </div>
@@ -2804,15 +2812,17 @@ function handleFileImport(event) {
 
 // --- 후원 알림 관련 함수 ---
 async function sendDonationNotification(newDonations) {
-    // 권한 체크: 관리자이거나 비밀번호가 입력된 경우만 자동 알림 허용
-    if (!hasWritePermission()) {
-        console.log('챗봇 자동 알림 권한이 없습니다. (관리자이거나 비밀번호 입력 필요)');
-        showStatus('🔒 챗봇 자동 알림은 관리자 권한이 필요합니다. 비밀번호를 입력하세요.', 'warning', 5000);
+    // 챗봇이 연결된 상태면 자동 알림 허용
+    if (!liveChatId) {
+        console.log('라이브 채팅이 연결되지 않아 알림을 보낼 수 없습니다.');
         return;
     }
     
-    if (!liveChatId) {
-        console.log('라이브 채팅이 연결되지 않아 알림을 보낼 수 없습니다.');
+    // OAuth 로그인이 되어있거나 API 키가 설정되어 있으면 권한 체크 생략
+    const hasYouTubeAccess = isOAuthSignedIn || localStorage.getItem('youtube_api_key');
+    if (!hasWritePermission() && !hasYouTubeAccess) {
+        console.log('챗봇 자동 알림 권한이 없습니다. (관리자이거나 비밀번호 입력 필요)');
+        showStatus('💡 챗봇 자동 알림: Google OAuth 로그인 또는 관리자 권한이 필요합니다.', 'info', 3000);
         return;
     }
     
@@ -4550,11 +4560,23 @@ function syncAutoNotifySettings() {
         
         // 상태 표시 업데이트
         if (chatbotCheckbox.checked) {
-            statusDiv.innerHTML = '✅ 후원 등록시 챗봇으로 자동 알림이 전송됩니다.';
-            statusDiv.className = 'status status-success';
+            // 권한 체크
+            const hasYouTubeAccess = isOAuthSignedIn || localStorage.getItem('youtube_api_key');
+            const hasPermission = isAdminVerified || hasYouTubeAccess;
+            
+            if (hasPermission && liveChatId) {
+                statusDiv.innerHTML = '✅ 후원 등록시 챗봇으로 자동 알림이 전송됩니다.';
+                statusDiv.className = 'status status-success';
+            } else if (!hasPermission) {
+                statusDiv.innerHTML = '⚠️ 자동 알림을 위해 관리자 권한 또는 Google OAuth 로그인이 필요합니다.';
+                statusDiv.className = 'status status-warning';
+            } else if (!liveChatId) {
+                statusDiv.innerHTML = '⚠️ 자동 알림을 위해 라이브 채팅 연결이 필요합니다.';
+                statusDiv.className = 'status status-warning';
+            }
         } else {
             statusDiv.innerHTML = '후원 자동 알림이 비활성화되어 있습니다.';
-            statusDiv.className = 'status status-warning';
+            statusDiv.className = 'status status-info';
         }
     }
 }
@@ -4568,6 +4590,54 @@ function initializeAutoNotifySync() {
         // 기존 설정을 챗봇 탭에 반영
         chatbotCheckbox.checked = originalCheckbox.checked;
         syncAutoNotifySettings();
+    }
+    
+    // 관리자 버튼 상태 업데이트
+    updateQuickAdminButton();
+}
+
+// 빠른 관리자 권한 활성화
+function quickEnableAdmin() {
+    const adminCheckbox = document.getElementById('admin-verified');
+    const quickAdminBtn = document.getElementById('quick-admin-btn');
+    
+    if (adminCheckbox) {
+        if (!isAdminVerified) {
+            // 관리자 권한 활성화
+            adminCheckbox.checked = true;
+            isAdminVerified = true;
+            
+            quickAdminBtn.innerHTML = '✅ 관리자 권한 활성화됨';
+            quickAdminBtn.className = 'btn btn-success';
+            quickAdminBtn.disabled = true;
+            
+            showStatus('✅ 관리자 권한이 활성화되었습니다!', 'success');
+            
+            // 자동 알림 상태도 업데이트
+            syncAutoNotifySettings();
+            
+        } else {
+            showStatus('이미 관리자 권한이 활성화되어 있습니다.', 'info');
+        }
+    } else {
+        showStatus('관리자 체크박스를 찾을 수 없습니다.', 'error');
+    }
+}
+
+// 빠른 관리자 버튼 상태 업데이트
+function updateQuickAdminButton() {
+    const quickAdminBtn = document.getElementById('quick-admin-btn');
+    
+    if (quickAdminBtn) {
+        if (isAdminVerified) {
+            quickAdminBtn.innerHTML = '✅ 관리자 권한 활성화됨';
+            quickAdminBtn.className = 'btn btn-success';
+            quickAdminBtn.disabled = true;
+        } else {
+            quickAdminBtn.innerHTML = '🔓 관리자 권한 활성화 (비밀번호: 2749)';
+            quickAdminBtn.className = 'btn btn-primary';
+            quickAdminBtn.disabled = false;
+        }
     }
 }
 
