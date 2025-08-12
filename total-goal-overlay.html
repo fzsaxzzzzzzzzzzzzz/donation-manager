@@ -323,9 +323,11 @@ class TotalGoalOverlay {
         this.dailyGoal = null;
         this.textSwitchInterval = null;
         this.isShowingAltText = false;
+        this.autoExtendCheckInterval = null;
         
         this.initializeSocket();
         this.applySettings();
+        this.startAutoExtendChecker();
     }
     
     initializeSocket() {
@@ -365,14 +367,14 @@ class TotalGoalOverlay {
                 this.settings = data.settings || {};
                 this.dailyGoal = data.settings?.dailyGoal || null;
                 
-                // 자동 연장 체크
-                this.checkAutoExtend();
-                
                 console.log('💰 후원 데이터:', this.donations.length, '건');
                 console.log('🎯 일일 목표:', this.dailyGoal);
                 
+                // 디스플레이 업데이트 후 자동 추가 체크
                 setTimeout(() => {
                     this.updateDisplay();
+                    // 실시간 데이터 업데이트 시마다 자동추가 체크
+                    this.checkAutoExtend();
                 }, 100);
             });
             
@@ -382,6 +384,8 @@ class TotalGoalOverlay {
                 this.dailyGoal = settings.dailyGoal || this.dailyGoal;
                 this.applySettings();
                 this.updateDisplay();
+                // 설정 업데이트 시에도 자동추가 체크 (목표 변경 등)
+                this.checkAutoExtend();
             });
             
         } catch (error) {
@@ -668,6 +672,18 @@ class TotalGoalOverlay {
                 console.error('❌ 목표 자동 추가 실패:', error);
             });
         }
+    }
+    
+    startAutoExtendChecker() {
+        // 10초마다 자동추가 체크 (실시간 업데이트 보조용)
+        this.autoExtendCheckInterval = setInterval(() => {
+            if (this.dailyGoal && (this.dailyGoal.autoExtendEnabled || this.dailyGoal.autoExtend)) {
+                console.log('⏰ 정기 자동추가 체크 실행');
+                this.checkAutoExtend();
+            }
+        }, 10000); // 10초 간격
+        
+        console.log('🔄 자동추가 정기 체크 시작 (10초 간격)');
     }
 }
 
