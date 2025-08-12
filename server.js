@@ -65,6 +65,8 @@ let currentData = {
     "table-text-color": "white",
     "hidden-streamers": "[]",
     "group-threshold": "2",
+    "groupThreshold": 2,
+    "includeSuperchat": false,
     "show-total-row": "true",
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆"
