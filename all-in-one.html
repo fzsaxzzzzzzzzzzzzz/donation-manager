@@ -413,6 +413,7 @@ body {
         <button class="tab active" onclick="showTab('dashboard')">📊 대시보드</button>
         <button class="tab" onclick="showTab('donations')">💰 후원 관리</button>
         <button class="tab" onclick="showTab('streamers')">👥 스트리머 관리</button>
+        <button class="tab" onclick="showTab('mission-adjust')">🎯 퇴근미션 조정</button>
         <button class="tab" onclick="showTab('settings')">⚙️ 설정</button>
         <button class="tab" onclick="showTab('overlays')">🎥 오버레이</button>
         <button class="tab" onclick="showTab('debug')">🔧 디버그</button>
@@ -550,6 +551,55 @@ body {
                 <div id="streamersList">
                     <!-- 스트리머 목록이 여기에 동적으로 추가됩니다 -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 퇴근미션 조정 탭 -->
+    <div id="mission-adjust" class="tab-content">
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3>🎯 퇴근미션 조정</h3>
+                    <p class="card-subtitle">총액에 반영되지 않는 퇴근미션 전용 조정</p>
+                </div>
+                <form id="missionAdjustForm">
+                    <div class="form-group">
+                        <label class="form-label">스트리머</label>
+                        <select id="missionAdjustStreamer" class="form-select" required>
+                            <option value="">스트리머를 선택하세요</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">조정 금액 (만원)</label>
+                        <input type="number" id="missionAdjustAmount" class="form-input" step="0.1" min="-999999" max="999999" placeholder="예: 50 또는 -20" required>
+                        <small class="form-help">양수: 추가, 음수: 차감</small>
+                    </div>
+                    <button type="submit" class="btn btn-warning" style="width: 100%;">🎯 퇴근미션 조정 (총액 반영 안됨)</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 퇴근미션 조정 기록</h3>
+                </div>
+                <div id="missionAdjustmentsList">
+                    <!-- 퇴근미션 조정 기록이 여기에 표시됩니다 -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3>ℹ️ 퇴근미션 조정 안내</h3>
+            </div>
+            <div class="card-body">
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong>총액에 반영되지 않음:</strong> 이 기능으로 조정한 금액은 전체 후원 총액이나 스트리머별 순위에 반영되지 않습니다.</li>
+                    <li><strong>퇴근미션 전용:</strong> 오직 퇴근미션 달성 여부 계산에만 사용됩니다.</li>
+                    <li><strong>정산 요약 표시:</strong> 미션 성공 시 정산 요약에서 퇴근미션 결과 항목에만 표시됩니다.</li>
+                    <li><strong>양수/음수 지원:</strong> 양수 입력 시 추가, 음수 입력 시 차감됩니다.</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -830,6 +880,7 @@ function updateAllDisplays() {
     updateStreamersList();
     updateSettingsDisplay();
     updateOverlayPreview();
+    updateMissionAdjustmentsList();
 }
 
 // 통계 업데이트
@@ -904,6 +955,13 @@ function updateStreamersList() {
     // 선택 옵션 업데이트
     select.innerHTML = '<option value="">스트리머 선택</option>' + 
         streamers.map(streamer => `<option value="${streamer}">${emojis[streamer] || '🎮'} ${streamer}</option>`).join('');
+    
+    // 퇴근미션 조정용 스트리머 선택 옵션도 업데이트
+    const missionAdjustSelect = document.getElementById('missionAdjustStreamer');
+    if (missionAdjustSelect) {
+        missionAdjustSelect.innerHTML = '<option value="">스트리머를 선택하세요</option>' + 
+            streamers.map(streamer => `<option value="${streamer}">${emojis[streamer] || '🎮'} ${streamer}</option>`).join('');
+    }
 }
 
 // 설정 표시 업데이트
@@ -1086,6 +1144,58 @@ async function deleteStreamer(streamerName) {
         showAlert('오류: ' + error.message, 'error');
         log('스트리머 삭제 실패: ' + error.message);
     }
+}
+
+// 퇴근미션 조정
+async function adjustMission(streamer, amount) {
+    try {
+        const response = await fetch('/api/missions/adjust', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                streamer: streamer,
+                amount: amount
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showAlert(`${streamer} 퇴근미션이 ${amount > 0 ? '+' : ''}${amount}만원 조정되었습니다. (총액 반영 안됨)`, 'success');
+            log(`퇴근미션 조정: ${streamer} ${amount > 0 ? '+' : ''}${amount}만원`);
+        } else {
+            showAlert('퇴근미션 조정 실패: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showAlert('오류: ' + error.message, 'error');
+        log('퇴근미션 조정 실패: ' + error.message);
+    }
+}
+
+// 퇴근미션 조정 기록 목록 업데이트
+function updateMissionAdjustmentsList() {
+    const adjustments = currentData.missionAdjustments || [];
+    const container = document.getElementById('missionAdjustmentsList');
+    
+    if (!container) return;
+    
+    if (adjustments.length === 0) {
+        container.innerHTML = '<div class="donation-item"><div class="donation-info"><div class="donation-donor">아직 퇴근미션 조정 기록이 없습니다</div></div></div>';
+        return;
+    }
+    
+    const html = adjustments.slice(0, 10).map(adjustment => `
+        <div class="donation-item">
+            <div class="donation-info">
+                <div class="donation-donor">${adjustment.streamer}</div>
+                <div class="donation-details">${adjustment.amount > 0 ? '+' : ''}${adjustment.amount}만원 • ${new Date(adjustment.time).toLocaleString()}</div>
+            </div>
+            <div class="donation-amount" style="color: ${adjustment.amount >= 0 ? '#28a745' : '#dc3545'}">${adjustment.amount > 0 ? '+' : ''}${adjustment.amount}만원</div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
 }
 
 // 설정 적용
@@ -1327,6 +1437,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         addStreamer(name, emoji);
+        
+        // 폼 리셋
+        e.target.reset();
+    });
+    
+    // 퇴근미션 조정 폼 이벤트
+    document.getElementById('missionAdjustForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const streamer = document.getElementById('missionAdjustStreamer').value;
+        const amount = parseFloat(document.getElementById('missionAdjustAmount').value);
+        
+        if (!streamer) {
+            showAlert('스트리머를 선택해주세요.', 'error');
+            return;
+        }
+        
+        if (isNaN(amount)) {
+            showAlert('올바른 금액을 입력해주세요.', 'error');
+            return;
+        }
+        
+        adjustMission(streamer, amount);
         
         // 폼 리셋
         e.target.reset();

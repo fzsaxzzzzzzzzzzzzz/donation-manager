@@ -369,7 +369,15 @@ class MissionGraphOverlay {
                 d.streamer === mission.streamer && 
                 new Date(d.time) >= new Date(mission.startTime)
             );
-            const currentAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+            
+            // 퇴근미션 조정 금액도 포함 (미션 시작 시간 이후의 조정만)
+            const missionAdjustments = (this.data?.missionAdjustments || []).filter(adj => 
+                adj.streamer === mission.streamer && new Date(adj.time) >= new Date(mission.startTime)
+            );
+            const adjustmentAmount = missionAdjustments.reduce((sum, adj) => sum + (parseFloat(adj.amount) || 0), 0);
+            
+            const donationAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+            const currentAmount = donationAmount + adjustmentAmount;
             const progressPercent = target > 0 ? Math.min((currentAmount / target) * 100, 100) : 0;
             const isCompleted = progressPercent >= 100 || mission.status === 'completed';
             const isManuallyCompleted = mission.status === 'completed';

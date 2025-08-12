@@ -523,9 +523,19 @@ class TotalGoalOverlay {
             return new Intl.NumberFormat('ko-KR').format(Math.round(num));
         };
         
+        // 달성된 목표 개수 계산
+        const achievedGoals = this.dailyGoal.achievedGoals || [];
+        const achievedCount = achievedGoals.length;
+        
         // UI 업데이트
         document.getElementById('current-amount').textContent = formatNumber(currentAmount) + '만원';
-        document.getElementById('target-amount').textContent = formatNumber(targetAmount) + '만원';
+        
+        // 목표 표시 (달성된 목표가 있으면 표시)
+        const targetText = achievedCount > 0 ? 
+            `${formatNumber(targetAmount)}만원 (${achievedCount}차 달성)` : 
+            `${formatNumber(targetAmount)}만원`;
+        document.getElementById('target-amount').textContent = targetText;
+        
         document.getElementById('progress-percentage').textContent = Math.round(progressPercent) + '%';
         document.getElementById('remaining-amount').textContent = formatNumber(remainingAmount);
         
@@ -533,9 +543,11 @@ class TotalGoalOverlay {
         const progressBar = document.getElementById('goal-progress-bar');
         progressBar.style.width = Math.min(progressPercent, 100) + '%';
         
-        // 진행 바 텍스트 업데이트
-        document.getElementById('progress-text').textContent = 
+        // 진행 바 텍스트 업데이트 (달성 횟수 포함)
+        const progressText = achievedCount > 0 ? 
+            `${formatNumber(currentAmount)} / ${formatNumber(targetAmount)}만원 (${Math.round(progressPercent)}%) [${achievedCount}차 달성]` :
             `${formatNumber(currentAmount)} / ${formatNumber(targetAmount)}만원 (${Math.round(progressPercent)}%)`;
+        document.getElementById('progress-text').textContent = progressText;
         
         // 대체 텍스트 업데이트 (남은 금액)
         if (isOvertime) {
@@ -600,9 +612,26 @@ class TotalGoalOverlay {
         const targetAmount = parseFloat(this.dailyGoal.target) || 0;
         const extendAmount = parseFloat(this.dailyGoal.extendAmount) || 50;
         
-        // 목표 달성시 자동으로 목표치 추가
-        if (currentAmount >= targetAmount && targetAmount > 0) {
-            console.log('🎯 목표 달성! 자동 연장 실행:', extendAmount, '만원 추가');
+        // 목표 달성시 자동으로 새로운 목표치 추가
+        if (currentAmount >= targetAmount && targetAmount > 0 && this.dailyGoal.autoExtendEnabled) {
+            // 이미 자동 추가된 적이 있는지 확인 (중복 방지)
+            const lastAutoAddTime = this.dailyGoal.lastAutoAddTime || 0;
+            const currentTime = Date.now();
+            
+            // 5분 내에 이미 자동 추가된 경우 스킵
+            if (currentTime - lastAutoAddTime < 5 * 60 * 1000) {
+                return;
+            }
+            
+            console.log('🎯 목표 달성! 새로운 목표 자동 추가:', extendAmount, '만원 추가');
+            
+            // 달성된 목표 기록
+            const achievedGoals = this.dailyGoal.achievedGoals || [];
+            achievedGoals.push({
+                target: targetAmount,
+                achievedAt: currentTime,
+                achievedAmount: currentAmount
+            });
             
             const newTarget = targetAmount + extendAmount;
             
@@ -610,7 +639,9 @@ class TotalGoalOverlay {
             const settings = {
                 dailyGoal: {
                     ...this.dailyGoal,
-                    target: newTarget
+                    target: newTarget,
+                    achievedGoals: achievedGoals,
+                    lastAutoAddTime: currentTime
                 }
             };
             
@@ -622,12 +653,15 @@ class TotalGoalOverlay {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('✅ 목표 자동 연장 성공:', newTarget, '만원');
+                    console.log('✅ 새로운 목표 자동 추가 성공:', newTarget, '만원');
+                    console.log('🏆 달성된 목표 기록:', targetAmount, '만원');
                     this.dailyGoal.target = newTarget;
+                    this.dailyGoal.achievedGoals = achievedGoals;
+                    this.dailyGoal.lastAutoAddTime = currentTime;
                 }
             })
             .catch(error => {
-                console.error('❌ 목표 자동 연장 실패:', error);
+                console.error('❌ 목표 자동 추가 실패:', error);
             });
         }
     }

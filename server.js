@@ -58,6 +58,7 @@ let currentData = {
   },
   missions: [],
   runningMissions: [],
+  missionAdjustments: [], // 퇴근 미션 조정 기록 (총액에 반영되지 않음)
   settings: {
     "overlay-font-size": "24",
     "overlay-stroke-width": "3", 
@@ -498,6 +499,59 @@ app.post('/api/missions', async (req, res) => {
     res.json({ success: true, mission: newMission });
   } catch (error) {
     console.error('미션 생성 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
+// 퇴근 미션 조정 API (총액에 반영되지 않는 특수 후원)
+app.post('/api/missions/adjust', async (req, res) => {
+  try {
+    const { streamer, amount } = req.body;
+    
+    if (!streamer || amount === undefined || amount === null) {
+      return res.status(400).json({ error: '스트리머와 금액이 필요합니다.' });
+    }
+    
+    console.log('🎯 퇴근 미션 조정 요청:', { streamer, amount });
+    
+    // 트림 처리 및 정규화
+    const normalizedStreamer = streamer.trim();
+    const foundStreamer = currentData.streamers.find(s => s.trim() === normalizedStreamer);
+    
+    if (!foundStreamer) {
+      return res.status(400).json({ error: '존재하지 않는 스트리머입니다.', availableStreamers: currentData.streamers });
+    }
+    
+    // 퇴근 미션 조정용 특수 후원 데이터 생성 (총액에 반영되지 않음)
+    const missionAdjustment = {
+      donor: "[퇴근미션조정]",
+      streamer: normalizedStreamer,
+      type: "미션조정",
+      amount: parseFloat(amount),
+      time: new Date().toISOString(),
+      isMissionAdjustment: true, // 퇴근 미션 조정임을 표시
+      excludeFromTotal: true // 총액 계산에서 제외
+    };
+    
+    // 미션 조정 기록을 별도로 저장
+    if (!currentData.missionAdjustments) {
+      currentData.missionAdjustments = [];
+    }
+    currentData.missionAdjustments.unshift(missionAdjustment);
+    
+    await saveData();
+    
+    // 모든 클라이언트에게 실시간 업데이트 전송
+    console.log(`🎯 [서버] 퇴근 미션 조정: ${normalizedStreamer} ${amount}만원 (총액 반영 안됨)`);
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ 
+      success: true, 
+      adjustment: missionAdjustment,
+      message: '퇴근 미션이 조정되었습니다. (총액에 반영되지 않음)'
+    });
+  } catch (error) {
+    console.error('퇴근 미션 조정 실패:', error);
     res.status(500).json({ error: '서버 오류' });
   }
 });

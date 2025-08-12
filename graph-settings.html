@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 그래프 조정모드</title>
+
+<!-- Socket.IO for Real-time -->
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    background: #f8f9fa;
+    min-height: 100vh;
+    color: #333;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header {
+    background: #007bff;
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.header p {
+    margin: 8px 0 0 0;
+    opacity: 0.9;
+    font-size: 16px;
+}
+
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.tab-button {
+    padding: 12px 20px;
+    border: none;
+    background: #6c757d;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.tab-button.active {
+    background: #007bff;
+    box-shadow: 0 3px 8px rgba(0,123,255,0.4);
+}
+
+.tab-button:hover:not(.active) {
+    background: #5a6268;
+}
+
+.tab-content {
+    display: none;
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.section {
+    margin-bottom: 25px;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.section h3 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-input, .form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.grid {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.slider-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.slider-label {
+    min-width: 120px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.slider {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: #ddd;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+}
+
+.slider-value {
+    min-width: 60px;
+    font-weight: 600;
+    color: #007bff;
+}
+
+.color-input {
+    width: 60px;
+    height: 40px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+}
+
+.checkbox {
+    transform: scale(1.3);
+    cursor: pointer;
+}
+
+.buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #1e7e34;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.status {
+    padding: 12px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.status-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.overlay-preview {
+    margin-top: 20px;
+    padding: 15px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    text-align: center;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .slider-group { flex-direction: column; align-items: stretch; }
+    .tabs { flex-direction: column; }
+    .buttons { flex-direction: column; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+    <!-- 헤더 -->
+    <div class="header">
+        <h1>📊 그래프 조정모드</h1>
+        <p>퇴근미션 그래프 & 총액목표 그래프 설정 전용</p>
+    </div>
+
+    <!-- 탭 메뉴 -->
+    <div class="tabs">
+        <button class="tab-button active" onclick="switchTab('mission')">🎯 퇴근미션 그래프</button>
+        <button class="tab-button" onclick="switchTab('total')">💰 총액목표 그래프</button>
+    </div>
+
+    <!-- 퇴근미션 그래프 설정 -->
+    <div class="tab-content active" id="mission-tab">
+        <div class="section">
+            <h3>🎯 퇴근미션 그래프 오버레이 설정</h3>
+            
+            <!-- 배경 설정 -->
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">배경 투명도</label>
+                    <div class="slider-group">
+                        <span class="slider-label">투명</span>
+                        <input type="range" class="slider" id="mission-bg-opacity" min="0" max="100" value="85">
+                        <span class="slider-value" id="mission-bg-opacity-value">85%</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">배경 색상</label>
+                    <input type="color" class="color-input" id="mission-bg-color" value="#000000">
+                </div>
+            </div>
+
+            <!-- 텍스트 테두리 -->
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">텍스트 테두리 두께</label>
+                    <div class="slider-group">
+                        <span class="slider-label">없음</span>
+                        <input type="range" class="slider" id="mission-text-outline-width" min="0" max="5" value="1">
+                        <span class="slider-value" id="mission-text-outline-width-value">1px</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">텍스트 테두리 색상</label>
+                    <input type="color" class="color-input" id="mission-text-outline-color" value="#000000">
+                </div>
+            </div>
+
+            <!-- 크기 설정 -->
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label class="form-label">제목 크기</label>
+                    <div class="slider-group">
+                        <span class="slider-label">작게</span>
+                        <input type="range" class="slider" id="mission-title-size" min="16" max="32" value="20">
+                        <span class="slider-value" id="mission-title-size-value">20px</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">숫자 크기</label>
+                    <div class="slider-group">
+                        <span class="slider-label">작게</span>
+                        <input type="range" class="slider" id="mission-stats-size" min="12" max="24" value="16">
+                        <span class="slider-value" id="mission-stats-size-value">16px</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">진행바 높이</label>
+                    <div class="slider-group">
+                        <span class="slider-label">낮게</span>
+                        <input type="range" class="slider" id="mission-progress-height" min="15" max="35" value="20">
+                        <span class="slider-value" id="mission-progress-height-value">20px</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-success" onclick="saveMissionSettings()">✅ 적용</button>
+                <button class="btn btn-secondary" onclick="resetMissionSettings()">🔄 기본값</button>
+                <button class="btn btn-primary" onclick="openMissionOverlay()">🔗 오버레이 열기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 총액목표 그래프 설정 -->
+    <div class="tab-content" id="total-tab">
+        <div class="section">
+            <h3>💰 총액목표 그래프 오버레이 설정</h3>
+            
+            <!-- 목표 설정 -->
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">일일 목표액 (만원)</label>
+                    <input type="number" class="form-input" id="daily-goal-target" placeholder="예: 100">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" class="checkbox" id="auto-extend-enabled">
+                    <label>자동 목표 추가 (+<input type="number" id="extend-amount" value="50" style="width: 60px; text-align: center; border: 1px solid #ddd; border-radius: 4px;">만원)</label>
+                </div>
+            </div>
+
+            <!-- 배경 설정 -->
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">배경 투명도</label>
+                    <div class="slider-group">
+                        <span class="slider-label">투명</span>
+                        <input type="range" class="slider" id="total-bg-opacity" min="0" max="100" value="0">
+                        <span class="slider-value" id="total-bg-opacity-value">0%</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">배경 색상</label>
+                    <input type="color" class="color-input" id="total-bg-color" value="#000000">
+                </div>
+            </div>
+
+            <!-- 텍스트 설정 -->
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">텍스트 테두리 두께</label>
+                    <div class="slider-group">
+                        <span class="slider-label">없음</span>
+                        <input type="range" class="slider" id="total-text-outline-width" min="0" max="5" value="1">
+                        <span class="slider-value" id="total-text-outline-width-value">1px</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">텍스트 테두리 색상</label>
+                    <input type="color" class="color-input" id="total-text-outline-color" value="#000000">
+                </div>
+            </div>
+
+            <!-- 표시 옵션 -->
+            <div class="section" style="background: #e8f4fd; border-color: #007bff;">
+                <h4 style="color: #007bff; margin-bottom: 15px;">📋 표시 옵션</h4>
+                <div class="grid grid-2">
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox" id="total-show-top-stats" checked>
+                        <label>진행바 위 글자 표시</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox" id="total-text-switch-enabled">
+                        <label>진행바 텍스트 자동 전환</label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label class="form-label">전환 간격</label>
+                    <div class="slider-group">
+                        <span class="slider-label">빠르게</span>
+                        <input type="range" class="slider" id="total-text-switch-interval" min="3" max="15" value="5" disabled>
+                        <span class="slider-value" id="total-text-switch-interval-value">5초</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 크기 설정 -->
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label class="form-label">제목 크기</label>
+                    <div class="slider-group">
+                        <span class="slider-label">작게</span>
+                        <input type="range" class="slider" id="total-title-size" min="18" max="36" value="24">
+                        <span class="slider-value" id="total-title-size-value">24px</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">숫자 크기</label>
+                    <div class="slider-group">
+                        <span class="slider-label">작게</span>
+                        <input type="range" class="slider" id="total-stats-size" min="16" max="28" value="20">
+                        <span class="slider-value" id="total-stats-size-value">20px</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">진행바 높이</label>
+                    <div class="slider-group">
+                        <span class="slider-label">낮게</span>
+                        <input type="range" class="slider" id="total-progress-height" min="20" max="50" value="30">
+                        <span class="slider-value" id="total-progress-height-value">30px</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-success" onclick="saveTotalSettings()">✅ 적용</button>
+                <button class="btn btn-secondary" onclick="resetTotalSettings()">🔄 기본값</button>
+                <button class="btn btn-primary" onclick="openTotalOverlay()">🔗 오버레이 열기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 상태 메시지 -->
+    <div id="status-message"></div>
+
+    <!-- 프리뷰 영역 -->
+    <div class="overlay-preview" id="preview-area">
+        <p>💡 설정을 변경하고 "적용" 버튼을 누르면 실시간으로 오버레이에 반영됩니다</p>
+        <p>🔗 오버레이 열기 버튼으로 실제 결과를 확인하세요</p>
+    </div>
+</div>
+
+<script>
+// 전역 변수
+let socket = null;
+
+// Socket.IO 연결
+function initSocket() {
+    socket = io({
+        transports: ['websocket', 'polling'],
+        timeout: 20000,
+        forceNew: true
+    });
+
+    socket.on('connect', () => {
+        console.log('🔗 그래프 조정모드 서버 연결 성공');
+        loadCurrentSettings();
+    });
+
+    socket.on('disconnect', () => {
+        console.log('❌ 서버 연결 끊김');
+    });
+
+    socket.on('settingsUpdate', (settings) => {
+        console.log('⚙️ 설정 업데이트 수신:', settings);
+    });
+}
+
+// 탭 전환
+function switchTab(tabName) {
+    // 모든 탭 버튼과 콘텐츠 초기화
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    // 선택된 탭 활성화
+    event.target.classList.add('active');
+    document.getElementById(tabName + '-tab').classList.add('active');
+}
+
+// 슬라이더 값 업데이트
+function initSliders() {
+    const sliders = document.querySelectorAll('.slider');
+    sliders.forEach(slider => {
+        const valueElement = document.getElementById(slider.id + '-value');
+        if (valueElement) {
+            // 초기값 설정
+            updateSliderValue(slider);
+            
+            // 이벤트 리스너
+            slider.addEventListener('input', () => updateSliderValue(slider));
+        }
+    });
+    
+    // 체크박스 이벤트
+    document.getElementById('auto-extend-enabled').addEventListener('change', function() {
+        document.getElementById('extend-amount').disabled = !this.checked;
+    });
+    
+    document.getElementById('total-text-switch-enabled').addEventListener('change', function() {
+        document.getElementById('total-text-switch-interval').disabled = !this.checked;
+    });
+}
+
+function updateSliderValue(slider) {
+    const valueElement = document.getElementById(slider.id + '-value');
+    if (valueElement) {
+        const suffix = slider.id.includes('opacity') ? '%' : 
+                      slider.id.includes('interval') ? '초' : 'px';
+        valueElement.textContent = slider.value + suffix;
+    }
+}
+
+// 현재 설정 로드
+async function loadCurrentSettings() {
+    try {
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        const settings = data.settings || {};
+        
+        // 퇴근미션 그래프 설정
+        document.getElementById('mission-bg-opacity').value = settings['mission-graph-opacity'] || 85;
+        document.getElementById('mission-bg-color').value = settings['mission-graph-bg-color'] || '#000000';
+        document.getElementById('mission-text-outline-width').value = settings['mission-text-outline-width'] || 1;
+        document.getElementById('mission-text-outline-color').value = settings['mission-text-outline-color'] || '#000000';
+        document.getElementById('mission-title-size').value = parseInt(settings['mission-title-font-size']) || 20;
+        document.getElementById('mission-stats-size').value = parseInt(settings['mission-stats-font-size']) || 16;
+        document.getElementById('mission-progress-height').value = parseInt(settings['mission-progress-height']) || 20;
+        
+        // 총액목표 그래프 설정
+        if (settings.dailyGoal) {
+            document.getElementById('daily-goal-target').value = settings.dailyGoal.target || '';
+            document.getElementById('auto-extend-enabled').checked = settings.dailyGoal.autoExtendEnabled || settings.dailyGoal.autoExtend || false;
+            document.getElementById('extend-amount').value = settings.dailyGoal.extendAmount || 50;
+        }
+        
+        document.getElementById('total-bg-opacity').value = settings['total-goal-bg-opacity'] || 0;
+        document.getElementById('total-bg-color').value = settings['total-goal-bg-color'] || '#000000';
+        document.getElementById('total-text-outline-width').value = settings['total-goal-text-outline-width'] || 1;
+        document.getElementById('total-text-outline-color').value = settings['total-goal-text-outline-color'] || '#000000';
+        document.getElementById('total-show-top-stats').checked = settings['total-goal-show-top-stats'] !== false;
+        document.getElementById('total-text-switch-enabled').checked = settings['total-goal-text-switch-enabled'] || false;
+        document.getElementById('total-text-switch-interval').value = settings['total-goal-text-switch-interval'] || 5;
+        document.getElementById('total-title-size').value = parseInt(settings['total-goal-title-font-size']) || 24;
+        document.getElementById('total-stats-size').value = parseInt(settings['total-goal-stats-font-size']) || 20;
+        document.getElementById('total-progress-height').value = parseInt(settings['total-goal-progress-height']) || 30;
+        
+        // 슬라이더 값 업데이트
+        document.querySelectorAll('.slider').forEach(slider => updateSliderValue(slider));
+        
+        // 체크박스에 따른 비활성화
+        document.getElementById('extend-amount').disabled = !document.getElementById('auto-extend-enabled').checked;
+        document.getElementById('total-text-switch-interval').disabled = !document.getElementById('total-text-switch-enabled').checked;
+        
+        showStatus('✅ 현재 설정을 불러왔습니다', 'success');
+    } catch (error) {
+        console.error('설정 로드 실패:', error);
+        showStatus('❌ 설정을 불러오지 못했습니다', 'error');
+    }
+}
+
+// 퇴근미션 그래프 설정 저장
+async function saveMissionSettings() {
+    try {
+        const settings = {
+            'mission-graph-opacity': document.getElementById('mission-bg-opacity').value,
+            'mission-graph-bg-color': document.getElementById('mission-bg-color').value,
+            'mission-text-outline-width': document.getElementById('mission-text-outline-width').value,
+            'mission-text-outline-color': document.getElementById('mission-text-outline-color').value,
+            'mission-title-font-size': document.getElementById('mission-title-size').value,
+            'mission-stats-font-size': document.getElementById('mission-stats-size').value,
+            'mission-progress-height': document.getElementById('mission-progress-height').value
+        };
+        
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showStatus('✅ 퇴근미션 그래프 설정이 적용되었습니다!', 'success');
+        } else {
+            showStatus('❌ 설정 저장 실패: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('설정 저장 실패:', error);
+        showStatus('❌ 네트워크 오류가 발생했습니다', 'error');
+    }
+}
+
+// 총액목표 그래프 설정 저장
+async function saveTotalSettings() {
+    try {
+        const target = parseFloat(document.getElementById('daily-goal-target').value);
+        if (!target || target <= 0) {
+            showStatus('⚠️ 올바른 목표액을 입력해주세요', 'error');
+            return;
+        }
+        
+        const settings = {
+            dailyGoal: {
+                target: target,
+                autoExtendEnabled: document.getElementById('auto-extend-enabled').checked,
+                extendAmount: parseFloat(document.getElementById('extend-amount').value) || 50,
+                createdDate: new Date().toISOString().split('T')[0]
+            },
+            'total-goal-bg-opacity': document.getElementById('total-bg-opacity').value,
+            'total-goal-bg-color': document.getElementById('total-bg-color').value,
+            'total-goal-text-outline-width': document.getElementById('total-text-outline-width').value,
+            'total-goal-text-outline-color': document.getElementById('total-text-outline-color').value,
+            'total-goal-show-top-stats': document.getElementById('total-show-top-stats').checked,
+            'total-goal-text-switch-enabled': document.getElementById('total-text-switch-enabled').checked,
+            'total-goal-text-switch-interval': document.getElementById('total-text-switch-interval').value,
+            'total-goal-title-font-size': document.getElementById('total-title-size').value,
+            'total-goal-stats-font-size': document.getElementById('total-stats-size').value,
+            'total-goal-progress-height': document.getElementById('total-progress-height').value
+        };
+        
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showStatus(`✅ 총액목표 그래프 설정이 적용되었습니다! (목표: ${target}만원)`, 'success');
+        } else {
+            showStatus('❌ 설정 저장 실패: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('설정 저장 실패:', error);
+        showStatus('❌ 네트워크 오류가 발생했습니다', 'error');
+    }
+}
+
+// 기본값 초기화
+function resetMissionSettings() {
+    if (confirm('🔄 퇴근미션 그래프 설정을 기본값으로 초기화하시겠습니까?')) {
+        document.getElementById('mission-bg-opacity').value = 85;
+        document.getElementById('mission-bg-color').value = '#000000';
+        document.getElementById('mission-text-outline-width').value = 1;
+        document.getElementById('mission-text-outline-color').value = '#000000';
+        document.getElementById('mission-title-size').value = 20;
+        document.getElementById('mission-stats-size').value = 16;
+        document.getElementById('mission-progress-height').value = 20;
+        
+        document.querySelectorAll('.slider').forEach(slider => updateSliderValue(slider));
+        showStatus('🔄 퇴근미션 설정이 초기화되었습니다', 'success');
+    }
+}
+
+function resetTotalSettings() {
+    if (confirm('🔄 총액목표 그래프 설정을 기본값으로 초기화하시겠습니까?')) {
+        document.getElementById('daily-goal-target').value = '';
+        document.getElementById('auto-extend-enabled').checked = false;
+        document.getElementById('extend-amount').value = 50;
+        document.getElementById('extend-amount').disabled = true;
+        document.getElementById('total-bg-opacity').value = 0;
+        document.getElementById('total-bg-color').value = '#000000';
+        document.getElementById('total-text-outline-width').value = 1;
+        document.getElementById('total-text-outline-color').value = '#000000';
+        document.getElementById('total-show-top-stats').checked = true;
+        document.getElementById('total-text-switch-enabled').checked = false;
+        document.getElementById('total-text-switch-interval').value = 5;
+        document.getElementById('total-text-switch-interval').disabled = true;
+        document.getElementById('total-title-size').value = 24;
+        document.getElementById('total-stats-size').value = 20;
+        document.getElementById('total-progress-height').value = 30;
+        
+        document.querySelectorAll('.slider').forEach(slider => updateSliderValue(slider));
+        showStatus('🔄 총액목표 설정이 초기화되었습니다', 'success');
+    }
+}
+
+// 오버레이 열기
+function openMissionOverlay() {
+    window.open('/mission-graph-overlay.html', '_blank', 'width=800,height=600');
+}
+
+function openTotalOverlay() {
+    window.open('/total-goal-overlay.html', '_blank', 'width=800,height=600');
+}
+
+// 상태 메시지 표시
+function showStatus(message, type) {
+    const statusDiv = document.getElementById('status-message');
+    statusDiv.className = `status status-${type}`;
+    statusDiv.textContent = message;
+    statusDiv.style.display = 'block';
+    
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 3000);
+}
+
+// 페이지 로드 시 초기화
+window.addEventListener('DOMContentLoaded', () => {
+    initSocket();
+    initSliders();
+    console.log('📊 그래프 조정모드 초기화 완료');
+});
+</script>
+</body>
+</html>
