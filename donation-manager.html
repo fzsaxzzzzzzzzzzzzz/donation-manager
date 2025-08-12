@@ -1621,6 +1621,8 @@ function updateSummary() {
     const groupThreshold = parseInt(document.getElementById('group-threshold').value, 10) || 1;
     const includeSuperchat = document.getElementById('include-superchat').checked;
     
+    console.log(`[디버그] 그룹화 임계값: ${groupThreshold}, 슈퍼챗포함: ${includeSuperchat}`);
+    
     // 설정을 localStorage에 저장 (오버레이에서 사용)
     localStorage.setItem('group-threshold', groupThreshold.toString());
     localStorage.setItem('include-superchat', includeSuperchat.toString());
@@ -1656,9 +1658,12 @@ function updateSummary() {
     const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
     const donorTotalText = sortedGroups.map(([amount, donors]) => {
         const amountStr = `${parseFloat(amount)}만`;
+        console.log(`[디버그] 금액: ${amount}, 후원자: ${donors.length}명, 임계값: ${groupThreshold}, 묶기: ${donors.length >= groupThreshold}`);
         if (donors.length >= groupThreshold) {
+            console.log(`[묶기적용] ${donors.join(', ')} ${amountStr}`);
             return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
         } else {
+            console.log(`[개별표시] ${donors.join(', ')} ${amountStr}`);
             return donors.map(d => `${d}님 ${amountStr}`).join('\n');
         }
     }).join('\n');
