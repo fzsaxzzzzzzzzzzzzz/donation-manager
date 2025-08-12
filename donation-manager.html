@@ -283,6 +283,82 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <span id="graph-overlay-url">https://donation-manager-ufm1.onrender.com/mission-graph-overlay.html</span>
 </div>
 
+<!-- 총액 목표 그래프 오버레이 섹션 -->
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f0f8ff;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+<strong>🎯 총액 목표 그래프 오버레이</strong>
+<div style="display: flex; gap: 8px;">
+<button onclick="openOverlay('total-goal')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
+<button onclick="copyOverlayURL('total-goal')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
+<button onclick="showQRCode('total-goal')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
+<button onclick="showTotalGoalSettings()" class="btn btn-warning" style="font-size: 12px; padding: 5px 10px;">🎨 설정</button>
+</div>
+</div>
+<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+<span id="total-goal-overlay-url">https://donation-manager-ufm1.onrender.com/total-goal-overlay.html</span>
+</div>
+
+<!-- 총액 목표 설정 패널 -->
+<div id="total-goal-settings" style="display: none; margin-top: 15px; padding: 15px; background: #e8f5e8; border: 1px solid #4caf50; border-radius: 8px;">
+<h5 style="margin-bottom: 15px; color: #2e7d32;">💰 총액 목표 설정</h5>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+<!-- 목표 금액 -->
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">일일 목표액 (만원)</label>
+<input type="number" id="daily-goal-target" placeholder="예: 100" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+</div>
+
+<!-- 자동 연장 -->
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">
+<input type="checkbox" id="auto-extend-enabled" style="margin-right: 5px;"> 자동 목표 연장
+</label>
+<input type="number" id="extend-interval" placeholder="24" value="24" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
+<small style="color: #666;">시간 간격 (시간)</small>
+</div>
+</div>
+
+<!-- 색상 설정 -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">배경 색상</label>
+<input type="color" id="total-goal-bg-color" value="#1a1a1a" style="width: 100%; height: 30px;">
+</div>
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">테두리 색상</label>
+<input type="color" id="total-goal-border-color" value="#ff6b35" style="width: 100%; height: 30px;">
+</div>
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">진행 색상</label>
+<input type="color" id="total-goal-progress-color" value="#ff6b35" style="width: 100%; height: 30px;">
+</div>
+</div>
+
+<!-- 크기 설정 -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">제목 크기: <span id="total-goal-title-size-value">24px</span></label>
+<input type="range" id="total-goal-title-size" min="16" max="40" value="24" style="width: 100%;">
+</div>
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">숫자 크기: <span id="total-goal-stats-size-value">20px</span></label>
+<input type="range" id="total-goal-stats-size" min="14" max="32" value="20" style="width: 100%;">
+</div>
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">진행바 높이: <span id="total-goal-progress-height-value">30px</span></label>
+<input type="range" id="total-goal-progress-height" min="15" max="50" value="30" style="width: 100%;">
+</div>
+</div>
+
+<div style="display: flex; gap: 10px;">
+<button onclick="saveTotalGoalSettings()" class="btn btn-success">적용</button>
+<button onclick="resetTotalGoalSettings()" class="btn btn-secondary">기본값 복원</button>
+<button onclick="hideTotalGoalSettings()" class="btn btn-danger">닫기</button>
+</div>
+</div>
+</div>
+
 <!-- 미션 그래프 설정 패널 (숨김) -->
 <div id="mission-graph-settings" style="display: none; margin-top: 15px; padding: 15px; background: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 8px;">
 <h5 style="margin-bottom: 15px; color: #1565c0;">🎨 미션 그래프 오버레이 설정</h5>
@@ -4039,6 +4115,8 @@ function getOverlayURL(type) {
         return baseUrl + 'streamer-table-overlay.html';
     } else if (type === 'graph') {
         return baseUrl + 'mission-graph-overlay.html';
+    } else if (type === 'total-goal') {
+        return baseUrl + 'total-goal-overlay.html';
     }
     return '';
 }
@@ -4066,7 +4144,9 @@ async function copyOverlayURL(type) {
 function showQRCode(type) {
     const url = getOverlayURL(type);
     const typeName = type === 'donor' ? '후원자별 총액' : 
-                     type === 'table' ? '스트리머 테이블' : '퇴근미션 그래프';
+                     type === 'table' ? '스트리머 테이블' : 
+                     type === 'graph' ? '퇴근미션 그래프' : 
+                     type === 'total-goal' ? '총액 목표' : '오버레이';
     
     // QR코드 생성 (Google Charts API 사용)
     const qrUrl = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(url)}`;
@@ -5202,6 +5282,159 @@ function showMissionGraphSettings() {
     
     // 슬라이더 값 업데이트 함수 바인딩
     bindSliderUpdates();
+}
+
+// 총액 목표 설정 패널 표시/숨김
+function showTotalGoalSettings() {
+    const panel = document.getElementById('total-goal-settings');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    
+    // 기존 설정 값 로드
+    loadTotalGoalSettings();
+    
+    // 슬라이더 값 업데이트 함수 바인딩
+    bindTotalGoalSliderUpdates();
+}
+
+function hideTotalGoalSettings() {
+    document.getElementById('total-goal-settings').style.display = 'none';
+}
+
+function loadTotalGoalSettings() {
+    // 서버에서 현재 설정 로드
+    const settings = currentData.settings || {};
+    
+    // 목표 설정 로드
+    if (settings.dailyGoal) {
+        document.getElementById('daily-goal-target').value = settings.dailyGoal.target || '';
+        document.getElementById('auto-extend-enabled').checked = settings.dailyGoal.autoExtend || false;
+        document.getElementById('extend-interval').value = settings.dailyGoal.extendInterval || 24;
+        document.getElementById('extend-interval').disabled = !settings.dailyGoal.autoExtend;
+    }
+    
+    // 색상 설정 로드
+    document.getElementById('total-goal-bg-color').value = settings['total-goal-bg-color'] || '#1a1a1a';
+    document.getElementById('total-goal-border-color').value = settings['total-goal-border-color'] || '#ff6b35';
+    document.getElementById('total-goal-progress-color').value = settings['total-goal-progress-color'] || '#ff6b35';
+    
+    // 크기 설정 로드
+    document.getElementById('total-goal-title-size').value = parseInt(settings['total-goal-title-font-size']) || 24;
+    document.getElementById('total-goal-stats-size').value = parseInt(settings['total-goal-stats-font-size']) || 20;
+    document.getElementById('total-goal-progress-height').value = parseInt(settings['total-goal-progress-height']) || 30;
+}
+
+function bindTotalGoalSliderUpdates() {
+    const sliders = [
+        { id: 'total-goal-title-size', suffix: 'px', valueId: 'total-goal-title-size-value' },
+        { id: 'total-goal-stats-size', suffix: 'px', valueId: 'total-goal-stats-size-value' },
+        { id: 'total-goal-progress-height', suffix: 'px', valueId: 'total-goal-progress-height-value' }
+    ];
+    
+    sliders.forEach(slider => {
+        const element = document.getElementById(slider.id);
+        const valueDisplay = document.getElementById(slider.valueId);
+        
+        if (element && valueDisplay) {
+            // 초기값 설정
+            valueDisplay.textContent = element.value + slider.suffix;
+            
+            // 슬라이더 변경 이벤트
+            element.addEventListener('input', function() {
+                valueDisplay.textContent = this.value + slider.suffix;
+            });
+        }
+    });
+    
+    // 자동 연장 체크박스 이벤트
+    const autoExtendCheckbox = document.getElementById('auto-extend-enabled');
+    const extendIntervalInput = document.getElementById('extend-interval');
+    
+    if (autoExtendCheckbox && extendIntervalInput) {
+        autoExtendCheckbox.addEventListener('change', function() {
+            extendIntervalInput.disabled = !this.checked;
+        });
+    }
+}
+
+function saveTotalGoalSettings() {
+    try {
+        // 목표 설정 수집
+        const target = parseFloat(document.getElementById('daily-goal-target').value);
+        const autoExtend = document.getElementById('auto-extend-enabled').checked;
+        const extendInterval = parseInt(document.getElementById('extend-interval').value) || 24;
+        
+        if (!target || target <= 0) {
+            showStatus('⚠️ 올바른 목표액을 입력해주세요', 'warning');
+            return;
+        }
+        
+        const settings = {
+            // 일일 목표 설정
+            dailyGoal: {
+                target: target,
+                autoExtend: autoExtend,
+                extendInterval: extendInterval,
+                createdDate: new Date().toISOString().split('T')[0]
+            },
+            
+            // 시각 설정
+            'total-goal-bg-color': document.getElementById('total-goal-bg-color').value,
+            'total-goal-border-color': document.getElementById('total-goal-border-color').value,
+            'total-goal-progress-color': document.getElementById('total-goal-progress-color').value,
+            'total-goal-title-font-size': document.getElementById('total-goal-title-size').value,
+            'total-goal-stats-font-size': document.getElementById('total-goal-stats-size').value,
+            'total-goal-progress-height': document.getElementById('total-goal-progress-height').value
+        };
+        
+        console.log('💰 총액 목표 설정 저장:', settings);
+        
+        // 서버에 설정 저장
+        fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showStatus(`✅ 총액 목표 설정이 저장되었습니다: ${target}만원`, 'success');
+                console.log('✅ 총액 목표 설정 저장 성공:', data);
+            } else {
+                showStatus('❌ 설정 저장 실패: ' + (data.error || '알 수 없는 오류'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('❌ 총액 목표 설정 저장 실패:', error);
+            showStatus('❌ 네트워크 오류로 설정 저장에 실패했습니다', 'error');
+        });
+        
+    } catch (error) {
+        console.error('❌ 총액 목표 설정 수집 실패:', error);
+        showStatus('❌ 설정 데이터 처리 중 오류가 발생했습니다', 'error');
+    }
+}
+
+function resetTotalGoalSettings() {
+    if (confirm('🔄 총액 목표 설정을 기본값으로 초기화하시겠습니까?')) {
+        // 기본값으로 초기화
+        document.getElementById('daily-goal-target').value = '';
+        document.getElementById('auto-extend-enabled').checked = false;
+        document.getElementById('extend-interval').value = 24;
+        document.getElementById('extend-interval').disabled = true;
+        document.getElementById('total-goal-bg-color').value = '#1a1a1a';
+        document.getElementById('total-goal-border-color').value = '#ff6b35';
+        document.getElementById('total-goal-progress-color').value = '#ff6b35';
+        document.getElementById('total-goal-title-size').value = 24;
+        document.getElementById('total-goal-stats-size').value = 20;
+        document.getElementById('total-goal-progress-height').value = 30;
+        
+        // 슬라이더 값 업데이트
+        document.querySelectorAll('#total-goal-settings input[type="range"]').forEach(input => {
+            input.dispatchEvent(new Event('input'));
+        });
+        
+        showStatus('🔄 총액 목표 설정이 초기화되었습니다', 'success');
+    }
 }
 
 function hideMissionGraphSettings() {

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 오늘의 총액 목표 그래프 오버레이</title>
+
+<!-- Socket.IO for Real-time -->
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+body {
+    margin: 0;
+    padding: 20px;
+    background: transparent;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    color: white;
+    overflow: hidden;
+}
+
+.overlay-container {
+    background: transparent;
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* 총액 목표 그래프 컨테이너 */
+.total-goal-container {
+    background: rgba(var(--graph-bg-color-rgb, 0, 0, 0), var(--graph-opacity, 0.85));
+    border-radius: 15px;
+    padding: 20px;
+    border: var(--graph-border-width, 3px) solid var(--graph-border-color, #ff6b35);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+}
+
+.goal-title {
+    text-align: center;
+    font-size: var(--title-font-size, 24px);
+    font-weight: bold;
+    color: var(--title-color, #ffffff);
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.goal-date {
+    text-align: center;
+    font-size: var(--date-font-size, 16px);
+    color: var(--date-color, #ffeb3b);
+    margin-bottom: 20px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.goal-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: var(--stats-font-size, 20px);
+    font-weight: bold;
+}
+
+.current-amount {
+    color: var(--current-color, #4caf50);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.target-amount {
+    color: var(--target-color, #ff9800);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.progress-percentage {
+    color: var(--progress-color, #2196f3);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    font-size: var(--percentage-font-size, 28px);
+}
+
+/* 진행도 바 */
+.goal-progress-container {
+    width: 100%;
+    height: var(--progress-height, 30px);
+    background: linear-gradient(90deg, #2c2c2c 0%, #404040 100%);
+    border-radius: 15px;
+    overflow: hidden;
+    border: 3px solid #555;
+    box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.6);
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.goal-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, 
+        var(--progress-start-color, #ff6b35) 0%, 
+        var(--progress-mid-color, #ff8a50) 50%, 
+        var(--progress-end-color, #ffa726) 100%
+    );
+    width: 0%;
+    transition: width 1.2s ease-in-out;
+    border-radius: 12px;
+    position: relative;
+    box-shadow: 0 3px 15px rgba(255, 107, 53, 0.6);
+}
+
+.goal-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.4) 50%, 
+        transparent 100%
+    );
+    border-radius: 12px;
+    animation: shine 3s infinite;
+}
+
+.goal-progress-bar.completed {
+    background: linear-gradient(90deg, 
+        var(--complete-start-color, #4caf50) 0%, 
+        var(--complete-mid-color, #66bb6a) 50%, 
+        var(--complete-end-color, #81c784) 100%
+    );
+    box-shadow: 0 3px 15px rgba(76, 175, 80, 0.8);
+    animation: pulse-green 2s infinite;
+}
+
+.goal-progress-bar.overtime {
+    background: linear-gradient(90deg, 
+        var(--overtime-start-color, #ffd700) 0%, 
+        var(--overtime-mid-color, #ffed4e) 50%, 
+        var(--overtime-end-color, #fff176) 100%
+    );
+    box-shadow: 0 3px 15px rgba(255, 215, 0, 1);
+    animation: pulse-gold 2s infinite;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes pulse-green {
+    0%, 100% { 
+        opacity: 1;
+        box-shadow: 0 3px 15px rgba(76, 175, 80, 0.8);
+    }
+    50% { 
+        opacity: 0.9;
+        box-shadow: 0 6px 25px rgba(76, 175, 80, 1);
+    }
+}
+
+@keyframes pulse-gold {
+    0%, 100% { 
+        opacity: 1;
+        box-shadow: 0 3px 15px rgba(255, 215, 0, 0.8);
+    }
+    50% { 
+        opacity: 0.9;
+        box-shadow: 0 6px 25px rgba(255, 215, 0, 1.2);
+    }
+}
+
+/* 목표 상세 정보 */
+.goal-details {
+    font-size: var(--details-font-size, 16px);
+    color: var(--details-color, #e0e0e0);
+    text-align: center;
+    line-height: 1.4;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.auto-extend-info {
+    font-size: var(--auto-extend-font-size, 12px);
+    color: var(--auto-extend-color, #b0bec5);
+    text-align: center;
+    margin-top: 10px;
+    font-style: italic;
+}
+
+.no-goal {
+    text-align: center;
+    font-size: var(--no-goal-font-size, 20px);
+    color: var(--no-goal-color, #9e9e9e);
+    padding: 40px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* 반응형 */
+@media (max-width: 600px) {
+    .overlay-container {
+        max-width: 90vw;
+    }
+    .total-goal-container {
+        padding: 15px;
+    }
+    .goal-title {
+        font-size: 20px;
+    }
+    .goal-stats {
+        font-size: 16px;
+    }
+}
+
+/* 설정 가능한 CSS 변수들 */
+:root {
+    --graph-opacity: 0.9;
+    --graph-bg-color: #1a1a1a;
+    --graph-border-color: #ff6b35;
+    --graph-border-width: 3px;
+    --title-font-size: 24px;
+    --title-color: #ffffff;
+    --date-font-size: 16px;
+    --date-color: #ffeb3b;
+    --stats-font-size: 20px;
+    --percentage-font-size: 28px;
+    --current-color: #4caf50;
+    --target-color: #ff9800;
+    --progress-color: #2196f3;
+    --progress-height: 30px;
+    --progress-start-color: #ff6b35;
+    --progress-mid-color: #ff8a50;
+    --progress-end-color: #ffa726;
+    --complete-start-color: #4caf50;
+    --complete-mid-color: #66bb6a;
+    --complete-end-color: #81c784;
+    --overtime-start-color: #ffd700;
+    --overtime-mid-color: #ffed4e;
+    --overtime-end-color: #fff176;
+    --details-font-size: 16px;
+    --details-color: #e0e0e0;
+    --auto-extend-font-size: 12px;
+    --auto-extend-color: #b0bec5;
+    --no-goal-font-size: 20px;
+    --no-goal-color: #9e9e9e;
+}
+</style>
+</head>
+
+<body>
+<div class="overlay-container">
+    <div class="total-goal-container" id="total-goal-container">
+        <div class="no-goal" id="no-goal-message">
+            <div id="loading-message">📡 애플리케이션을 불러오는 중...</div>
+            <div id="no-goal-data-message" style="display: none;">🎯 오늘의 목표가 설정되지 않았습니다</div>
+            <div id="error-message" style="display: none;">❌ 서버 연결 실패</div>
+        </div>
+        
+        <div class="goal-content" id="goal-content" style="display: none;">
+            <div class="goal-title" id="goal-title">🎯 오늘의 목표</div>
+            <div class="goal-date" id="goal-date"></div>
+            
+            <div class="goal-stats">
+                <span class="current-amount" id="current-amount">0</span>
+                <span class="progress-percentage" id="progress-percentage">0%</span>
+                <span class="target-amount" id="target-amount">0</span>
+            </div>
+            
+            <div class="goal-progress-container">
+                <div class="goal-progress-bar" id="goal-progress-bar"></div>
+            </div>
+            
+            <div class="goal-details" id="goal-details">
+                목표까지 <span id="remaining-amount">0</span>만원 남음
+            </div>
+            
+            <div class="auto-extend-info" id="auto-extend-info" style="display: none;">
+                자동 연장: <span id="extend-interval">24</span>시간마다
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+class TotalGoalOverlay {
+    constructor() {
+        this.socket = null;
+        this.donations = [];
+        this.settings = {};
+        this.dailyGoal = null;
+        
+        this.initializeSocket();
+        this.applySettings();
+        this.updateDate();
+    }
+    
+    initializeSocket() {
+        try {
+            this.socket = io({
+                transports: ['websocket', 'polling'],
+                timeout: 20000,
+                forceNew: true
+            });
+            
+            this.socket.on('connect', () => {
+                console.log('🔗 총액 목표 오버레이 서버 연결 성공');
+                this.socket.emit('requestData');
+                
+                setTimeout(() => {
+                    if (!this.dailyGoal) {
+                        console.log('⏰ 1초 후 목표 데이터 없음 - no-goal 표시');
+                        this.updateDisplay();
+                    }
+                }, 1000);
+            });
+            
+            this.socket.on('disconnect', () => {
+                console.log('❌ 서버 연결 끊김');
+                this.showError();
+            });
+            
+            this.socket.on('connect_error', (error) => {
+                console.error('❌ 연결 실패:', error);
+                this.showError();
+            });
+            
+            this.socket.on('dataUpdate', (data) => {
+                console.log('📊 데이터 업데이트 수신:', data);
+                
+                this.donations = data.donations || [];
+                this.settings = data.settings || {};
+                this.dailyGoal = data.settings?.dailyGoal || null;
+                
+                console.log('💰 후원 데이터:', this.donations.length, '건');
+                console.log('🎯 일일 목표:', this.dailyGoal);
+                
+                setTimeout(() => {
+                    this.updateDisplay();
+                }, 100);
+            });
+            
+            this.socket.on('settingsUpdate', (settings) => {
+                console.log('⚙️ 설정 업데이트 수신:', settings);
+                this.settings = { ...this.settings, ...settings };
+                this.dailyGoal = settings.dailyGoal || this.dailyGoal;
+                this.applySettings();
+                this.updateDisplay();
+            });
+            
+        } catch (error) {
+            console.error('❌ Socket.IO 초기화 실패:', error);
+        }
+    }
+    
+    applySettings() {
+        console.log('🎨 총액 목표 설정 적용 중:', this.settings);
+        
+        // 총액 목표 그래프 설정들을 CSS 변수로 적용
+        if (this.settings['total-goal-opacity']) {
+            document.documentElement.style.setProperty('--graph-opacity', this.settings['total-goal-opacity'] / 100);
+        }
+        if (this.settings['total-goal-bg-color']) {
+            document.documentElement.style.setProperty('--graph-bg-color', this.settings['total-goal-bg-color']);
+        }
+        if (this.settings['total-goal-border-color']) {
+            document.documentElement.style.setProperty('--graph-border-color', this.settings['total-goal-border-color']);
+        }
+        if (this.settings['total-goal-title-font-size']) {
+            document.documentElement.style.setProperty('--title-font-size', this.settings['total-goal-title-font-size'] + 'px');
+        }
+        if (this.settings['total-goal-stats-font-size']) {
+            document.documentElement.style.setProperty('--stats-font-size', this.settings['total-goal-stats-font-size'] + 'px');
+        }
+        if (this.settings['total-goal-progress-height']) {
+            document.documentElement.style.setProperty('--progress-height', this.settings['total-goal-progress-height'] + 'px');
+        }
+    }
+    
+    updateDate() {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long'
+        });
+        document.getElementById('goal-date').textContent = dateStr;
+    }
+    
+    getTodaysDonationTotal() {
+        const today = new Date().toDateString();
+        return this.donations
+            .filter(d => new Date(d.time).toDateString() === today)
+            .reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+    }
+    
+    updateDisplay() {
+        console.log('🔄 총액 목표 디스플레이 업데이트 시작');
+        
+        if (!this.dailyGoal || !this.dailyGoal.target) {
+            console.log('💭 목표 없음 - 기본 메시지 표시');
+            this.showNoGoal();
+            return;
+        }
+        
+        console.log('✅ 목표 있음 - 진행도 표시');
+        this.showGoalProgress();
+    }
+    
+    showGoalProgress() {
+        document.getElementById('no-goal-message').style.display = 'none';
+        document.getElementById('goal-content').style.display = 'block';
+        
+        const currentAmount = this.getTodaysDonationTotal();
+        const targetAmount = parseFloat(this.dailyGoal.target) || 0;
+        const progressPercent = targetAmount > 0 ? Math.min((currentAmount / targetAmount) * 100, 150) : 0;
+        const remainingAmount = Math.max(targetAmount - currentAmount, 0);
+        
+        // 상태 결정
+        const isCompleted = progressPercent >= 100;
+        const isOvertime = progressPercent > 100;
+        
+        // 숫자 포맷팅 함수
+        const formatNumber = (num) => {
+            return new Intl.NumberFormat('ko-KR').format(Math.round(num));
+        };
+        
+        // UI 업데이트
+        document.getElementById('current-amount').textContent = formatNumber(currentAmount) + '만원';
+        document.getElementById('target-amount').textContent = formatNumber(targetAmount) + '만원';
+        document.getElementById('progress-percentage').textContent = Math.round(progressPercent) + '%';
+        document.getElementById('remaining-amount').textContent = formatNumber(remainingAmount);
+        
+        // 진행도 바 업데이트
+        const progressBar = document.getElementById('goal-progress-bar');
+        progressBar.style.width = Math.min(progressPercent, 100) + '%';
+        
+        // 상태에 따른 스타일 적용
+        progressBar.className = 'goal-progress-bar';
+        if (isOvertime) {
+            progressBar.classList.add('overtime');
+        } else if (isCompleted) {
+            progressBar.classList.add('completed');
+        }
+        
+        // 상세 정보 업데이트
+        if (isOvertime) {
+            document.getElementById('goal-details').innerHTML = 
+                `🎉 목표 달성! 초과 달성: <span style="color: #ffd700; font-weight: bold;">${formatNumber(currentAmount - targetAmount)}만원</span>`;
+        } else if (isCompleted) {
+            document.getElementById('goal-details').innerHTML = 
+                `🎊 목표 달성 완료!`;
+        } else {
+            document.getElementById('goal-details').innerHTML = 
+                `목표까지 <span id="remaining-amount">${formatNumber(remainingAmount)}</span>만원 남음`;
+        }
+        
+        // 자동 연장 정보 표시
+        if (this.dailyGoal.autoExtend) {
+            document.getElementById('auto-extend-info').style.display = 'block';
+            document.getElementById('extend-interval').textContent = this.dailyGoal.extendInterval || '24';
+        } else {
+            document.getElementById('auto-extend-info').style.display = 'none';
+        }
+    }
+    
+    showError() {
+        document.getElementById('loading-message').style.display = 'none';
+        document.getElementById('no-goal-data-message').style.display = 'none';
+        document.getElementById('error-message').style.display = 'block';
+        document.getElementById('no-goal-message').style.display = 'block';
+        document.getElementById('goal-content').style.display = 'none';
+    }
+    
+    showNoGoal() {
+        document.getElementById('loading-message').style.display = 'none';
+        document.getElementById('no-goal-data-message').style.display = 'block';
+        document.getElementById('error-message').style.display = 'none';
+        document.getElementById('no-goal-message').style.display = 'block';
+        document.getElementById('goal-content').style.display = 'none';
+    }
+}
+
+// 페이지 로드 시 초기화
+window.addEventListener('DOMContentLoaded', () => {
+    new TotalGoalOverlay();
+});
+</script>
+</body>
+</html>

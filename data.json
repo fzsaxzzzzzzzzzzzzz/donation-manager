@@ -39,8 +39,26 @@
     "옥긔": "🦆",
     "국고": "🏦"
   },
-  "missions": [],
-  "runningMissions": [],
+  "missions": [
+    {
+      "id": "1755003737970",
+      "streamer": "연기",
+      "target": 1,
+      "description": "연기 퇴근미션",
+      "status": "running",
+      "startTime": "2025-08-12T13:02:17.970Z"
+    }
+  ],
+  "runningMissions": [
+    {
+      "id": "1755003737970",
+      "streamer": "연기",
+      "target": 1,
+      "description": "연기 퇴근미션",
+      "status": "running",
+      "startTime": "2025-08-12T13:02:17.970Z"
+    }
+  ],
   "settings": {
     "overlay-font-size": "24",
     "overlay-stroke-width": "3",
@@ -55,7 +73,8 @@
     "includeSuperchat": false,
     "show-total-row": "true",
     "show-update-time": "false",
-    "table-title": "🏆 스트리머별 후원 현황 🏆"
+    "table-title": "🏆 스트리머별 후원 현황 🏆",
+    "table-color-preset": "blue"
   },
-  "lastUpdated": "2025-08-12T12:18:40.959Z"
+  "lastUpdated": "2025-08-12T13:02:17.970Z"
 }
