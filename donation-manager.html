@@ -319,24 +319,32 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
-<!-- 색상 설정 -->
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+<!-- 배경 및 텍스트 설정 -->
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">배경 투명도: <span id="bg-opacity-value">0%</span></label>
+<input type="range" id="total-goal-bg-opacity" min="0" max="100" value="0" style="width: 100%;">
+</div>
 <div>
 <label style="display: block; font-weight: 600; margin-bottom: 5px;">배경 색상</label>
-<input type="color" id="total-goal-bg-color" value="#1a1a1a" style="width: 100%; height: 30px;">
+<input type="color" id="total-goal-bg-color" value="#000000" style="width: 100%; height: 30px;">
+</div>
+</div>
+
+<!-- 텍스트 테두리 설정 -->
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">글자 테두리 두께: <span id="text-outline-width-value">1px</span></label>
+<input type="range" id="total-goal-text-outline-width" min="0" max="5" value="1" style="width: 100%;">
 </div>
 <div>
-<label style="display: block; font-weight: 600; margin-bottom: 5px;">테두리 색상</label>
-<input type="color" id="total-goal-border-color" value="#ff6b35" style="width: 100%; height: 30px;">
-</div>
-<div>
-<label style="display: block; font-weight: 600; margin-bottom: 5px;">진행 색상</label>
-<input type="color" id="total-goal-progress-color" value="#ff6b35" style="width: 100%; height: 30px;">
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">글자 테두리 색상</label>
+<input type="color" id="total-goal-text-outline-color" value="#000000" style="width: 100%; height: 30px;">
 </div>
 </div>
 
 <!-- 크기 설정 -->
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
 <div>
 <label style="display: block; font-weight: 600; margin-bottom: 5px;">제목 크기: <span id="total-goal-title-size-value">24px</span></label>
 <input type="range" id="total-goal-title-size" min="16" max="40" value="24" style="width: 100%;">
@@ -348,6 +356,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div>
 <label style="display: block; font-weight: 600; margin-bottom: 5px;">진행바 높이: <span id="total-goal-progress-height-value">30px</span></label>
 <input type="range" id="total-goal-progress-height" min="15" max="50" value="30" style="width: 100%;">
+</div>
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">진행바 글자 크기: <span id="total-goal-progress-text-size-value">16px</span></label>
+<input type="range" id="total-goal-progress-text-size" min="12" max="24" value="16" style="width: 100%;">
 </div>
 </div>
 
@@ -5312,22 +5324,27 @@ function loadTotalGoalSettings() {
         document.getElementById('extend-amount').disabled = !settings.dailyGoal.autoExtend;
     }
     
-    // 색상 설정 로드
-    document.getElementById('total-goal-bg-color').value = settings['total-goal-bg-color'] || '#1a1a1a';
-    document.getElementById('total-goal-border-color').value = settings['total-goal-border-color'] || '#ff6b35';
-    document.getElementById('total-goal-progress-color').value = settings['total-goal-progress-color'] || '#ff6b35';
+    // 배경 및 텍스트 설정 로드
+    document.getElementById('total-goal-bg-opacity').value = settings['total-goal-bg-opacity'] || 0;
+    document.getElementById('total-goal-bg-color').value = settings['total-goal-bg-color'] || '#000000';
+    document.getElementById('total-goal-text-outline-width').value = settings['total-goal-text-outline-width'] || 1;
+    document.getElementById('total-goal-text-outline-color').value = settings['total-goal-text-outline-color'] || '#000000';
     
     // 크기 설정 로드
     document.getElementById('total-goal-title-size').value = parseInt(settings['total-goal-title-font-size']) || 24;
     document.getElementById('total-goal-stats-size').value = parseInt(settings['total-goal-stats-font-size']) || 20;
     document.getElementById('total-goal-progress-height').value = parseInt(settings['total-goal-progress-height']) || 30;
+    document.getElementById('total-goal-progress-text-size').value = parseInt(settings['total-goal-progress-text-size']) || 16;
 }
 
 function bindTotalGoalSliderUpdates() {
     const sliders = [
+        { id: 'total-goal-bg-opacity', suffix: '%', valueId: 'bg-opacity-value' },
+        { id: 'total-goal-text-outline-width', suffix: 'px', valueId: 'text-outline-width-value' },
         { id: 'total-goal-title-size', suffix: 'px', valueId: 'total-goal-title-size-value' },
         { id: 'total-goal-stats-size', suffix: 'px', valueId: 'total-goal-stats-size-value' },
-        { id: 'total-goal-progress-height', suffix: 'px', valueId: 'total-goal-progress-height-value' }
+        { id: 'total-goal-progress-height', suffix: 'px', valueId: 'total-goal-progress-height-value' },
+        { id: 'total-goal-progress-text-size', suffix: 'px', valueId: 'total-goal-progress-text-size-value' }
     ];
     
     sliders.forEach(slider => {
@@ -5378,12 +5395,14 @@ function saveTotalGoalSettings() {
             },
             
             // 시각 설정
+            'total-goal-bg-opacity': document.getElementById('total-goal-bg-opacity').value,
             'total-goal-bg-color': document.getElementById('total-goal-bg-color').value,
-            'total-goal-border-color': document.getElementById('total-goal-border-color').value,
-            'total-goal-progress-color': document.getElementById('total-goal-progress-color').value,
+            'total-goal-text-outline-width': document.getElementById('total-goal-text-outline-width').value,
+            'total-goal-text-outline-color': document.getElementById('total-goal-text-outline-color').value,
             'total-goal-title-font-size': document.getElementById('total-goal-title-size').value,
             'total-goal-stats-font-size': document.getElementById('total-goal-stats-size').value,
-            'total-goal-progress-height': document.getElementById('total-goal-progress-height').value
+            'total-goal-progress-height': document.getElementById('total-goal-progress-height').value,
+            'total-goal-progress-text-size': document.getElementById('total-goal-progress-text-size').value
         };
         
         console.log('💰 총액 목표 설정 저장:', settings);
@@ -5421,12 +5440,14 @@ function resetTotalGoalSettings() {
         document.getElementById('auto-extend-enabled').checked = false;
         document.getElementById('extend-amount').value = 50;
         document.getElementById('extend-amount').disabled = true;
-        document.getElementById('total-goal-bg-color').value = '#1a1a1a';
-        document.getElementById('total-goal-border-color').value = '#ff6b35';
-        document.getElementById('total-goal-progress-color').value = '#ff6b35';
+        document.getElementById('total-goal-bg-opacity').value = 0;
+        document.getElementById('total-goal-bg-color').value = '#000000';
+        document.getElementById('total-goal-text-outline-width').value = 1;
+        document.getElementById('total-goal-text-outline-color').value = '#000000';
         document.getElementById('total-goal-title-size').value = 24;
         document.getElementById('total-goal-stats-size').value = 20;
         document.getElementById('total-goal-progress-height').value = 30;
+        document.getElementById('total-goal-progress-text-size').value = 16;
         
         // 슬라이더 값 업데이트
         document.querySelectorAll('#total-goal-settings input[type="range"]').forEach(input => {

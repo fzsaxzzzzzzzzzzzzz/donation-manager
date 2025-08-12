@@ -27,8 +27,8 @@ body {
 
 /* 총액 목표 그래프 컨테이너 */
 .total-goal-container {
-    background: transparent;
-    border-radius: 0;
+    background: rgba(var(--bg-r, 0), var(--bg-g, 0), var(--bg-b, 0), var(--bg-opacity, 0));
+    border-radius: var(--container-border-radius, 0px);
     padding: 20px;
     border: none;
     box-shadow: none;
@@ -42,6 +42,8 @@ body {
     color: var(--title-color, #ffffff);
     margin-bottom: 15px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
 }
 
 .goal-date {
@@ -64,17 +66,23 @@ body {
 .current-amount {
     color: var(--current-color, #4caf50);
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
 }
 
 .target-amount {
     color: var(--target-color, #ff9800);
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
 }
 
 .progress-percentage {
     color: var(--progress-color, #2196f3);
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
     font-size: var(--percentage-font-size, 28px);
+    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
 }
 
 /* 진행도 바 */
@@ -116,6 +124,8 @@ body {
     font-weight: bold;
     font-size: var(--progress-text-size, 16px);
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
     z-index: 10;
     white-space: nowrap;
 }
@@ -190,6 +200,8 @@ body {
     text-align: center;
     line-height: 1.4;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
 }
 
 .auto-extend-info {
@@ -198,6 +210,8 @@ body {
     text-align: center;
     margin-top: 10px;
     font-style: italic;
+    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
 }
 
 .no-goal {
@@ -226,20 +240,22 @@ body {
 
 /* 설정 가능한 CSS 변수들 */
 :root {
-    --graph-opacity: 0.9;
-    --graph-bg-color: #1a1a1a;
-    --graph-border-color: #ff6b35;
-    --graph-border-width: 3px;
+    --bg-r: 0;
+    --bg-g: 0;
+    --bg-b: 0;
+    --bg-opacity: 0;
+    --container-border-radius: 0px;
+    --text-outline-width: 1px;
+    --text-outline-color: #000000;
     --title-font-size: 24px;
     --title-color: #ffffff;
-    --date-font-size: 16px;
-    --date-color: #ffeb3b;
     --stats-font-size: 20px;
     --percentage-font-size: 28px;
     --current-color: #4caf50;
     --target-color: #ff9800;
     --progress-color: #2196f3;
     --progress-height: 30px;
+    --progress-text-size: 16px;
     --progress-start-color: #ff6b35;
     --progress-mid-color: #ff8a50;
     --progress-end-color: #ffa726;
@@ -270,7 +286,6 @@ body {
         
         <div class="goal-content" id="goal-content" style="display: none;">
             <div class="goal-title" id="goal-title">🎯 오늘의 목표</div>
-            <div class="goal-date" id="goal-date"></div>
             
             <div class="goal-stats">
                 <span class="current-amount" id="current-amount">0</span>
@@ -304,7 +319,6 @@ class TotalGoalOverlay {
         
         this.initializeSocket();
         this.applySettings();
-        this.updateDate();
     }
     
     initializeSocket() {
@@ -371,16 +385,29 @@ class TotalGoalOverlay {
     applySettings() {
         console.log('🎨 총액 목표 설정 적용 중:', this.settings);
         
-        // 총액 목표 그래프 설정들을 CSS 변수로 적용
-        if (this.settings['total-goal-opacity']) {
-            document.documentElement.style.setProperty('--graph-opacity', this.settings['total-goal-opacity'] / 100);
+        // 배경 투명도 및 색상 설정
+        if (this.settings['total-goal-bg-opacity']) {
+            document.documentElement.style.setProperty('--bg-opacity', this.settings['total-goal-bg-opacity'] / 100);
         }
         if (this.settings['total-goal-bg-color']) {
-            document.documentElement.style.setProperty('--graph-bg-color', this.settings['total-goal-bg-color']);
+            const hex = this.settings['total-goal-bg-color'];
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            document.documentElement.style.setProperty('--bg-r', r);
+            document.documentElement.style.setProperty('--bg-g', g);
+            document.documentElement.style.setProperty('--bg-b', b);
         }
-        if (this.settings['total-goal-border-color']) {
-            document.documentElement.style.setProperty('--graph-border-color', this.settings['total-goal-border-color']);
+        
+        // 텍스트 테두리 설정
+        if (this.settings['total-goal-text-outline-width']) {
+            document.documentElement.style.setProperty('--text-outline-width', this.settings['total-goal-text-outline-width'] + 'px');
         }
+        if (this.settings['total-goal-text-outline-color']) {
+            document.documentElement.style.setProperty('--text-outline-color', this.settings['total-goal-text-outline-color']);
+        }
+        
+        // 폰트 크기 설정
         if (this.settings['total-goal-title-font-size']) {
             document.documentElement.style.setProperty('--title-font-size', this.settings['total-goal-title-font-size'] + 'px');
         }
@@ -390,18 +417,11 @@ class TotalGoalOverlay {
         if (this.settings['total-goal-progress-height']) {
             document.documentElement.style.setProperty('--progress-height', this.settings['total-goal-progress-height'] + 'px');
         }
+        if (this.settings['total-goal-progress-text-size']) {
+            document.documentElement.style.setProperty('--progress-text-size', this.settings['total-goal-progress-text-size'] + 'px');
+        }
     }
     
-    updateDate() {
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            weekday: 'long'
-        });
-        document.getElementById('goal-date').textContent = dateStr;
-    }
     
     getTodaysDonationTotal() {
         const today = new Date().toDateString();
