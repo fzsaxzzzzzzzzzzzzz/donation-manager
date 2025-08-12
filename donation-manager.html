@@ -1656,15 +1656,15 @@ function updateSummary() {
     // 소액 필터링 (0.1만원 미만 제외)
     const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 0.1);
     const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
-    const donorTotalText = sortedGroups.map(([amount, donors]) => {
+    const donorTotalText = sortedGroups.flatMap(([amount, donors]) => {
         const amountStr = `${parseFloat(amount)}만`;
         const shouldGroup = donors.length >= groupThreshold;
         console.log(`[확인] ${amount}만원 ${donors.length}명 >= ${groupThreshold}? ${shouldGroup} => ${shouldGroup ? '묶기' : '개별'}`);
         
         if (shouldGroup) {
-            return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
+            return [`${donors.map(d => d + '님').join(', ')} ${amountStr}`];
         } else {
-            return donors.map(d => `${d}님 ${amountStr}`).join('\n');
+            return donors.map(d => `${d}님 ${amountStr}`);
         }
     }).join('\n');
     
