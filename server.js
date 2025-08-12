@@ -113,7 +113,7 @@ async function loadExistingData() {
       ...currentData,
       ...firebaseData,
       emojis: firebaseData.emojis || currentData.emojis,
-      settings: firebaseData.settings?.settings || firebaseData.settings || currentData.settings
+      settings: { ...currentData.settings, ...(firebaseData.settings?.settings || firebaseData.settings || {}) }
     };
     console.log('📊 스트리머:', currentData.streamers.length + '명');
     console.log('💸 후원:', currentData.donations.length + '건');
@@ -131,7 +131,7 @@ async function loadExistingData() {
       emojis: loadedData.emojis && Object.keys(loadedData.emojis).length > 0 
         ? loadedData.emojis 
         : currentData.emojis,
-      settings: loadedData.settings?.settings || loadedData.settings || currentData.settings
+      settings: { ...currentData.settings, ...(loadedData.settings?.settings || loadedData.settings || {}) }
     };
     
     console.log('✅ 로컬 데이터 로드 완료');
@@ -444,6 +444,45 @@ app.post('/api/force-reload', async (req, res) => {
   } catch (error) {
     console.error('강제 초기화 실패:', error);
     res.status(500).json({ error: '서버 오류' });
+  }
+});
+
+// 설정 초기화 API (디버깅용)
+app.post('/api/reset-settings', async (req, res) => {
+  try {
+    console.log('🔄 설정 초기화 실행...');
+    console.log('초기화 전:', JSON.stringify(currentData.settings, null, 2));
+    
+    // 기본 설정으로 완전히 재설정
+    currentData.settings = {
+      "overlay-font-size": "24",
+      "overlay-stroke-width": "3", 
+      "overlay-text-align": "center",
+      "table-opacity": "85",
+      "table-number-size": "16",
+      "table-font-size": "14",
+      "table-text-color": "white",
+      "hidden-streamers": "[]",
+      "group-threshold": "2",
+      "groupThreshold": 2,
+      "includeSuperchat": false,
+      "show-total-row": "true",
+      "show-update-time": "false",
+      "table-title": "🏆 스트리머별 후원 현황 🏆"
+    };
+    
+    await saveData(false);
+    console.log('✅ 설정 초기화 완료');
+    console.log('초기화 후:', JSON.stringify(currentData.settings, null, 2));
+    
+    // 모든 클라이언트에게 업데이트 전송
+    io.emit('dataUpdate', currentData);
+    io.emit('settingsUpdate', currentData.settings);
+    
+    res.json({ success: true, message: '설정이 초기화되었습니다.' });
+  } catch (error) {
+    console.error('❌ 설정 초기화 실패:', error);
+    res.status(500).json({ error: '설정 초기화에 실패했습니다.' });
   }
 });
 
