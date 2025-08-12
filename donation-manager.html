@@ -67,6 +67,32 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .save-status.error { background-color: #fa383e; color: white; }
 .summary-header { display: flex; justify-content: space-between; align-items: center; }
 .summary-header h4 { margin: 0; }
+
+/* 퇴근미션 진행도 바 */
+.mission-progress-container {
+    width: 100%;
+    height: 20px;
+    background-color: #f0f2f5;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #dddfe2;
+}
+.mission-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #42b72a 0%, #56c946 50%, #6bd464 100%);
+    width: 0%;
+    transition: width 0.8s ease-in-out;
+    border-radius: 10px;
+    position: relative;
+}
+.mission-progress-bar.completed {
+    background: linear-gradient(90deg, #ffd700 0%, #ffed4e 50%, #fff176 100%);
+    animation: pulse-gold 2s infinite;
+}
+@keyframes pulse-gold {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
 .summary-actions .btn { font-size:12px; padding:4px 8px; margin-left: 5px; }
 
 /* 챗봇 관련 스타일 */
@@ -684,6 +710,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="sendMissionSummaryToChatbot()" class="btn btn-success" id="mission-summary-chatbot-btn">📤 챗봇 전송</button>
 </div>
 </div>
+<!-- 목표치 진행도 그래프 -->
+<div style="margin-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 14px;">
+        <span id="mission-progress-text">진행률: 0%</span>
+        <span id="mission-amount-text">0 / 0 만원</span>
+    </div>
+    <div class="mission-progress-container">
+        <div class="mission-progress-bar" id="mission-progress-bar"></div>
+    </div>
+</div>
+
 <div class="copy-box" id="mission-summary-output">진행 중인 미션이 없습니다.</div>
 </div>
 </div>
@@ -1870,7 +1907,8 @@ function updateMissionSummary() {
         return total + missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
     }, 0);
 
-    const missionTexts = runningMissions.map(mission => {
+    // 미션 정보를 계산하고 성공/진행중으로 분리
+    const missionWithInfo = runningMissions.map(mission => {
         const missionDonations = donations.filter(d => d.streamer === mission.streamer && new Date(d.time) >= new Date(mission.startTime));
         const currentAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
         const remaining = (parseFloat(mission.target) || 0) - currentAmount;
@@ -1879,12 +1917,70 @@ function updateMissionSummary() {
             mission.status = 'success'; 
             mission.completedTime = Date.now(); 
         }
+        
         const currentAmountStr = parseFloat(currentAmount);
-        if (mission.status === 'success') { return `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/성공!)`; }
         const remainingStr = parseFloat(remaining > 0 ? remaining : 0);
-        return `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/-${remainingStr})`;
+        
+        return {
+            ...mission,
+            currentAmount,
+            remaining,
+            text: mission.status === 'success' 
+                ? `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/성공!)` 
+                : `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/-${remainingStr})`
+        };
     });
-    container.textContent = `🎄퇴근미션(${parseFloat(totalMissionAmount)}만)🎄 | ${missionTexts.join(' | ')}`;
+    
+    // 진행중인 미션을 앞에, 성공한 미션을 뒤에 배치
+    const sortedMissions = missionWithInfo.sort((a, b) => {
+        if (a.status === 'success' && b.status !== 'success') return 1;
+        if (a.status !== 'success' && b.status === 'success') return -1;
+        return 0; // 같은 상태끼리는 원래 순서 유지
+    });
+    
+    // 진행중과 성공으로 분리
+    const runningMissions = sortedMissions.filter(m => m.status !== 'success');
+    const successMissions = sortedMissions.filter(m => m.status === 'success');
+    
+    const parts = [];
+    if (runningMissions.length > 0) {
+        parts.push(runningMissions.map(m => m.text).join(' '));
+    }
+    if (successMissions.length > 0) {
+        parts.push(successMissions.map(m => m.text).join(' '));
+    }
+    
+    container.textContent = `🎄퇴근미션🎄 | ${parts.join(' | ')}`;
+    
+    // 목표치 그래프 업데이트
+    updateMissionProgressGraph(sortedMissions);
+}
+
+// 퇴근미션 목표치 그래프 업데이트
+function updateMissionProgressGraph(missions) {
+    const totalTarget = missions.reduce((sum, mission) => sum + (parseFloat(mission.target) || 0), 0);
+    const totalCurrent = missions.reduce((sum, mission) => sum + (mission.currentAmount || 0), 0);
+    
+    const progressPercentage = totalTarget > 0 ? Math.min((totalCurrent / totalTarget) * 100, 100) : 0;
+    const isCompleted = progressPercentage >= 100;
+    
+    // 진행률 텍스트 업데이트
+    document.getElementById('mission-progress-text').textContent = `진행률: ${Math.round(progressPercentage)}%`;
+    
+    // 금액 텍스트 업데이트
+    document.getElementById('mission-amount-text').textContent = 
+        `${parseFloat(totalCurrent)} / ${parseFloat(totalTarget)} 만원`;
+    
+    // 진행도 바 업데이트
+    const progressBar = document.getElementById('mission-progress-bar');
+    progressBar.style.width = `${progressPercentage}%`;
+    
+    // 완료 시 특별 효과
+    if (isCompleted && !progressBar.classList.contains('completed')) {
+        progressBar.classList.add('completed');
+    } else if (!isCompleted) {
+        progressBar.classList.remove('completed');
+    }
 }
 
 // --- 유틸리티 및 이벤트 핸들러 ---
