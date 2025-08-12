@@ -236,6 +236,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
+<!-- 퇴근미션 그래프 섹션 -->
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+<strong>🎯 퇴근미션 그래프 오버레이</strong>
+<div style="display: flex; gap: 8px;">
+<button onclick="openOverlay('graph')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
+<button onclick="copyOverlayURL('graph')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
+<button onclick="showQRCode('graph')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
+</div>
+</div>
+<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+<span id="graph-overlay-url">https://donation-manager-ufm1.onrender.com/mission-graph-overlay.html</span>
+</div>
+</div>
+
 <!-- 실시간 미리보기 토글 -->
 <div style="margin-bottom: 15px; text-align: center;">
 <button onclick="togglePreview()" class="btn btn-info" id="preview-toggle">👁️ 실시간 미리보기 켜기</button>
@@ -3832,6 +3847,8 @@ function getOverlayURL(type) {
         return baseUrl + 'donor-overlay.html';
     } else if (type === 'table') {
         return baseUrl + 'streamer-table-overlay.html';
+    } else if (type === 'graph') {
+        return baseUrl + 'mission-graph-overlay.html';
     }
     return '';
 }
@@ -3858,7 +3875,8 @@ async function copyOverlayURL(type) {
 // QR코드 생성 및 표시
 function showQRCode(type) {
     const url = getOverlayURL(type);
-    const typeName = type === 'donor' ? '후원자별 총액' : '스트리머 테이블';
+    const typeName = type === 'donor' ? '후원자별 총액' : 
+                     type === 'table' ? '스트리머 테이블' : '퇴근미션 그래프';
     
     // QR코드 생성 (Google Charts API 사용)
     const qrUrl = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(url)}`;
@@ -3896,7 +3914,8 @@ function showQRCode(type) {
 // 모든 오버레이 한번에 열기
 function openAllOverlays() {
     openOverlay('donor');
-    setTimeout(() => openOverlay('table'), 500); // 약간의 딜레이
+    setTimeout(() => openOverlay('table'), 500);
+    setTimeout(() => openOverlay('graph'), 1000); // 그래프 오버레이 추가
     showStatus('모든 오버레이가 새 창에서 열렸습니다!', 'info');
 }
 
