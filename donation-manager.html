@@ -2219,9 +2219,9 @@ function updateRunningMissionsList() {
     const container = document.getElementById('running-missions-list');
     if (!container) return;
     
-    // 서버에서 받은 미션 데이터 사용
+    // 서버에서 받은 미션 데이터 사용 (완료된 미션도 포함)
     const runningMissions = (currentData && currentData.missions) ? 
-        currentData.missions.filter(m => m.status === 'running') : [];
+        currentData.missions.filter(m => m.status === 'running' || m.status === 'completed') : [];
     
     if (runningMissions.length === 0) {
         container.innerHTML = `
@@ -2240,12 +2240,16 @@ function updateRunningMissionsList() {
         const currentAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
         const progressPercent = Math.min((currentAmount / mission.target) * 100, 100);
         const remaining = Math.max(0, mission.target - currentAmount);
+        const isCompleted = mission.status === 'completed' || progressPercent >= 100;
+        const completedIcon = mission.status === 'completed' ? ' ✅' : (progressPercent >= 100 ? ' 🎉' : '');
+        const borderColor = isCompleted ? '#28a745' : '#dee2e6';
+        const backgroundColor = isCompleted ? '#d4edda' : '#f8f9fa';
         
         return `
-            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+            <div style="background: ${backgroundColor}; border: 1px solid ${borderColor}; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div>
-                        <strong style="font-size: 16px;">${emojis[mission.streamer] || ''}${mission.streamer}</strong>
+                        <strong style="font-size: 16px;">${emojis[mission.streamer] || ''}${mission.streamer}${completedIcon}</strong>
                         <div style="font-size: 12px; color: #6c757d;">${mission.description || '퇴근미션'}</div>
                     </div>
                     <button onclick="deleteMission('${mission.id}')" class="btn btn-danger btn-sm">

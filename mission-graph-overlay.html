@@ -340,7 +340,7 @@ class MissionGraphOverlay {
         }
         
         const runningMissions = this.missions.filter(mission => 
-            mission && (mission.status === 'running' || mission.status === 'success')
+            mission && (mission.status === 'running' || mission.status === 'success' || mission.status === 'completed')
         );
         
         console.log('🏃‍♂️ 진행중인 미션:', runningMissions.length, '개');
@@ -371,13 +371,16 @@ class MissionGraphOverlay {
             );
             const currentAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
             const progressPercent = target > 0 ? Math.min((currentAmount / target) * 100, 100) : 0;
-            const isCompleted = progressPercent >= 100;
+            const isCompleted = progressPercent >= 100 || mission.status === 'completed';
+            const isManuallyCompleted = mission.status === 'completed';
             const emoji = this.emojis[mission.streamer] || '';
             
             return `
                 <div style="margin-bottom: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                        <span style="font-size: var(--stats-font-size, 16px); font-weight: bold; color: var(--title-color, #ffffff);">${emoji}${mission.streamer}</span>
+                        <span style="font-size: var(--stats-font-size, 16px); font-weight: bold; color: var(--title-color, #ffffff);">
+                            ${emoji}${mission.streamer}${isManuallyCompleted ? ' ✅' : isCompleted ? ' 🎉' : ''}
+                        </span>
                         <span style="font-size: var(--details-font-size, 14px); color: var(--amount-color, #ffffff); font-weight: bold;">${Math.round(progressPercent)}% (${currentAmount}/${target}만)</span>
                     </div>
                     <div style="background: var(--progress-bg-color, #2c2c2c); border-radius: 8px; height: var(--progress-height, 20px); overflow: hidden; border: 1px solid #444;">

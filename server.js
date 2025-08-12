@@ -540,8 +540,12 @@ app.put('/api/missions/:id/complete', async (req, res) => {
     mission.status = 'completed';
     mission.completedTime = new Date().toISOString();
     
-    // runningMissions에서 제거
-    currentData.runningMissions = currentData.runningMissions.filter(m => m.id !== missionId);
+    // runningMissions에서도 상태 업데이트 (제거하지 않음)
+    const runningMission = currentData.runningMissions.find(m => m.id === missionId);
+    if (runningMission) {
+        runningMission.status = 'completed';
+        runningMission.completedTime = new Date().toISOString();
+    }
     
     await saveData();
     
