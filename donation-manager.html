@@ -1954,12 +1954,12 @@ function updateMissionSummary() {
     });
     
     // 진행중과 성공으로 분리
-    const runningMissions = sortedMissions.filter(m => m.status !== 'success');
+    const activeMissions = sortedMissions.filter(m => m.status !== 'success');
     const successMissions = sortedMissions.filter(m => m.status === 'success');
     
     const parts = [];
-    if (runningMissions.length > 0) {
-        parts.push(runningMissions.map(m => m.text).join(' '));
+    if (activeMissions.length > 0) {
+        parts.push(activeMissions.map(m => m.text).join(' '));
     }
     if (successMissions.length > 0) {
         parts.push(successMissions.map(m => m.text).join(' '));
