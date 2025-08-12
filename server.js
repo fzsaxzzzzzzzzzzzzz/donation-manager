@@ -472,6 +472,7 @@ app.post('/api/settings', async (req, res) => {
       // 모든 클라이언트에게 설정 업데이트 전송
       console.log('⚙️ [서버] 설정 업데이트 전송:', Object.keys(settings).join(', '));
       io.emit('dataUpdate', currentData);
+      io.emit('settingsUpdate', currentData.settings);
     } else {
       console.log('⚙️ [서버] 설정 변경 없음, 업데이트 건너뜀');
     }

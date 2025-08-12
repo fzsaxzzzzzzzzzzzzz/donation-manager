@@ -159,11 +159,18 @@ class RealtimeDonorOverlay {
             return;
         }
         
-        // 후원자별 총액 계산 (계좌 타입만) - 정산요약과 동일한 로직
+        // 후원자별 총액 계산 (계좌 + 슈퍼챗 옵션) - 정산요약과 동일한 로직
         const donorAccountTotals = {};
+        
+        // 슈퍼챗 포함 옵션 확인 (서버 설정 우선, 없으면 로컬 설정)
+        const includeSuperchat = this.settings.includeSuperchat !== undefined ? 
+            this.settings.includeSuperchat : (localStorage.getItem('include-superchat') === 'true');
+            
         this.donations.forEach(d => {
             const amount = parseFloat(d.amount) || 0;
-            if (d.type === '계좌') {
+            const shouldInclude = d.type === '계좌' || (includeSuperchat && d.type === '슈퍼챗');
+            
+            if (shouldInclude) {
                 // 스트리머별 조정은 제외, 후원자별 조정은 포함
                 if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
                     // 스트리머별 조정 → 제외
@@ -213,7 +220,7 @@ class RealtimeDonorOverlay {
         // 정산요약과 동일한 형식으로 텍스트 생성
         const donorTotalText = sortedGroups.map(([amount, donors]) => {
             const amountStr = `${parseFloat(amount)}만`;
-            if (donors.length >= groupThreshold && groupThreshold > 1) {
+            if (donors.length >= groupThreshold) {
                 return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
             } else {
                 return donors.map(d => `${d}님 ${amountStr}`).join('\n');
