@@ -1621,8 +1621,6 @@ function updateSummary() {
     const groupThreshold = parseInt(document.getElementById('group-threshold').value, 10) || 2;
     const includeSuperchat = document.getElementById('include-superchat').checked;
     
-    console.log(`[확인] 임계값: ${groupThreshold}, 입력필드값: ${document.getElementById('group-threshold').value}`);
-    
     // 설정을 localStorage에 저장 (오버레이에서 사용)
     localStorage.setItem('group-threshold', groupThreshold.toString());
     localStorage.setItem('include-superchat', includeSuperchat.toString());
@@ -1658,10 +1656,7 @@ function updateSummary() {
     const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
     const donorTotalText = sortedGroups.flatMap(([amount, donors]) => {
         const amountStr = `${parseFloat(amount)}만`;
-        const shouldGroup = donors.length >= groupThreshold;
-        console.log(`[확인] ${amount}만원 ${donors.length}명 >= ${groupThreshold}? ${shouldGroup} => ${shouldGroup ? '묶기' : '개별'}`);
-        
-        if (shouldGroup) {
+        if (donors.length >= groupThreshold) {
             return [`${donors.map(d => d + '님').join(', ')} ${amountStr}`];
         } else {
             return donors.map(d => `${d}님 ${amountStr}`);
@@ -1670,7 +1665,6 @@ function updateSummary() {
     
     // "사랑해요♡" 인사말과 함께 표시
     const finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡\n후원자가 없습니다';
-    console.log(`[최종결과] ${finalText}`);
     document.getElementById('donor-total').textContent = finalText;
 
     const minutes = parseInt(document.getElementById('recent-minutes').value, 10);
