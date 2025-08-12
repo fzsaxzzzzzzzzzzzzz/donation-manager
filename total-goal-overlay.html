@@ -308,7 +308,7 @@ body {
             </div>
             
             <div class="auto-extend-info" id="auto-extend-info" style="display: none;">
-                자동 연장: +<span id="extend-amount">50</span>만원씩
+                자동 추가: +<span id="extend-amount">50</span>만원씩
             </div>
         </div>
     </div>
@@ -324,6 +324,7 @@ class TotalGoalOverlay {
         this.textSwitchInterval = null;
         this.isShowingAltText = false;
         this.autoExtendCheckInterval = null;
+        this.apiPollInterval = null;
         
         this.initializeSocket();
         this.applySettings();
@@ -370,13 +371,15 @@ class TotalGoalOverlay {
             });
             
             this.socket.on('disconnect', () => {
-                console.log('❌ 서버 연결 끊김');
-                this.showError();
+                console.log('❌ [총액그래프] 서버 연결 끊김');
+                console.log('🔄 [총액그래프] API 폴백 모드로 전환');
+                this.fallbackToAPI();
             });
             
             this.socket.on('connect_error', (error) => {
-                console.error('❌ 연결 실패:', error);
-                this.showError();
+                console.error('❌ [총액그래프] Socket.io 연결 실패:', error);
+                console.log('🔄 [총액그래프] API 폴백 모드로 전환');
+                this.fallbackToAPI();
             });
             
             this.socket.on('dataUpdate', (data) => {
@@ -443,10 +446,13 @@ class TotalGoalOverlay {
                 this.updateDisplay();
                 this.checkAutoExtend();
                 
-                // API 폴백 모드에서는 30초마다 갱신
-                setInterval(() => {
-                    this.fallbackToAPI();
-                }, 30000);
+                // API 폴백 모드에서는 30초마다 갱신 (중복 방지)
+                if (!this.apiPollInterval) {
+                    this.apiPollInterval = setInterval(() => {
+                        this.fallbackToAPI();
+                    }, 30000);
+                    console.log('🔄 [총액그래프] API 폴링 모드 시작 (30초 간격)');
+                }
             } else {
                 console.error('❌ [총액그래프] API 응답 실패:', response.status);
                 this.showError();
@@ -648,8 +654,9 @@ class TotalGoalOverlay {
                 `목표까지 <span id="remaining-amount">${formatNumber(remainingAmount)}</span>만원 남음`;
         }
         
-        // 자동 연장 정보 표시
-        if (this.dailyGoal.autoExtend) {
+        // 자동 추가 정보 표시
+        const isAutoExtendEnabled = this.dailyGoal.autoExtendEnabled || this.dailyGoal.autoExtend;
+        if (isAutoExtendEnabled) {
             document.getElementById('auto-extend-info').style.display = 'block';
             document.getElementById('extend-amount').textContent = this.dailyGoal.extendAmount || '50';
         } else {
