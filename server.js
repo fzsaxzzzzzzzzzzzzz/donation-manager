@@ -55,6 +55,8 @@ let currentData = {
     "주옥": "👺", "불곰": "🎬", "이효팔": "🏝", "남붕": "🤠", 
     "옥긔": "🦆", "국고": "🏦"
   },
+  missions: {},
+  runningMissions: [],
   settings: {
     "overlay-font-size": "24",
     "overlay-stroke-width": "3", 
