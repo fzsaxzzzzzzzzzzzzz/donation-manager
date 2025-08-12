@@ -115,7 +115,7 @@ body {
     justify-content: center;
 }
 
-.progress-text {
+.progress-text, .progress-text-alt {
     position: absolute;
     left: 50%;
     top: 50%;
@@ -128,6 +128,7 @@ body {
     text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
     z-index: 10;
     white-space: nowrap;
+    transition: opacity 0.3s ease-in-out;
 }
 
 .goal-progress-bar::after {
@@ -257,6 +258,8 @@ body {
     --progress-color: #2196f3;
     --progress-height: 30px;
     --progress-text-size: 16px;
+    --text-switch-enabled: true;
+    --text-switch-interval: 5;
     --progress-start-color: #ff6b35;
     --progress-mid-color: #ff8a50;
     --progress-end-color: #ffa726;
@@ -296,10 +299,11 @@ body {
             
             <div class="goal-progress-container">
                 <div class="progress-text" id="progress-text">0 / 0만원 (0%)</div>
+                <div class="progress-text-alt" id="progress-text-alt" style="display: none;">목표까지 0만원 남음</div>
                 <div class="goal-progress-bar" id="goal-progress-bar"></div>
             </div>
             
-            <div class="goal-details" id="goal-details">
+            <div class="goal-details" id="goal-details" style="display: none;">
                 목표까지 <span id="remaining-amount">0</span>만원 남음
             </div>
             
@@ -317,6 +321,8 @@ class TotalGoalOverlay {
         this.donations = [];
         this.settings = {};
         this.dailyGoal = null;
+        this.textSwitchInterval = null;
+        this.isShowingAltText = false;
         
         this.initializeSocket();
         this.applySettings();
@@ -426,6 +432,56 @@ class TotalGoalOverlay {
         if (this.settings['total-goal-progress-text-size']) {
             document.documentElement.style.setProperty('--progress-text-size', this.settings['total-goal-progress-text-size'] + 'px');
         }
+        
+        // 텍스트 전환 설정
+        if (this.settings['total-goal-text-switch-enabled'] !== undefined) {
+            this.setupTextSwitching();
+        }
+        if (this.settings['total-goal-text-switch-interval']) {
+            document.documentElement.style.setProperty('--text-switch-interval', this.settings['total-goal-text-switch-interval']);
+        }
+    }
+    
+    setupTextSwitching() {
+        // 기존 인터벌 정리
+        if (this.textSwitchInterval) {
+            clearInterval(this.textSwitchInterval);
+            this.textSwitchInterval = null;
+        }
+        
+        // 텍스트 전환이 활성화된 경우
+        if (this.settings['total-goal-text-switch-enabled']) {
+            const intervalSeconds = parseInt(this.settings['total-goal-text-switch-interval']) || 5;
+            
+            this.textSwitchInterval = setInterval(() => {
+                this.switchProgressText();
+            }, intervalSeconds * 1000);
+            
+            console.log('🔄 텍스트 전환 활성화:', intervalSeconds, '초 간격');
+        } else {
+            // 텍스트 전환 비활성화 시 기본 텍스트만 표시
+            document.getElementById('progress-text').style.display = 'block';
+            document.getElementById('progress-text-alt').style.display = 'none';
+            this.isShowingAltText = false;
+            console.log('🔄 텍스트 전환 비활성화');
+        }
+    }
+    
+    switchProgressText() {
+        const mainText = document.getElementById('progress-text');
+        const altText = document.getElementById('progress-text-alt');
+        
+        if (this.isShowingAltText) {
+            // 퍼센트 텍스트 표시
+            mainText.style.display = 'block';
+            altText.style.display = 'none';
+            this.isShowingAltText = false;
+        } else {
+            // 남은 금액 텍스트 표시
+            mainText.style.display = 'none';
+            altText.style.display = 'block';
+            this.isShowingAltText = true;
+        }
     }
     
     
@@ -480,6 +536,17 @@ class TotalGoalOverlay {
         // 진행 바 텍스트 업데이트
         document.getElementById('progress-text').textContent = 
             `${formatNumber(currentAmount)} / ${formatNumber(targetAmount)}만원 (${Math.round(progressPercent)}%)`;
+        
+        // 대체 텍스트 업데이트 (남은 금액)
+        if (isOvertime) {
+            document.getElementById('progress-text-alt').textContent = 
+                `🎉 목표 달성! 초과: ${formatNumber(currentAmount - targetAmount)}만원`;
+        } else if (isCompleted) {
+            document.getElementById('progress-text-alt').textContent = '🎊 목표 달성 완료!';
+        } else {
+            document.getElementById('progress-text-alt').textContent = 
+                `목표까지 ${formatNumber(remainingAmount)}만원 남음`;
+        }
         
         // 상태에 따른 스타일 적용
         progressBar.className = 'goal-progress-bar';

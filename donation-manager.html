@@ -345,12 +345,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 
 <!-- 표시 옵션 -->
 <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
-<h6 style="margin: 0 0 10px 0; color: #333;">📋 표시 옵션</h6>
-<div style="display: flex; align-items: center; gap: 10px;">
+<h6 style="margin: 0 0 15px 0; color: #333;">📋 표시 옵션</h6>
+
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
 <label style="display: flex; align-items: center; font-weight: 500; cursor: pointer;">
 <input type="checkbox" id="total-goal-show-top-stats" checked style="margin-right: 8px; transform: scale(1.2);">
 진행바 위 글자 표시 (현재액 / 목표액 %)
 </label>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+<label style="display: flex; align-items: center; font-weight: 500; cursor: pointer;">
+<input type="checkbox" id="total-goal-text-switch-enabled" style="margin-right: 8px; transform: scale(1.2);">
+진행바 텍스트 자동 전환 (퍼센트 ⟷ 남은금액)
+</label>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px;">
+<label style="font-weight: 500;">전환 간격: <span id="text-switch-interval-value">5초</span></label>
+<input type="range" id="total-goal-text-switch-interval" min="3" max="30" value="5" style="flex: 1;" disabled>
 </div>
 </div>
 
@@ -5343,6 +5356,9 @@ function loadTotalGoalSettings() {
     
     // 표시 옵션 로드
     document.getElementById('total-goal-show-top-stats').checked = settings['total-goal-show-top-stats'] !== false; // 기본값: true
+    document.getElementById('total-goal-text-switch-enabled').checked = settings['total-goal-text-switch-enabled'] || false; // 기본값: false
+    document.getElementById('total-goal-text-switch-interval').value = settings['total-goal-text-switch-interval'] || 5;
+    document.getElementById('total-goal-text-switch-interval').disabled = !settings['total-goal-text-switch-enabled'];
     
     // 크기 설정 로드
     document.getElementById('total-goal-title-size').value = parseInt(settings['total-goal-title-font-size']) || 24;
@@ -5355,6 +5371,7 @@ function bindTotalGoalSliderUpdates() {
     const sliders = [
         { id: 'total-goal-bg-opacity', suffix: '%', valueId: 'bg-opacity-value' },
         { id: 'total-goal-text-outline-width', suffix: 'px', valueId: 'text-outline-width-value' },
+        { id: 'total-goal-text-switch-interval', suffix: '초', valueId: 'text-switch-interval-value' },
         { id: 'total-goal-title-size', suffix: 'px', valueId: 'total-goal-title-size-value' },
         { id: 'total-goal-stats-size', suffix: 'px', valueId: 'total-goal-stats-size-value' },
         { id: 'total-goal-progress-height', suffix: 'px', valueId: 'total-goal-progress-height-value' },
@@ -5383,6 +5400,16 @@ function bindTotalGoalSliderUpdates() {
     if (autoExtendCheckbox && extendAmountInput) {
         autoExtendCheckbox.addEventListener('change', function() {
             extendAmountInput.disabled = !this.checked;
+        });
+    }
+    
+    // 텍스트 전환 체크박스 이벤트
+    const textSwitchCheckbox = document.getElementById('total-goal-text-switch-enabled');
+    const textSwitchIntervalInput = document.getElementById('total-goal-text-switch-interval');
+    
+    if (textSwitchCheckbox && textSwitchIntervalInput) {
+        textSwitchCheckbox.addEventListener('change', function() {
+            textSwitchIntervalInput.disabled = !this.checked;
         });
     }
 }
@@ -5414,6 +5441,8 @@ function saveTotalGoalSettings() {
             'total-goal-text-outline-width': document.getElementById('total-goal-text-outline-width').value,
             'total-goal-text-outline-color': document.getElementById('total-goal-text-outline-color').value,
             'total-goal-show-top-stats': document.getElementById('total-goal-show-top-stats').checked,
+            'total-goal-text-switch-enabled': document.getElementById('total-goal-text-switch-enabled').checked,
+            'total-goal-text-switch-interval': document.getElementById('total-goal-text-switch-interval').value,
             'total-goal-title-font-size': document.getElementById('total-goal-title-size').value,
             'total-goal-stats-font-size': document.getElementById('total-goal-stats-size').value,
             'total-goal-progress-height': document.getElementById('total-goal-progress-height').value,
@@ -5460,6 +5489,9 @@ function resetTotalGoalSettings() {
         document.getElementById('total-goal-text-outline-width').value = 1;
         document.getElementById('total-goal-text-outline-color').value = '#000000';
         document.getElementById('total-goal-show-top-stats').checked = true;
+        document.getElementById('total-goal-text-switch-enabled').checked = false;
+        document.getElementById('total-goal-text-switch-interval').value = 5;
+        document.getElementById('total-goal-text-switch-interval').disabled = true;
         document.getElementById('total-goal-title-size').value = 24;
         document.getElementById('total-goal-stats-size').value = 20;
         document.getElementById('total-goal-progress-height').value = 30;
