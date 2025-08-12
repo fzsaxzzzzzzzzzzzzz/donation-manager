@@ -549,6 +549,16 @@ io.on('connection', (socket) => {
     io.emit('userCount', io.sockets.sockets.size);
   });
   
+  // 데이터 요청 처리 (미션 그래프 오버레이용)
+  socket.on('requestData', () => {
+    console.log('📊 클라이언트 데이터 요청:', socket.id);
+    socket.emit('dataUpdate', {
+      ...currentData,
+      missions: currentData.missions || [],
+      runningMissions: currentData.runningMissions || []
+    });
+  });
+  
   // ping/pong으로 연결 상태 확인
   socket.on('ping', () => {
     socket.emit('pong');
