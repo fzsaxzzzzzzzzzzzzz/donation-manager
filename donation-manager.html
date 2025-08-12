@@ -196,10 +196,42 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 <div class="tab-content" id="mission-tab">
-<div id="mission-settings" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
-<div style="display: flex; gap: 10px; margin-top: 15px;">
-<button onclick="saveAllMissions()" class="btn btn-primary" id="save-mission-btn" style="flex: 1;">모든 목표 저장</button>
-<button onclick="stopAllMissions()" class="btn btn-danger" id="stop-all-missions-btn" style="flex: 1;">🛑 일괄 중지</button>
+<div style="margin-bottom: 20px;">
+<h4 style="margin-bottom: 15px;">🎯 퇴근미션 관리</h4>
+
+<!-- 새 미션 생성 -->
+<div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+<h5 style="margin-bottom: 10px;">🎄 새 퇴근미션 생성</h5>
+<div style="display: flex; gap: 10px; align-items: end;">
+<div style="flex: 1;">
+<label style="display: block; margin-bottom: 5px; font-weight: 600;">스트리머</label>
+<select id="mission-streamer" class="form-select">
+<option value="">선택하세요</option>
+</select>
+</div>
+<div style="flex: 1;">
+<label style="display: block; margin-bottom: 5px; font-weight: 600;">목표액 (만원)</label>
+<input type="number" id="mission-target" class="form-input" placeholder="100" step="1" min="1">
+</div>
+<div style="flex: 2;">
+<label style="display: block; margin-bottom: 5px; font-weight: 600;">설명 (선택사항)</label>
+<input type="text" id="mission-description" class="form-input" placeholder="퇴근미션 설명">
+</div>
+<button onclick="createMission()" class="btn btn-success" style="height: 40px;">➕ 생성</button>
+</div>
+</div>
+
+<!-- 진행중인 미션 목록 -->
+<div style="background: #fff; border: 1px solid #dee2e6; border-radius: 8px;">
+<div style="background: #495057; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0;">
+<h5 style="margin: 0;">🏃‍♂️ 진행중인 미션</h5>
+</div>
+<div id="running-missions-list" style="padding: 15px;">
+<div class="no-missions" style="text-align: center; color: #6c757d; padding: 20px;">
+진행중인 퇴근미션이 없습니다.
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="tab-content" id="overlay-tab">
@@ -832,6 +864,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 let streamers = ['엄삼용','손덕배','연기','주옥','불곰','이효팔','동동','남붕','옥긔','국고'];
 let emojis = {'엄삼용': '🫅', '손덕배':'🌺', '연기': '🐧', '동동': '😎', '주옥': '👺', '불곰':'🎬', '이효팔': '🏝', '남붕': '🤠', '옥긔':'🦆', '국고':'🏦'};
 let donations = [], missionData = {}, user = { email: 'local@user.com', isAdmin: false };
+let currentData = { missions: [], runningMissions: [] };
 let currentPassword = '2749'; // 관리자 전용 비밀번호
 let isAdminVerified = false; // 관리자 인증 상태
 let autoSaveEnabled = true, selectedRows = new Set(), todayDonors = new Set();
@@ -871,6 +904,7 @@ function initializeRealtimeConnection() {
             donations = data.donations || [];
             streamers = data.streamers || streamers;
             emojis = data.emojis || emojis;
+            currentData = data; // 전체 데이터 저장
             
             // 서버 설정을 UI에 적용
             if (data.settings) {
@@ -886,6 +920,7 @@ function initializeRealtimeConnection() {
             console.log('🔄 [관리자] 실시간 데이터 업데이트 수신:', data);
             console.log('🔄 [관리자] 수신된 후원 데이터:', data.donations?.length || 0, '건');
             donations = data.donations || [];
+            currentData = data; // 전체 데이터 저장 (미션 포함)
             
             // 설정도 함께 업데이트 (중복 이벤트 방지)
             if (data.settings) {
@@ -1511,6 +1546,8 @@ function updateAllUI() {
     updateStreamerInputs();
     updateStreamerList();
     updateMissionSettingsUI();
+    updateRunningMissionsList();
+    updateMissionSummary();
     updateTable();
     updateSummary();
     updateQuickAddForm();
@@ -1902,19 +1939,28 @@ function updateDetailedSummaryTable() {
 }
 
 function updateMissionSettingsUI() { 
-    const container = document.getElementById('mission-settings'); 
-    if (!container) return; 
-    const missionStreamers = (streamers || []).filter(s => s !== '국고'); 
-    container.innerHTML = missionStreamers.map(streamer => { 
-        const mission = missionData[streamer] || {}; 
-        const isRunning = mission.status === 'running'; 
-        return `<div style="border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 10px;"><label class="form-label" style="font-weight: bold;">${emojis[streamer] || ''} ${streamer}</label><div style="display: flex; gap: 10px; align-items: center;"><input type="number" step="0.1" class="form-input" id="mission-target-${streamer}" placeholder="목표액(만)" value="${mission.target || ''}" style="flex: 1;"><button class="btn ${isRunning ? 'btn-danger' : 'btn-success'}" onclick="toggleMission('${streamer}')">${isRunning ? '🛑 중지' : '🚀 시작'}</button></div></div>`; 
-    }).join(''); 
+    // 스트리머 선택 드롭다운 업데이트
+    const missionStreamerSelect = document.getElementById('mission-streamer');
+    if (missionStreamerSelect) {
+        const currentValue = missionStreamerSelect.value;
+        missionStreamerSelect.innerHTML = '<option value="">선택하세요</option>' + 
+            streamers.map(streamer => 
+                `<option value="${streamer}">${emojis[streamer] || ''}${streamer}</option>`
+            ).join('');
+        if (streamers.includes(currentValue)) {
+            missionStreamerSelect.value = currentValue;
+        }
+    }
 }
 
 function updateMissionSummary() {
     const container = document.getElementById('mission-summary-output'); if (!container) return;
-    const runningMissions = Object.values(missionData).filter(m => streamers.includes(m.streamer) && (m.status === 'running' || m.status === 'success'));
+    
+    // 새로운 API 형식의 미션 데이터 사용
+    const runningMissions = (currentData && currentData.missions) ? 
+        currentData.missions.filter(m => m.status === 'running') : 
+        Object.values(missionData).filter(m => streamers.includes(m.streamer) && (m.status === 'running' || m.status === 'success'));
+    
     if (runningMissions.length === 0) { container.textContent = '진행 중인 미션이 없습니다.'; return; }
     
     const totalMissionAmount = runningMissions.reduce((total, mission) => {
@@ -1969,6 +2015,65 @@ function updateMissionSummary() {
     
     // 목표치 그래프 업데이트
     updateMissionProgressGraph(sortedMissions);
+}
+
+// 진행중인 미션 목록 업데이트
+function updateRunningMissionsList() {
+    const container = document.getElementById('running-missions-list');
+    if (!container) return;
+    
+    // 서버에서 받은 미션 데이터 사용
+    const runningMissions = (currentData && currentData.missions) ? 
+        currentData.missions.filter(m => m.status === 'running') : [];
+    
+    if (runningMissions.length === 0) {
+        container.innerHTML = `
+            <div class="no-missions" style="text-align: center; color: #6c757d; padding: 20px;">
+                진행중인 퇴근미션이 없습니다.
+            </div>`;
+        return;
+    }
+    
+    container.innerHTML = runningMissions.map(mission => {
+        // 해당 미션의 후원 계산
+        const missionDonations = donations.filter(d => 
+            d.streamer === mission.streamer && 
+            new Date(d.time) >= new Date(mission.startTime)
+        );
+        const currentAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+        const progressPercent = Math.min((currentAmount / mission.target) * 100, 100);
+        const remaining = Math.max(0, mission.target - currentAmount);
+        
+        return `
+            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <strong style="font-size: 16px;">${emojis[mission.streamer] || ''}${mission.streamer}</strong>
+                        <div style="font-size: 12px; color: #6c757d;">${mission.description || '퇴근미션'}</div>
+                    </div>
+                    <button onclick="deleteMission('${mission.id}')" class="btn btn-danger btn-sm">
+                        🗑️ 삭제
+                    </button>
+                </div>
+                
+                <div style="margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                        <span>현재: ${currentAmount}만원</span>
+                        <span>목표: ${mission.target}만원</span>
+                    </div>
+                    <div style="font-size: 12px; color: #28a745;">진행률: ${Math.round(progressPercent)}%</div>
+                </div>
+                
+                <div style="background: #e9ecef; border-radius: 10px; height: 8px; overflow: hidden;">
+                    <div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; width: ${progressPercent}%; transition: width 0.3s ease;"></div>
+                </div>
+                
+                ${remaining > 0 ? 
+                    `<div style="font-size: 12px; color: #dc3545; margin-top: 5px;">${remaining}만원 남음</div>` : 
+                    `<div style="font-size: 12px; color: #28a745; margin-top: 5px;">✅ 목표 달성!</div>`
+                }
+            </div>`;
+    }).join('');
 }
 
 // 퇴근미션 목표치 그래프 업데이트
@@ -5004,6 +5109,70 @@ async function sendToYouTubeOAuth(message) {
         return false;
     }
 }
+
+// 미션 관리 함수들
+async function createMission() {
+    const streamer = document.getElementById('mission-streamer').value;
+    const target = document.getElementById('mission-target').value;
+    const description = document.getElementById('mission-description').value;
+    
+    if (!streamer || !target) {
+        showStatus('스트리머와 목표액을 입력하세요', 'error');
+        return;
+    }
+    
+    if (parseFloat(target) <= 0) {
+        showStatus('목표액은 0보다 커야 합니다', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/missions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ streamer, target, description })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus(`✅ ${streamer}의 퇴근미션이 시작되었습니다! (목표: ${target}만원)`, 'success');
+            // 입력 필드 초기화
+            document.getElementById('mission-streamer').value = '';
+            document.getElementById('mission-target').value = '';
+            document.getElementById('mission-description').value = '';
+        } else {
+            showStatus(`❌ 미션 생성 실패: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('미션 생성 실패:', error);
+        showStatus('❌ 서버 오류로 미션 생성에 실패했습니다', 'error');
+    }
+}
+
+async function deleteMission(missionId) {
+    if (!confirm('정말로 이 퇴근미션을 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/missions/${missionId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('✅ 퇴근미션이 삭제되었습니다', 'success');
+        } else {
+            showStatus(`❌ 미션 삭제 실패: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('미션 삭제 실패:', error);
+        showStatus('❌ 서버 오류로 미션 삭제에 실패했습니다', 'error');
+    }
+}
+
 </script>
 </body>
 </html>

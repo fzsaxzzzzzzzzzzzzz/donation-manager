@@ -20,7 +20,7 @@ body {
 
 .overlay-container {
     background: transparent;
-    max-width: 600px;
+    max-width: 400px;
     width: 100%;
     margin: 0 auto;
 }
@@ -28,8 +28,8 @@ body {
 /* 미션 그래프 컨테이너 */
 .mission-graph-container {
     background: rgba(0, 0, 0, var(--graph-opacity, 0.8));
-    border-radius: 15px;
-    padding: 20px;
+    border-radius: 12px;
+    padding: 15px;
     border: 2px solid var(--graph-border-color, #42b72a);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(5px);
@@ -37,10 +37,10 @@ body {
 
 .mission-title {
     text-align: center;
-    font-size: var(--title-font-size, 24px);
+    font-size: var(--title-font-size, 18px);
     font-weight: bold;
     color: var(--title-color, #ffffff);
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
@@ -48,8 +48,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
-    font-size: var(--stats-font-size, 18px);
+    margin-bottom: 8px;
+    font-size: var(--stats-font-size, 14px);
     font-weight: bold;
 }
 
@@ -66,13 +66,13 @@ body {
 /* 진행도 바 */
 .mission-progress-container {
     width: 100%;
-    height: var(--progress-height, 30px);
+    height: var(--progress-height, 20px);
     background: linear-gradient(90deg, #2c2c2c 0%, #404040 100%);
-    border-radius: 15px;
+    border-radius: 10px;
     overflow: hidden;
     border: 2px solid #555;
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .mission-progress-bar {
@@ -80,7 +80,7 @@ body {
     background: linear-gradient(90deg, var(--progress-start-color, #42b72a) 0%, var(--progress-mid-color, #56c946) 50%, var(--progress-end-color, #6bd464) 100%);
     width: 0%;
     transition: width 1s ease-in-out;
-    border-radius: 13px;
+    border-radius: 8px;
     position: relative;
     box-shadow: 0 2px 10px rgba(66, 183, 42, 0.5);
 }
@@ -93,7 +93,7 @@ body {
     right: 0;
     bottom: 0;
     background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
-    border-radius: 13px;
+    border-radius: 8px;
     animation: shine 2s infinite;
 }
 
@@ -121,10 +121,10 @@ body {
 
 /* 미션 상세 정보 */
 .mission-details {
-    font-size: var(--details-font-size, 14px);
+    font-size: var(--details-font-size, 12px);
     color: var(--details-color, #cccccc);
     text-align: center;
-    line-height: 1.4;
+    line-height: 1.3;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
@@ -156,21 +156,21 @@ body {
 :root {
     --graph-opacity: 0.8;
     --graph-border-color: #42b72a;
-    --title-font-size: 24px;
+    --title-font-size: 18px;
     --title-color: #ffffff;
-    --stats-font-size: 18px;
+    --stats-font-size: 14px;
     --progress-color: #42b72a;
     --amount-color: #ffffff;
-    --progress-height: 30px;
+    --progress-height: 20px;
     --progress-start-color: #42b72a;
     --progress-mid-color: #56c946;
     --progress-end-color: #6bd464;
     --complete-start-color: #ffd700;
     --complete-mid-color: #ffed4e;
     --complete-end-color: #fff176;
-    --details-font-size: 14px;
+    --details-font-size: 12px;
     --details-color: #cccccc;
-    --no-mission-font-size: 18px;
+    --no-mission-font-size: 16px;
     --no-mission-color: #888888;
 }
 </style>
@@ -304,56 +304,55 @@ class MissionGraphOverlay {
             return;
         }
         
-        console.log('✅ 미션 있음 - 그래프 표시');
-        this.showMissions();
+        console.log('✅ 미션 있음 - 개별 진행도 표시');
+        this.showIndividualMissions(runningMissions);
+    }
+    
+    showIndividualMissions(missions) {
+        document.getElementById('no-mission-message').style.display = 'none';
+        document.getElementById('mission-content').style.display = 'block';
         
-        // 총 목표액과 현재 달성액 계산
-        let totalTarget = 0;
-        let totalCurrent = 0;
-        const missionDetails = [];
+        // 제목 업데이트
+        document.getElementById('mission-title').textContent = '🎯 퇴근미션 현황';
         
-        runningMissions.forEach(mission => {
+        // 개별 미션들을 한 줄씩 표시
+        const missionBars = missions.map(mission => {
             const target = parseFloat(mission.target) || 0;
             const missionDonations = this.donations.filter(d => 
                 d.streamer === mission.streamer && 
                 new Date(d.time) >= new Date(mission.startTime)
             );
             const currentAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
-            
-            totalTarget += target;
-            totalCurrent += currentAmount;
-            
-            // 미션 상태 업데이트
-            if (currentAmount >= target && mission.status === 'running') {
-                mission.status = 'success';
-            }
-            
+            const progressPercent = target > 0 ? Math.min((currentAmount / target) * 100, 100) : 0;
+            const isCompleted = progressPercent >= 100;
             const emoji = this.emojis[mission.streamer] || '';
-            const status = mission.status === 'success' ? '성공!' : `${Math.max(0, parseFloat(target - currentAmount))}만 남음`;
-            missionDetails.push(`${emoji}${mission.streamer}: ${parseFloat(currentAmount)}/${parseFloat(target)}만 (${status})`);
-        });
+            
+            return `
+                <div style="margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                        <span style="font-size: 14px; font-weight: bold;">${emoji}${mission.streamer}</span>
+                        <span style="font-size: 12px;">${Math.round(progressPercent)}% (${currentAmount}/${target}만)</span>
+                    </div>
+                    <div style="background: #2c2c2c; border-radius: 8px; height: 12px; overflow: hidden;">
+                        <div style="
+                            height: 100%; 
+                            width: ${progressPercent}%; 
+                            background: ${isCompleted ? 'linear-gradient(90deg, #ffd700, #ffed4e)' : 'linear-gradient(90deg, #42b72a, #56c946)'};
+                            transition: width 0.8s ease;
+                            border-radius: 8px;
+                        "></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
         
-        // 진행률 계산
-        const progressPercentage = totalTarget > 0 ? Math.min((totalCurrent / totalTarget) * 100, 100) : 0;
-        const isCompleted = progressPercentage >= 100;
-        
-        // UI 업데이트
-        document.getElementById('progress-percentage').textContent = `진행률: ${Math.round(progressPercentage)}%`;
-        document.getElementById('amount-text').textContent = `${parseFloat(totalCurrent)} / ${parseFloat(totalTarget)} 만원`;
-        
-        // 진행도 바 업데이트
-        const progressBar = document.getElementById('mission-progress-bar');
-        progressBar.style.width = `${progressPercentage}%`;
-        
-        // 완료 효과
-        if (isCompleted && !progressBar.classList.contains('completed')) {
-            progressBar.classList.add('completed');
-        } else if (!isCompleted) {
-            progressBar.classList.remove('completed');
-        }
-        
-        // 미션 상세 정보
-        document.getElementById('mission-details').textContent = missionDetails.join(' | ');
+        // 기존 UI 요소들을 새로운 개별 미션 바로 교체
+        document.getElementById('mission-content').innerHTML = `
+            <div class="mission-title" id="mission-title">🎯 퇴근미션 현황</div>
+            <div style="padding: 10px 0;">
+                ${missionBars}
+            </div>
+        `;
     }
     
     showError() {

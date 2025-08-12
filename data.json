@@ -1,8 +1,23 @@
 {
-  "donations": [],
+  "donations": [
+    {
+      "donor": "qa",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 50,
+      "time": "2025-08-12T12:05:10.941Z"
+    },
+    {
+      "donor": "ㅇ",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1,
+      "time": "2025-08-12T12:04:55.125Z"
+    }
+  ],
   "streamers": [
     "엄삼용",
-    "손덕배", 
+    "손덕배",
     "연기",
     "주옥",
     "불곰",
@@ -13,16 +28,68 @@
     "국고"
   ],
   "emojis": {
-    "엄삼용": "🫅", 
-    "손덕배": "🌺", 
-    "연기": "🐧", 
-    "동동": "😎", 
-    "주옥": "👺", 
-    "불곰": "🎬", 
-    "이효팔": "🏝", 
-    "남붕": "🤠", 
-    "옥긔": "🦆", 
+    "엄삼용": "🫅",
+    "손덕배": "🌺",
+    "연기": "🐧",
+    "동동": "😎",
+    "주옥": "👺",
+    "불곰": "🎬",
+    "이효팔": "🏝",
+    "남붕": "🤠",
+    "옥긔": "🦆",
     "국고": "🏦"
   },
-  "settings": {}
+  "missions": [
+    {
+      "id": "1755000267258",
+      "streamer": "엄삼용",
+      "target": 100,
+      "description": "엄삼용 퇴근미션",
+      "status": "running",
+      "startTime": "2025-08-12T12:04:27.258Z"
+    },
+    {
+      "id": "1755000412796",
+      "streamer": "남붕",
+      "target": 20,
+      "description": "남붕 퇴근미션",
+      "status": "running",
+      "startTime": "2025-08-12T12:06:52.796Z"
+    }
+  ],
+  "runningMissions": [
+    {
+      "id": "1755000267258",
+      "streamer": "엄삼용",
+      "target": 100,
+      "description": "엄삼용 퇴근미션",
+      "status": "running",
+      "startTime": "2025-08-12T12:04:27.258Z"
+    },
+    {
+      "id": "1755000412796",
+      "streamer": "남붕",
+      "target": 20,
+      "description": "남붕 퇴근미션",
+      "status": "running",
+      "startTime": "2025-08-12T12:06:52.796Z"
+    }
+  ],
+  "settings": {
+    "overlay-font-size": "24",
+    "overlay-stroke-width": "3",
+    "overlay-text-align": "left",
+    "table-opacity": "85",
+    "table-number-size": "16",
+    "table-font-size": "14",
+    "table-text-color": "white",
+    "hidden-streamers": "[]",
+    "group-threshold": "2",
+    "groupThreshold": 2,
+    "includeSuperchat": false,
+    "show-total-row": "true",
+    "show-update-time": "false",
+    "table-title": "🏆 스트리머별 후원 현황 🏆"
+  },
+  "lastUpdated": "2025-08-12T12:06:52.796Z"
 }

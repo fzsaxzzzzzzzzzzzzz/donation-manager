@@ -40,7 +40,8 @@ try {
 
 // 미들웨어
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static('.'));
 
 // 현재 데이터 저장소 (메모리 + 파일 백업)
@@ -55,7 +56,7 @@ let currentData = {
     "주옥": "👺", "불곰": "🎬", "이효팔": "🏝", "남붕": "🤠", 
     "옥긔": "🦆", "국고": "🏦"
   },
-  missions: {},
+  missions: [],
   runningMissions: [],
   settings: {
     "overlay-font-size": "24",
@@ -449,6 +450,112 @@ app.post('/api/force-reload', async (req, res) => {
   }
 });
 
+// 미션 관리 API
+app.post('/api/missions', async (req, res) => {
+  try {
+    const { streamer, target, description } = req.body;
+    
+    if (!streamer || !target) {
+      return res.status(400).json({ error: '스트리머와 목표액이 필요합니다.' });
+    }
+    
+    console.log('🔍 미션 생성 요청:', { streamer, target, description });
+    console.log('📋 현재 스트리머 목록:', currentData.streamers);
+    console.log('🔍 스트리머 비교:', streamer, '===', currentData.streamers[6]); // 동동 비교
+    console.log('🔍 문자열 길이:', streamer.length, 'vs', currentData.streamers[6].length);
+    
+    // 트림 처리 및 정규화
+    const normalizedStreamer = streamer.trim();
+    const foundStreamer = currentData.streamers.find(s => s.trim() === normalizedStreamer);
+    
+    if (!foundStreamer) {
+      return res.status(400).json({ error: '존재하지 않는 스트리머입니다.', availableStreamers: currentData.streamers });
+    }
+    
+    // 이미 진행중인 미션이 있는지 확인
+    const existingMission = currentData.missions.find(m => m.streamer === streamer && m.status === 'running');
+    if (existingMission) {
+      return res.status(400).json({ error: '이미 진행중인 미션이 있습니다.' });
+    }
+    
+    const newMission = {
+      id: Date.now().toString(),
+      streamer,
+      target: parseFloat(target),
+      description: description || `${streamer} 퇴근미션`,
+      status: 'running',
+      startTime: new Date().toISOString()
+    };
+    
+    currentData.missions.push(newMission);
+    currentData.runningMissions.push(newMission);
+    await saveData();
+    
+    // 모든 클라이언트에게 실시간 업데이트 전송
+    console.log(`🎯 [서버] 새 미션 생성: ${streamer} ${target}만원`);
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ success: true, mission: newMission });
+  } catch (error) {
+    console.error('미션 생성 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
+app.delete('/api/missions/:id', async (req, res) => {
+  try {
+    const missionId = req.params.id;
+    
+    const beforeCount = currentData.missions.length;
+    currentData.missions = currentData.missions.filter(m => m.id !== missionId);
+    currentData.runningMissions = currentData.runningMissions.filter(m => m.id !== missionId);
+    const afterCount = currentData.missions.length;
+    
+    if (beforeCount === afterCount) {
+      return res.status(404).json({ error: '미션을 찾을 수 없습니다.' });
+    }
+    
+    await saveData();
+    
+    // 모든 클라이언트에게 실시간 업데이트 전송
+    console.log(`🗑️ [서버] 미션 삭제: ${missionId}`);
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ success: true, message: '미션이 삭제되었습니다.' });
+  } catch (error) {
+    console.error('미션 삭제 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
+app.put('/api/missions/:id/complete', async (req, res) => {
+  try {
+    const missionId = req.params.id;
+    
+    const mission = currentData.missions.find(m => m.id === missionId);
+    if (!mission) {
+      return res.status(404).json({ error: '미션을 찾을 수 없습니다.' });
+    }
+    
+    mission.status = 'completed';
+    mission.completedTime = new Date().toISOString();
+    
+    // runningMissions에서 제거
+    currentData.runningMissions = currentData.runningMissions.filter(m => m.id !== missionId);
+    
+    await saveData();
+    
+    // 모든 클라이언트에게 실시간 업데이트 전송
+    console.log(`✅ [서버] 미션 완료: ${mission.streamer} ${mission.target}만원`);
+    io.emit('dataUpdate', currentData);
+    
+    res.json({ success: true, mission });
+  } catch (error) {
+    console.error('미션 완료 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
 // 설정 초기화 API (디버깅용)
 app.post('/api/reset-settings', async (req, res) => {
   try {
@@ -554,11 +661,7 @@ io.on('connection', (socket) => {
   // 데이터 요청 처리 (미션 그래프 오버레이용)
   socket.on('requestData', () => {
     console.log('📊 클라이언트 데이터 요청:', socket.id);
-    socket.emit('dataUpdate', {
-      ...currentData,
-      missions: currentData.missions || [],
-      runningMissions: currentData.runningMissions || []
-    });
+    socket.emit('dataUpdate', currentData);
   });
   
   // ping/pong으로 연결 상태 확인
