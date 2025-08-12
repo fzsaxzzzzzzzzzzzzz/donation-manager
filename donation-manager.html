@@ -657,6 +657,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
     <span style="font-size: 14px;">명 이상)</span>
     <button onclick="updateSummary()" class="btn btn-primary" style="font-size:12px; padding:4px 8px;">적용</button>
 </div>
+<div style="display: flex; gap: 10px; align-items: center; margin-bottom: 5px;">
+    <label style="font-size: 14px;"><input type="checkbox" id="include-superchat"> 슈퍼챗 포함</label>
+</div>
 <div class="copy-box" id="donor-total"></div>
 </div>
 <div>
@@ -1548,7 +1551,11 @@ function updateSummary() {
         }
         totalAmount += amount;
 
-        if (d.type === '계좌') {
+        // 슈퍼챗 포함 옵션 확인
+        const includeSuperchat = document.getElementById('include-superchat').checked;
+        const shouldInclude = d.type === '계좌' || (includeSuperchat && d.type === '슈퍼챗');
+        
+        if (shouldInclude) {
             // 스트리머별 조정은 제외, 후원자별 조정은 포함
             if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
                 // 스트리머별 조정 → 제외
@@ -1612,9 +1619,11 @@ function updateSummary() {
     document.getElementById('summary-output').textContent = summaryText;
     
     const groupThreshold = parseInt(document.getElementById('group-threshold').value, 10) || 1;
+    const includeSuperchat = document.getElementById('include-superchat').checked;
     
-    // 그룹화 임계값을 localStorage에 저장 (오버레이에서 사용)
+    // 설정을 localStorage에 저장 (오버레이에서 사용)
     localStorage.setItem('group-threshold', groupThreshold.toString());
+    localStorage.setItem('include-superchat', includeSuperchat.toString());
     
     // 서버에도 그룹화 임계값 저장 (서버 설정 적용 중이 아닐 때만)
     if (!isApplyingServerSettings) {
@@ -1623,9 +1632,12 @@ function updateSummary() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    settings: { groupThreshold: groupThreshold }
+                    settings: { 
+                        groupThreshold: groupThreshold,
+                        includeSuperchat: includeSuperchat
+                    }
                 })
-            }).catch(error => console.log('그룹화 설정 서버 저장 실패:', error));
+            }).catch(error => console.log('설정 서버 저장 실패:', error));
         } catch (error) {
             console.log('그룹화 설정 서버 저장 실패:', error);
         }
@@ -1644,7 +1656,7 @@ function updateSummary() {
     const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
     const donorTotalText = sortedGroups.map(([amount, donors]) => {
         const amountStr = `${parseFloat(amount)}만`;
-        if (donors.length >= groupThreshold && groupThreshold > 1) {
+        if (donors.length >= groupThreshold) {
             return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
         } else {
             return donors.map(d => `${d}님 ${amountStr}`).join('\n');
@@ -4060,6 +4072,12 @@ async function loadTableSettings() {
     const savedGroupThreshold = serverSettings?.groupThreshold || parseInt(localStorage.getItem('group-threshold') || '2');
     document.getElementById('group-threshold').value = savedGroupThreshold;
     localStorage.setItem('group-threshold', savedGroupThreshold.toString()); // 로컬에도 백업
+    
+    // 슈퍼챗 포함 설정 로드 (서버 설정 우선)
+    const savedIncludeSuperchat = serverSettings?.includeSuperchat !== undefined ? 
+        serverSettings.includeSuperchat : (localStorage.getItem('include-superchat') === 'true');
+    document.getElementById('include-superchat').checked = savedIncludeSuperchat;
+    localStorage.setItem('include-superchat', savedIncludeSuperchat.toString()); // 로컬에도 백업
     
     // 순번명 입력 필드 생성 및 로드
     updateRankInputs();
