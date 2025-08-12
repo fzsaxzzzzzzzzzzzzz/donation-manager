@@ -27,10 +27,10 @@ body {
 
 /* 미션 그래프 컨테이너 */
 .mission-graph-container {
-    background: rgba(0, 0, 0, var(--graph-opacity, 0.8));
+    background: rgba(var(--graph-bg-color-rgb, 0, 0, 0), var(--graph-opacity, 0.85));
     border-radius: 12px;
     padding: 15px;
-    border: 2px solid var(--graph-border-color, #42b72a);
+    border: var(--graph-border-width, 2px) solid var(--graph-border-color, #42b72a);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(5px);
 }
@@ -154,21 +154,24 @@ body {
 
 /* 설정 가능한 CSS 변수들 */
 :root {
-    --graph-opacity: 0.8;
+    --graph-opacity: 0.85;
+    --graph-bg-color: #000000;
     --graph-border-color: #42b72a;
-    --title-font-size: 18px;
+    --graph-border-width: 2px;
+    --title-font-size: 20px;
     --title-color: #ffffff;
-    --stats-font-size: 14px;
+    --stats-font-size: 16px;
     --progress-color: #42b72a;
     --amount-color: #ffffff;
     --progress-height: 20px;
+    --progress-bg-color: #2c2c2c;
     --progress-start-color: #42b72a;
     --progress-mid-color: #56c946;
     --progress-end-color: #6bd464;
     --complete-start-color: #ffd700;
     --complete-mid-color: #ffed4e;
     --complete-end-color: #fff176;
-    --details-font-size: 12px;
+    --details-font-size: 14px;
     --details-color: #cccccc;
     --no-mission-font-size: 16px;
     --no-mission-color: #888888;
@@ -330,16 +333,20 @@ class MissionGraphOverlay {
             return `
                 <div style="margin-bottom: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                        <span style="font-size: 14px; font-weight: bold;">${emoji}${mission.streamer}</span>
-                        <span style="font-size: 12px;">${Math.round(progressPercent)}% (${currentAmount}/${target}만)</span>
+                        <span style="font-size: var(--stats-font-size, 16px); font-weight: bold; color: var(--title-color, #ffffff);">${emoji}${mission.streamer}</span>
+                        <span style="font-size: var(--details-font-size, 14px); color: var(--amount-color, #ffffff); font-weight: bold;">${Math.round(progressPercent)}% (${currentAmount}/${target}만)</span>
                     </div>
-                    <div style="background: #2c2c2c; border-radius: 8px; height: 12px; overflow: hidden;">
+                    <div style="background: var(--progress-bg-color, #2c2c2c); border-radius: 8px; height: var(--progress-height, 20px); overflow: hidden; border: 1px solid #444;">
                         <div style="
                             height: 100%; 
                             width: ${progressPercent}%; 
-                            background: ${isCompleted ? 'linear-gradient(90deg, #ffd700, #ffed4e)' : 'linear-gradient(90deg, #42b72a, #56c946)'};
+                            background: ${isCompleted ? 
+                                'linear-gradient(90deg, var(--complete-start-color, #ffd700), var(--complete-mid-color, #ffed4e), var(--complete-end-color, #fff176))' : 
+                                'linear-gradient(90deg, var(--progress-start-color, #42b72a), var(--progress-mid-color, #56c946), var(--progress-end-color, #6bd464))'
+                            };
                             transition: width 0.8s ease;
-                            border-radius: 8px;
+                            border-radius: 7px;
+                            box-shadow: ${isCompleted ? '0 0 10px rgba(255, 215, 0, 0.5)' : '0 0 8px rgba(66, 183, 42, 0.3)'};
                         "></div>
                     </div>
                 </div>

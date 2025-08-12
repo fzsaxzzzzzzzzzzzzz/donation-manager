@@ -276,10 +276,95 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="openOverlay('graph')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
 <button onclick="copyOverlayURL('graph')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
 <button onclick="showQRCode('graph')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
+<button onclick="showMissionGraphSettings()" class="btn btn-warning" style="font-size: 12px; padding: 5px 10px;">🎨 설정</button>
 </div>
 </div>
 <div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
 <span id="graph-overlay-url">https://donation-manager-ufm1.onrender.com/mission-graph-overlay.html</span>
+</div>
+
+<!-- 미션 그래프 설정 패널 (숨김) -->
+<div id="mission-graph-settings" style="display: none; margin-top: 15px; padding: 15px; background: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 8px;">
+<h5 style="margin-bottom: 15px; color: #1565c0;">🎨 미션 그래프 오버레이 설정</h5>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+<!-- 배경 설정 -->
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">배경 투명도</label>
+<input type="range" id="graph-opacity" min="0" max="100" value="85" style="width: 100%;">
+<span id="graph-opacity-value">85%</span>
+</div>
+
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">배경 색상</label>
+<input type="color" id="graph-bg-color" value="#000000" style="width: 100%; height: 30px;">
+</div>
+
+<!-- 테두리 설정 -->
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">테두리 색상</label>
+<input type="color" id="graph-border-color" value="#42b72a" style="width: 100%; height: 30px;">
+</div>
+
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">테두리 두께</label>
+<input type="range" id="graph-border-width" min="0" max="10" value="2" style="width: 100%;">
+<span id="graph-border-width-value">2px</span>
+</div>
+
+<!-- 폰트 설정 -->
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">제목 크기</label>
+<input type="range" id="title-font-size" min="14" max="30" value="20" style="width: 100%;">
+<span id="title-font-size-value">20px</span>
+</div>
+
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">숫자 크기</label>
+<input type="range" id="stats-font-size" min="12" max="24" value="16" style="width: 100%;">
+<span id="stats-font-size-value">16px</span>
+</div>
+
+<!-- 진행도 바 설정 -->
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">진행도 바 높이</label>
+<input type="range" id="progress-height" min="15" max="40" value="20" style="width: 100%;">
+<span id="progress-height-value">20px</span>
+</div>
+
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">진행도 바 배경</label>
+<input type="color" id="progress-bg-color" value="#2c2c2c" style="width: 100%; height: 30px;">
+</div>
+
+<!-- 진행 중 색상 -->
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">진행중 시작색</label>
+<input type="color" id="progress-start-color" value="#42b72a" style="width: 100%; height: 30px;">
+</div>
+
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">진행중 끝색</label>
+<input type="color" id="progress-end-color" value="#6bd464" style="width: 100%; height: 30px;">
+</div>
+
+<!-- 완료 색상 -->
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">완료 시작색</label>
+<input type="color" id="complete-start-color" value="#ffd700" style="width: 100%; height: 30px;">
+</div>
+
+<div>
+<label style="display: block; font-weight: 600; margin-bottom: 5px;">완료 끝색</label>
+<input type="color" id="complete-end-color" value="#fff176" style="width: 100%; height: 30px;">
+</div>
+</div>
+
+<div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+<button onclick="applyMissionGraphSettings()" class="btn btn-success">✅ 적용</button>
+<button onclick="resetMissionGraphSettings()" class="btn btn-secondary">🔄 초기화</button>
+<button onclick="hideMissionGraphSettings()" class="btn btn-secondary">❌ 닫기</button>
+</div>
 </div>
 </div>
 
@@ -5107,6 +5192,108 @@ async function sendToYouTubeOAuth(message) {
         
         showStatus(`OAuth YouTube 전송 실패: ${errorMessage}`, 'error');
         return false;
+    }
+}
+
+// 미션 그래프 설정 관리
+function showMissionGraphSettings() {
+    const panel = document.getElementById('mission-graph-settings');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    
+    // 슬라이더 값 업데이트 함수 바인딩
+    bindSliderUpdates();
+}
+
+function hideMissionGraphSettings() {
+    document.getElementById('mission-graph-settings').style.display = 'none';
+}
+
+function bindSliderUpdates() {
+    const sliders = [
+        { id: 'graph-opacity', suffix: '%' },
+        { id: 'graph-border-width', suffix: 'px' },
+        { id: 'title-font-size', suffix: 'px' },
+        { id: 'stats-font-size', suffix: 'px' },
+        { id: 'progress-height', suffix: 'px' }
+    ];
+    
+    sliders.forEach(slider => {
+        const input = document.getElementById(slider.id);
+        const valueSpan = document.getElementById(`${slider.id}-value`);
+        
+        if (input && valueSpan) {
+            input.addEventListener('input', () => {
+                valueSpan.textContent = input.value + slider.suffix;
+            });
+        }
+    });
+}
+
+function applyMissionGraphSettings() {
+    const settings = {
+        'mission-graph-opacity': document.getElementById('graph-opacity').value,
+        'mission-graph-bg-color': document.getElementById('graph-bg-color').value,
+        'mission-graph-border-color': document.getElementById('graph-border-color').value,
+        'mission-graph-border-width': document.getElementById('graph-border-width').value,
+        'mission-title-font-size': document.getElementById('title-font-size').value,
+        'mission-stats-font-size': document.getElementById('stats-font-size').value,
+        'mission-progress-height': document.getElementById('progress-height').value,
+        'mission-progress-bg-color': document.getElementById('progress-bg-color').value,
+        'mission-progress-start-color': document.getElementById('progress-start-color').value,
+        'mission-progress-end-color': document.getElementById('progress-end-color').value,
+        'mission-complete-start-color': document.getElementById('complete-start-color').value,
+        'mission-complete-end-color': document.getElementById('complete-end-color').value
+    };
+    
+    // 서버에 설정 저장
+    saveMissionGraphSettings(settings);
+    showStatus('🎨 미션 그래프 설정이 적용되었습니다!', 'success');
+}
+
+function resetMissionGraphSettings() {
+    if (confirm('미션 그래프 설정을 초기화하시겠습니까?')) {
+        document.getElementById('graph-opacity').value = 85;
+        document.getElementById('graph-bg-color').value = '#000000';
+        document.getElementById('graph-border-color').value = '#42b72a';
+        document.getElementById('graph-border-width').value = 2;
+        document.getElementById('title-font-size').value = 20;
+        document.getElementById('stats-font-size').value = 16;
+        document.getElementById('progress-height').value = 20;
+        document.getElementById('progress-bg-color').value = '#2c2c2c';
+        document.getElementById('progress-start-color').value = '#42b72a';
+        document.getElementById('progress-end-color').value = '#6bd464';
+        document.getElementById('complete-start-color').value = '#ffd700';
+        document.getElementById('complete-end-color').value = '#fff176';
+        
+        // 값 표시 업데이트
+        bindSliderUpdates();
+        document.querySelectorAll('#mission-graph-settings input[type="range"]').forEach(input => {
+            input.dispatchEvent(new Event('input'));
+        });
+        
+        showStatus('🔄 미션 그래프 설정이 초기화되었습니다', 'success');
+    }
+}
+
+async function saveMissionGraphSettings(newSettings) {
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: newSettings })
+        });
+        
+        if (!response.ok) {
+            throw new Error('서버 응답 오류');
+        }
+        
+        const result = await response.json();
+        if (result.success) {
+            console.log('✅ 미션 그래프 설정 저장 성공:', newSettings);
+        }
+    } catch (error) {
+        console.error('❌ 미션 그래프 설정 저장 실패:', error);
+        showStatus('설정 저장에 실패했습니다', 'error');
     }
 }
 

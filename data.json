@@ -39,42 +39,8 @@
     "옥긔": "🦆",
     "국고": "🏦"
   },
-  "missions": [
-    {
-      "id": "1755000267258",
-      "streamer": "엄삼용",
-      "target": 100,
-      "description": "엄삼용 퇴근미션",
-      "status": "running",
-      "startTime": "2025-08-12T12:04:27.258Z"
-    },
-    {
-      "id": "1755000412796",
-      "streamer": "남붕",
-      "target": 20,
-      "description": "남붕 퇴근미션",
-      "status": "running",
-      "startTime": "2025-08-12T12:06:52.796Z"
-    }
-  ],
-  "runningMissions": [
-    {
-      "id": "1755000267258",
-      "streamer": "엄삼용",
-      "target": 100,
-      "description": "엄삼용 퇴근미션",
-      "status": "running",
-      "startTime": "2025-08-12T12:04:27.258Z"
-    },
-    {
-      "id": "1755000412796",
-      "streamer": "남붕",
-      "target": 20,
-      "description": "남붕 퇴근미션",
-      "status": "running",
-      "startTime": "2025-08-12T12:06:52.796Z"
-    }
-  ],
+  "missions": [],
+  "runningMissions": [],
   "settings": {
     "overlay-font-size": "24",
     "overlay-stroke-width": "3",
@@ -91,5 +57,5 @@
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆"
   },
-  "lastUpdated": "2025-08-12T12:06:52.796Z"
+  "lastUpdated": "2025-08-12T12:18:40.959Z"
 }
