@@ -314,8 +314,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <label style="display: block; font-weight: 600; margin-bottom: 5px;">
 <input type="checkbox" id="auto-extend-enabled" style="margin-right: 5px;"> 자동 목표 연장
 </label>
-<input type="number" id="extend-interval" placeholder="24" value="24" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
-<small style="color: #666;">시간 간격 (시간)</small>
+<input type="number" id="extend-amount" placeholder="50" value="50" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
+<small style="color: #666;">추가 금액 (만원)</small>
 </div>
 </div>
 
@@ -5308,8 +5308,8 @@ function loadTotalGoalSettings() {
     if (settings.dailyGoal) {
         document.getElementById('daily-goal-target').value = settings.dailyGoal.target || '';
         document.getElementById('auto-extend-enabled').checked = settings.dailyGoal.autoExtend || false;
-        document.getElementById('extend-interval').value = settings.dailyGoal.extendInterval || 24;
-        document.getElementById('extend-interval').disabled = !settings.dailyGoal.autoExtend;
+        document.getElementById('extend-amount').value = settings.dailyGoal.extendAmount || 50;
+        document.getElementById('extend-amount').disabled = !settings.dailyGoal.autoExtend;
     }
     
     // 색상 설정 로드
@@ -5347,11 +5347,11 @@ function bindTotalGoalSliderUpdates() {
     
     // 자동 연장 체크박스 이벤트
     const autoExtendCheckbox = document.getElementById('auto-extend-enabled');
-    const extendIntervalInput = document.getElementById('extend-interval');
+    const extendAmountInput = document.getElementById('extend-amount');
     
-    if (autoExtendCheckbox && extendIntervalInput) {
+    if (autoExtendCheckbox && extendAmountInput) {
         autoExtendCheckbox.addEventListener('change', function() {
-            extendIntervalInput.disabled = !this.checked;
+            extendAmountInput.disabled = !this.checked;
         });
     }
 }
@@ -5361,7 +5361,7 @@ function saveTotalGoalSettings() {
         // 목표 설정 수집
         const target = parseFloat(document.getElementById('daily-goal-target').value);
         const autoExtend = document.getElementById('auto-extend-enabled').checked;
-        const extendInterval = parseInt(document.getElementById('extend-interval').value) || 24;
+        const extendAmount = parseFloat(document.getElementById('extend-amount').value) || 50;
         
         if (!target || target <= 0) {
             showStatus('⚠️ 올바른 목표액을 입력해주세요', 'warning');
@@ -5373,7 +5373,7 @@ function saveTotalGoalSettings() {
             dailyGoal: {
                 target: target,
                 autoExtend: autoExtend,
-                extendInterval: extendInterval,
+                extendAmount: extendAmount,
                 createdDate: new Date().toISOString().split('T')[0]
             },
             
@@ -5419,8 +5419,8 @@ function resetTotalGoalSettings() {
         // 기본값으로 초기화
         document.getElementById('daily-goal-target').value = '';
         document.getElementById('auto-extend-enabled').checked = false;
-        document.getElementById('extend-interval').value = 24;
-        document.getElementById('extend-interval').disabled = true;
+        document.getElementById('extend-amount').value = 50;
+        document.getElementById('extend-amount').disabled = true;
         document.getElementById('total-goal-bg-color').value = '#1a1a1a';
         document.getElementById('total-goal-border-color').value = '#ff6b35';
         document.getElementById('total-goal-progress-color').value = '#ff6b35';

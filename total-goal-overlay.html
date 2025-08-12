@@ -27,12 +27,12 @@ body {
 
 /* 총액 목표 그래프 컨테이너 */
 .total-goal-container {
-    background: rgba(var(--graph-bg-color-rgb, 0, 0, 0), var(--graph-opacity, 0.85));
-    border-radius: 15px;
+    background: transparent;
+    border-radius: 0;
     padding: 20px;
-    border: var(--graph-border-width, 3px) solid var(--graph-border-color, #ff6b35);
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
 }
 
 .goal-title {
@@ -102,6 +102,22 @@ body {
     border-radius: 12px;
     position: relative;
     box-shadow: 0 3px 15px rgba(255, 107, 53, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: var(--progress-text-size, 16px);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    z-index: 10;
+    white-space: nowrap;
 }
 
 .goal-progress-bar::after {
@@ -263,6 +279,7 @@ body {
             </div>
             
             <div class="goal-progress-container">
+                <div class="progress-text" id="progress-text">0 / 0만원 (0%)</div>
                 <div class="goal-progress-bar" id="goal-progress-bar"></div>
             </div>
             
@@ -271,7 +288,7 @@ body {
             </div>
             
             <div class="auto-extend-info" id="auto-extend-info" style="display: none;">
-                자동 연장: <span id="extend-interval">24</span>시간마다
+                자동 연장: +<span id="extend-amount">50</span>만원씩
             </div>
         </div>
     </div>
@@ -326,6 +343,9 @@ class TotalGoalOverlay {
                 this.donations = data.donations || [];
                 this.settings = data.settings || {};
                 this.dailyGoal = data.settings?.dailyGoal || null;
+                
+                // 자동 연장 체크
+                this.checkAutoExtend();
                 
                 console.log('💰 후원 데이터:', this.donations.length, '건');
                 console.log('🎯 일일 목표:', this.dailyGoal);
@@ -431,6 +451,10 @@ class TotalGoalOverlay {
         const progressBar = document.getElementById('goal-progress-bar');
         progressBar.style.width = Math.min(progressPercent, 100) + '%';
         
+        // 진행 바 텍스트 업데이트
+        document.getElementById('progress-text').textContent = 
+            `${formatNumber(currentAmount)} / ${formatNumber(targetAmount)}만원 (${Math.round(progressPercent)}%)`;
+        
         // 상태에 따른 스타일 적용
         progressBar.className = 'goal-progress-bar';
         if (isOvertime) {
@@ -454,7 +478,7 @@ class TotalGoalOverlay {
         // 자동 연장 정보 표시
         if (this.dailyGoal.autoExtend) {
             document.getElementById('auto-extend-info').style.display = 'block';
-            document.getElementById('extend-interval').textContent = this.dailyGoal.extendInterval || '24';
+            document.getElementById('extend-amount').textContent = this.dailyGoal.extendAmount || '50';
         } else {
             document.getElementById('auto-extend-info').style.display = 'none';
         }
@@ -474,6 +498,45 @@ class TotalGoalOverlay {
         document.getElementById('error-message').style.display = 'none';
         document.getElementById('no-goal-message').style.display = 'block';
         document.getElementById('goal-content').style.display = 'none';
+    }
+    
+    checkAutoExtend() {
+        if (!this.dailyGoal || !this.dailyGoal.autoExtend) return;
+        
+        const currentAmount = this.getTodaysDonationTotal();
+        const targetAmount = parseFloat(this.dailyGoal.target) || 0;
+        const extendAmount = parseFloat(this.dailyGoal.extendAmount) || 50;
+        
+        // 목표 달성시 자동으로 목표치 추가
+        if (currentAmount >= targetAmount && targetAmount > 0) {
+            console.log('🎯 목표 달성! 자동 연장 실행:', extendAmount, '만원 추가');
+            
+            const newTarget = targetAmount + extendAmount;
+            
+            // 서버에 새로운 목표 저장
+            const settings = {
+                dailyGoal: {
+                    ...this.dailyGoal,
+                    target: newTarget
+                }
+            };
+            
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ 목표 자동 연장 성공:', newTarget, '만원');
+                    this.dailyGoal.target = newTarget;
+                }
+            })
+            .catch(error => {
+                console.error('❌ 목표 자동 연장 실패:', error);
+            });
+        }
     }
 }
 
