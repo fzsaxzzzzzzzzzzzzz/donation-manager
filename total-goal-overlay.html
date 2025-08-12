@@ -339,15 +339,34 @@ class TotalGoalOverlay {
             });
             
             this.socket.on('connect', () => {
-                console.log('🔗 총액 목표 오버레이 서버 연결 성공');
+                console.log('🔗 [총액그래프] 서버 연결 성공');
+                console.log('🔗 [총액그래프] 데이터 요청 전송 중...');
                 this.socket.emit('requestData');
                 
                 setTimeout(() => {
                     if (!this.dailyGoal) {
-                        console.log('⏰ 1초 후 목표 데이터 없음 - no-goal 표시');
+                        console.log('⏰ [총액그래프] 1초 후 목표 데이터 없음 - no-goal 표시');
                         this.updateDisplay();
                     }
                 }, 1000);
+            });
+            
+            this.socket.on('initialData', (data) => {
+                console.log('📊 [총액그래프] 초기 데이터 수신:', data);
+                console.log('📊 [총액그래프] 초기 후원 개수:', data.donations?.length || 0);
+                
+                this.donations = data.donations || [];
+                this.settings = data.settings || {};
+                this.dailyGoal = data.settings?.dailyGoal || null;
+                
+                const totalAmount = this.getTodaysDonationTotal();
+                console.log('💰 [총액그래프] 초기 총액:', totalAmount, '만원');
+                console.log('🎯 [총액그래프] 초기 목표:', this.dailyGoal);
+                
+                setTimeout(() => {
+                    this.updateDisplay();
+                    this.checkAutoExtend();
+                }, 100);
             });
             
             this.socket.on('disconnect', () => {
@@ -361,14 +380,24 @@ class TotalGoalOverlay {
             });
             
             this.socket.on('dataUpdate', (data) => {
-                console.log('📊 데이터 업데이트 수신:', data);
+                console.log('📊 [총액그래프] 데이터 업데이트 수신:', data);
+                console.log('📊 [총액그래프] 후원 개수:', data.donations?.length || 0);
+                console.log('📊 [총액그래프] 설정 데이터:', data.settings);
+                
+                // 데이터 업데이트 전후 비교
+                const beforeCount = this.donations.length;
+                const beforeTotal = this.getTodaysDonationTotal();
                 
                 this.donations = data.donations || [];
                 this.settings = data.settings || {};
                 this.dailyGoal = data.settings?.dailyGoal || null;
                 
-                console.log('💰 후원 데이터:', this.donations.length, '건');
-                console.log('🎯 일일 목표:', this.dailyGoal);
+                const afterCount = this.donations.length;
+                const afterTotal = this.getTodaysDonationTotal();
+                
+                console.log('💰 [총액그래프] 후원 변화:', beforeCount, '→', afterCount, '건');
+                console.log('💰 [총액그래프] 총액 변화:', beforeTotal, '→', afterTotal, '만원');
+                console.log('🎯 [총액그래프] 일일 목표:', this.dailyGoal);
                 
                 // 디스플레이 업데이트 후 자동 추가 체크
                 setTimeout(() => {
@@ -389,7 +418,42 @@ class TotalGoalOverlay {
             });
             
         } catch (error) {
-            console.error('❌ Socket.IO 초기화 실패:', error);
+            console.error('❌ [총액그래프] Socket.IO 초기화 실패:', error);
+            console.log('🔄 [총액그래프] API 폴백 모드로 전환');
+            this.fallbackToAPI();
+        }
+    }
+    
+    async fallbackToAPI() {
+        console.log('📡 [총액그래프] API 데이터 로드 시도');
+        try {
+            const response = await fetch('/api/data');
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📊 [총액그래프] API 데이터 수신:', data);
+                
+                this.donations = data.donations || [];
+                this.settings = data.settings || {};
+                this.dailyGoal = data.settings?.dailyGoal || null;
+                
+                const totalAmount = this.getTodaysDonationTotal();
+                console.log('💰 [총액그래프] API 총액:', totalAmount, '만원');
+                console.log('🎯 [총액그래프] API 목표:', this.dailyGoal);
+                
+                this.updateDisplay();
+                this.checkAutoExtend();
+                
+                // API 폴백 모드에서는 30초마다 갱신
+                setInterval(() => {
+                    this.fallbackToAPI();
+                }, 30000);
+            } else {
+                console.error('❌ [총액그래프] API 응답 실패:', response.status);
+                this.showError();
+            }
+        } catch (error) {
+            console.error('❌ [총액그래프] API 호출 실패:', error);
+            this.showError();
         }
     }
     
