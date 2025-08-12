@@ -279,9 +279,53 @@ class MissionGraphOverlay {
     }
     
     applySettings() {
-        // 서버 설정을 CSS 변수로 적용 (향후 확장용)
-        if (this.settings.missionGraphOpacity) {
-            document.documentElement.style.setProperty('--graph-opacity', this.settings.missionGraphOpacity / 100);
+        console.log('🎨 설정 적용 중:', this.settings);
+        
+        // 미션 그래프 오버레이 설정들을 CSS 변수로 적용
+        if (this.settings['mission-graph-opacity']) {
+            document.documentElement.style.setProperty('--graph-opacity', this.settings['mission-graph-opacity'] / 100);
+        }
+        if (this.settings['mission-graph-bg-color']) {
+            document.documentElement.style.setProperty('--graph-bg-color', this.settings['mission-graph-bg-color']);
+        }
+        if (this.settings['mission-graph-border-color']) {
+            document.documentElement.style.setProperty('--graph-border-color', this.settings['mission-graph-border-color']);
+        }
+        if (this.settings['mission-graph-border-width']) {
+            document.documentElement.style.setProperty('--graph-border-width', this.settings['mission-graph-border-width'] + 'px');
+        }
+        if (this.settings['mission-title-font-size']) {
+            document.documentElement.style.setProperty('--title-font-size', this.settings['mission-title-font-size'] + 'px');
+        }
+        if (this.settings['mission-stats-font-size']) {
+            document.documentElement.style.setProperty('--stats-font-size', this.settings['mission-stats-font-size'] + 'px');
+        }
+        if (this.settings['mission-progress-height']) {
+            document.documentElement.style.setProperty('--progress-height', this.settings['mission-progress-height'] + 'px');
+        }
+        if (this.settings['mission-progress-bg-color']) {
+            document.documentElement.style.setProperty('--progress-bg-color', this.settings['mission-progress-bg-color']);
+        }
+        if (this.settings['mission-progress-start-color']) {
+            document.documentElement.style.setProperty('--progress-start-color', this.settings['mission-progress-start-color']);
+        }
+        if (this.settings['mission-progress-mid-color']) {
+            document.documentElement.style.setProperty('--progress-mid-color', this.settings['mission-progress-mid-color']);
+        }
+        if (this.settings['mission-progress-end-color']) {
+            document.documentElement.style.setProperty('--progress-end-color', this.settings['mission-progress-end-color']);
+        }
+        if (this.settings['mission-complete-start-color']) {
+            document.documentElement.style.setProperty('--complete-start-color', this.settings['mission-complete-start-color']);
+        }
+        if (this.settings['mission-complete-mid-color']) {
+            document.documentElement.style.setProperty('--complete-mid-color', this.settings['mission-complete-mid-color']);
+        }
+        if (this.settings['mission-complete-end-color']) {
+            document.documentElement.style.setProperty('--complete-end-color', this.settings['mission-complete-end-color']);
+        }
+        if (this.settings['mission-details-font-size']) {
+            document.documentElement.style.setProperty('--details-font-size', this.settings['mission-details-font-size'] + 'px');
         }
     }
     
