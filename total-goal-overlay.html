@@ -55,7 +55,7 @@ body {
 }
 
 .goal-stats {
-    display: flex;
+    display: var(--stats-display, flex);
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
@@ -249,6 +249,7 @@ body {
     --text-outline-color: #000000;
     --title-font-size: 24px;
     --title-color: #ffffff;
+    --stats-display: flex;
     --stats-font-size: 20px;
     --percentage-font-size: 28px;
     --current-color: #4caf50;
@@ -405,6 +406,11 @@ class TotalGoalOverlay {
         }
         if (this.settings['total-goal-text-outline-color']) {
             document.documentElement.style.setProperty('--text-outline-color', this.settings['total-goal-text-outline-color']);
+        }
+        
+        // 바 위 글자 표시/숨김 설정
+        if (this.settings['total-goal-show-top-stats'] !== undefined) {
+            document.documentElement.style.setProperty('--stats-display', this.settings['total-goal-show-top-stats'] ? 'flex' : 'none');
         }
         
         // 폰트 크기 설정
