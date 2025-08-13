@@ -601,83 +601,111 @@ class TotalGoalOverlay {
         const achievedGoals = this.dailyGoal.achievedGoals || [];
         const achievedCount = achievedGoals.length;
         
-        // UI 업데이트
-        document.getElementById('current-amount').textContent = formatNumber(currentAmount) + '만원';
+        // UI 업데이트 (안전한 요소 접근)
+        const currentAmountEl = document.getElementById('current-amount');
+        if (currentAmountEl) currentAmountEl.textContent = formatNumber(currentAmount) + '만원';
         
         // 목표 표시 (달성된 목표가 있으면 표시)
         const targetText = achievedCount > 0 ? 
             `${formatNumber(targetAmount)}만원 (${achievedCount}차 달성)` : 
             `${formatNumber(targetAmount)}만원`;
-        document.getElementById('target-amount').textContent = targetText;
+        const targetAmountEl = document.getElementById('target-amount');
+        if (targetAmountEl) targetAmountEl.textContent = targetText;
         
-        document.getElementById('progress-percentage').textContent = Math.round(progressPercent) + '%';
-        document.getElementById('remaining-amount').textContent = formatNumber(remainingAmount);
+        const progressPercentageEl = document.getElementById('progress-percentage');
+        if (progressPercentageEl) progressPercentageEl.textContent = Math.round(progressPercent) + '%';
         
-        // 진행도 바 업데이트
+        const remainingAmountEl = document.getElementById('remaining-amount');
+        if (remainingAmountEl) remainingAmountEl.textContent = formatNumber(remainingAmount);
+        
+        // 진행도 바 업데이트 (안전한 요소 접근)
         const progressBar = document.getElementById('goal-progress-bar');
-        progressBar.style.width = Math.min(progressPercent, 100) + '%';
+        if (progressBar) progressBar.style.width = Math.min(progressPercent, 100) + '%';
         
         // 진행 바 텍스트 업데이트 (달성 횟수 포함)
         const progressText = achievedCount > 0 ? 
             `${formatNumber(currentAmount)} / ${formatNumber(targetAmount)}만원 (${Math.round(progressPercent)}%) [${achievedCount}차 달성]` :
             `${formatNumber(currentAmount)} / ${formatNumber(targetAmount)}만원 (${Math.round(progressPercent)}%)`;
-        document.getElementById('progress-text').textContent = progressText;
+        const progressTextEl = document.getElementById('progress-text');
+        if (progressTextEl) progressTextEl.textContent = progressText;
         
-        // 대체 텍스트 업데이트 (남은 금액)
-        if (isOvertime) {
-            document.getElementById('progress-text-alt').textContent = 
-                `🎉 목표 달성! 초과: ${formatNumber(currentAmount - targetAmount)}만원`;
-        } else if (isCompleted) {
-            document.getElementById('progress-text-alt').textContent = '🎊 목표 달성 완료!';
-        } else {
-            document.getElementById('progress-text-alt').textContent = 
-                `목표까지 ${formatNumber(remainingAmount)}만원 남음`;
+        // 대체 텍스트 업데이트 (안전한 요소 접근)
+        const progressTextAltEl = document.getElementById('progress-text-alt');
+        if (progressTextAltEl) {
+            if (isOvertime) {
+                progressTextAltEl.textContent = `🎉 목표 달성! 초과: ${formatNumber(currentAmount - targetAmount)}만원`;
+            } else if (isCompleted) {
+                progressTextAltEl.textContent = '🎊 목표 달성 완료!';
+            } else {
+                progressTextAltEl.textContent = `목표까지 ${formatNumber(remainingAmount)}만원 남음`;
+            }
         }
         
-        // 상태에 따른 스타일 적용
-        progressBar.className = 'goal-progress-bar';
-        if (isOvertime) {
-            progressBar.classList.add('overtime');
-        } else if (isCompleted) {
-            progressBar.classList.add('completed');
+        // 상태에 따른 스타일 적용 (안전한 요소 접근)
+        if (progressBar) {
+            progressBar.className = 'goal-progress-bar';
+            if (isOvertime) {
+                progressBar.classList.add('overtime');
+            } else if (isCompleted) {
+                progressBar.classList.add('completed');
+            }
         }
         
-        // 상세 정보 업데이트
-        if (isOvertime) {
-            document.getElementById('goal-details').innerHTML = 
-                `🎉 목표 달성! 초과 달성: <span style="color: #ffd700; font-weight: bold;">${formatNumber(currentAmount - targetAmount)}만원</span>`;
-        } else if (isCompleted) {
-            document.getElementById('goal-details').innerHTML = 
-                `🎊 목표 달성 완료!`;
-        } else {
-            document.getElementById('goal-details').innerHTML = 
-                `목표까지 <span id="remaining-amount">${formatNumber(remainingAmount)}</span>만원 남음`;
+        // 상세 정보 업데이트 (안전한 요소 접근)
+        const goalDetailsEl = document.getElementById('goal-details');
+        if (goalDetailsEl) {
+            if (isOvertime) {
+                goalDetailsEl.innerHTML = `🎉 목표 달성! 초과 달성: <span style="color: #ffd700; font-weight: bold;">${formatNumber(currentAmount - targetAmount)}만원</span>`;
+            } else if (isCompleted) {
+                goalDetailsEl.innerHTML = `🎊 목표 달성 완료!`;
+            } else {
+                goalDetailsEl.innerHTML = `목표까지 <span id="remaining-amount">${formatNumber(remainingAmount)}</span>만원 남음`;
+            }
         }
         
-        // 자동 추가 정보 표시
+        // 자동 추가 정보 표시 (안전한 요소 접근)
         const isAutoExtendEnabled = this.dailyGoal.autoExtendEnabled || this.dailyGoal.autoExtend;
-        if (isAutoExtendEnabled) {
-            document.getElementById('auto-extend-info').style.display = 'block';
-            document.getElementById('extend-amount').textContent = this.dailyGoal.extendAmount || '50';
-        } else {
-            document.getElementById('auto-extend-info').style.display = 'none';
+        const autoExtendInfoEl = document.getElementById('auto-extend-info');
+        const extendAmountEl = document.getElementById('extend-amount');
+        
+        if (autoExtendInfoEl) {
+            if (isAutoExtendEnabled) {
+                autoExtendInfoEl.style.display = 'block';
+                if (extendAmountEl) extendAmountEl.textContent = this.dailyGoal.extendAmount || '50';
+            } else {
+                autoExtendInfoEl.style.display = 'none';
+            }
         }
     }
     
     showError() {
-        document.getElementById('loading-message').style.display = 'none';
-        document.getElementById('no-goal-data-message').style.display = 'none';
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('no-goal-message').style.display = 'block';
-        document.getElementById('goal-content').style.display = 'none';
+        const elements = [
+            { id: 'loading-message', display: 'none' },
+            { id: 'no-goal-data-message', display: 'none' },
+            { id: 'error-message', display: 'block' },
+            { id: 'no-goal-message', display: 'block' },
+            { id: 'goal-content', display: 'none' }
+        ];
+        
+        elements.forEach(({ id, display }) => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = display;
+        });
     }
     
     showNoGoal() {
-        document.getElementById('loading-message').style.display = 'none';
-        document.getElementById('no-goal-data-message').style.display = 'block';
-        document.getElementById('error-message').style.display = 'none';
-        document.getElementById('no-goal-message').style.display = 'block';
-        document.getElementById('goal-content').style.display = 'none';
+        const elements = [
+            { id: 'loading-message', display: 'none' },
+            { id: 'no-goal-data-message', display: 'block' },
+            { id: 'error-message', display: 'none' },
+            { id: 'no-goal-message', display: 'block' },
+            { id: 'goal-content', display: 'none' }
+        ];
+        
+        elements.forEach(({ id, display }) => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = display;
+        });
     }
     
     checkAutoExtend() {
