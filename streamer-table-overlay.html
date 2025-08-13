@@ -368,17 +368,23 @@ class RealtimeStreamerTable {
         });
         
         // 후원 데이터 집계
+        console.log('🔍 [디버그] totalOnlyMode:', this.totalOnlyMode);
+        console.log('🔍 [디버그] 후원 데이터 수:', this.data.donations?.length || 0);
+        
         (this.data.donations || []).forEach(d => {
             if (streamerData.hasOwnProperty(d.streamer)) {
                 const amountInWon = (parseFloat(d.amount) || 0) * 10000; // 만원 → 원 변환
+                console.log(`🔍 [디버그] ${d.streamer}: ${d.amount}만원 (${amountInWon}원)`);
                 
                 if (this.totalOnlyMode) {
                     // 총액만 모드: 모든 타입의 후원을 총액에 합산
                     streamerData[d.streamer].total += amountInWon;
+                    console.log(`✅ [총액모드] ${d.streamer} 총액: ${streamerData[d.streamer].total}원`);
                 } else {
                     // 일반 모드: 타입별로 분리 집계
                     if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
                     else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
+                    console.log(`📊 [일반모드] ${d.streamer} 계좌:${streamerData[d.streamer].account} 투네:${streamerData[d.streamer].toonation}`);
                 }
             }
         });
