@@ -289,6 +289,7 @@ class RealtimeStreamerTable {
             this.totalOnlyMode = true;
             const overlayContainer = document.getElementById('overlayContainer');
             overlayContainer.classList.add('total-only-mode');
+            console.log('로컬스토리지에서 총액만 모드 복원:', this.totalOnlyMode);
         }
     }
 
@@ -389,7 +390,7 @@ class RealtimeStreamerTable {
                 // 일반 모드: 계좌 + 투네로 총액 계산
                 data.total = data.account + data.toonation; 
             }
-            // 총액만 모드에서는 이미 total에 모든 후원이 합산되어 있음
+            // 총액만 모드에서는 이미 total에 모든 후원이 합산되어 있으므로 덮어쓰지 않음
             return data; 
         }).sort((a, b) => b.total - a.total);
 
