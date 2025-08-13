@@ -323,8 +323,36 @@ class TotalOnlyOverlay {
     }
 
     getRankDisplay(index) {
-        const ranks = ['👑왕자', '🤴귀족', '🧙‍♂️기사', '👨‍🌾농민', '🥺거지', '🐛벌레', '🐜개미', '💨먼지', '🪨흙'];
-        return ranks[index] || (index + 1).toString();
+        const rankNumber = index + 1;
+        
+        // 디버깅: 순위명 설정 확인
+        if (index === 0) {
+            console.log('🏆 순위명 설정 확인:', {
+                serverRankNames: this.settings.rankNames,
+                localStorage1: localStorage.getItem('rank-1-name'),
+                localStorage2: localStorage.getItem('rank-2-name'),
+                localStorage3: localStorage.getItem('rank-3-name')
+            });
+        }
+        
+        // 서버 설정에서 순번명 확인 (우선)
+        if (this.settings.rankNames && this.settings.rankNames[rankNumber]) {
+            console.log(`📛 서버 설정 사용: ${rankNumber}위 = ${this.settings.rankNames[rankNumber]}`);
+            return this.settings.rankNames[rankNumber].trim();
+        }
+        
+        // 로컬 설정에서 순번명 확인 (백업)
+        const customRankName = localStorage.getItem(`rank-${rankNumber}-name`);
+        if (customRankName && customRankName.trim() !== '') {
+            console.log(`📛 로컬스토리지 사용: ${rankNumber}위 = ${customRankName}`);
+            return customRankName.trim();
+        }
+        
+        // 기본 순위명 (하드코딩된 이모지)
+        const defaultRanks = ['👑왕자', '🤴귀족', '🧙‍♂️기사', '👨‍🌾농민', '🥺거지', '🐛벌레', '🐜개미', '💨먼지', '🪨흙'];
+        const defaultRank = defaultRanks[index] || rankNumber.toString();
+        console.log(`📛 기본 순위명 사용: ${rankNumber}위 = ${defaultRank}`);
+        return defaultRank;
     }
 
     showNoData() {
