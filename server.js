@@ -462,8 +462,7 @@ app.post('/api/missions', async (req, res) => {
     
     console.log('🔍 미션 생성 요청:', { streamer, target, description });
     console.log('📋 현재 스트리머 목록:', currentData.streamers);
-    console.log('🔍 스트리머 비교:', streamer, '===', currentData.streamers[6]); // 동동 비교
-    console.log('🔍 문자열 길이:', streamer.length, 'vs', currentData.streamers[6].length);
+    console.log('🔍 요청된 스트리머:', streamer, '(길이:', streamer.length + ')');
     
     // 트림 처리 및 정규화
     const normalizedStreamer = streamer.trim();
