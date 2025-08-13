@@ -282,9 +282,8 @@ class TotalOnlyOverlay {
             }
         });
 
-        // 총액 기준 정렬
+        // 총액 기준 정렬 (0원 스트리머도 포함)
         const sortedStreamers = Object.values(streamerData)
-            .filter(streamer => streamer.total > 0) // 후원이 있는 스트리머만
             .sort((a, b) => b.total - a.total);
 
         console.log('💰 계산된 스트리머 총액:', sortedStreamers.slice(0, 3).map(s => ({
