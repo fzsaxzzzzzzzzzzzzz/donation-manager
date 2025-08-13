@@ -367,18 +367,29 @@ class RealtimeStreamerTable {
             streamerData[s] = { name: s, account: 0, toonation: 0, total: 0 }; 
         });
         
-        // 후원 데이터 집계 (계좌/투네 분리)
+        // 후원 데이터 집계
         (this.data.donations || []).forEach(d => {
             if (streamerData.hasOwnProperty(d.streamer)) {
                 const amountInWon = (parseFloat(d.amount) || 0) * 10000; // 만원 → 원 변환
-                if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
-                else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
+                
+                if (this.totalOnlyMode) {
+                    // 총액만 모드: 모든 타입의 후원을 총액에 합산
+                    streamerData[d.streamer].total += amountInWon;
+                } else {
+                    // 일반 모드: 타입별로 분리 집계
+                    if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
+                    else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
+                }
             }
         });
         
-        // 총액 계산 후 정렬 (상세 테이블과 동일)
+        // 총액 계산 후 정렬
         let sortedStreamers = Object.values(streamerData).map(data => { 
-            data.total = data.account + data.toonation; 
+            if (!this.totalOnlyMode) {
+                // 일반 모드: 계좌 + 투네로 총액 계산
+                data.total = data.account + data.toonation; 
+            }
+            // 총액만 모드에서는 이미 total에 모든 후원이 합산되어 있음
             return data; 
         }).sort((a, b) => b.total - a.total);
 
