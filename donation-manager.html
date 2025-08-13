@@ -1938,7 +1938,7 @@ function updateSummary() {
     // 퇴근 미션 성공 결과 텍스트 생성
     let missionResultText = '';
     const runningMissions = (currentData && currentData.missions) ? 
-        currentData.missions.filter(m => m.status === 'running') : 
+        currentData.missions.filter(m => m.status === 'running' || m.status === 'completed') : 
         Object.values(missionData).filter(m => streamers.includes(m.streamer) && (m.status === 'running' || m.status === 'success'));
     
     if (runningMissions.length > 0) {
@@ -2169,7 +2169,7 @@ function updateDetailedSummaryTable() {
     
     // 퇴근미션 상태 계산
     const runningMissions = (currentData && currentData.missions) ? 
-        currentData.missions.filter(m => m.status === 'running' || m.status === 'success') : 
+        currentData.missions.filter(m => m.status === 'running' || m.status === 'completed') : 
         Object.values(missionData).filter(m => streamers.includes(m.streamer) && (m.status === 'running' || m.status === 'success'));
         
     runningMissions.forEach(mission => {
@@ -2261,9 +2261,9 @@ function updateMissionSettingsUI() {
 function updateMissionSummary() {
     const container = document.getElementById('mission-summary-output'); if (!container) return;
     
-    // 새로운 API 형식의 미션 데이터 사용
+    // 새로운 API 형식의 미션 데이터 사용 (완료된 미션도 포함)
     const runningMissions = (currentData && currentData.missions) ? 
-        currentData.missions.filter(m => m.status === 'running') : 
+        currentData.missions.filter(m => m.status === 'running' || m.status === 'completed') : 
         Object.values(missionData).filter(m => streamers.includes(m.streamer) && (m.status === 'running' || m.status === 'success'));
     
     if (runningMissions.length === 0) { container.textContent = '진행 중인 미션이 없습니다.'; return; }
