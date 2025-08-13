@@ -199,26 +199,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div style="margin-bottom: 20px;">
 <h4 style="margin-bottom: 15px;">🎯 퇴근미션 관리</h4>
 
-<!-- 새 미션 생성 -->
-<div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-<h5 style="margin-bottom: 10px;">🎄 새 퇴근미션 생성</h5>
-<div style="display: flex; gap: 10px; align-items: end;">
-<div style="flex: 1;">
-<label style="display: block; margin-bottom: 5px; font-weight: 600;">스트리머</label>
-<select id="mission-streamer" class="form-select">
-<option value="">선택하세요</option>
-</select>
-</div>
-<div style="flex: 1;">
-<label style="display: block; margin-bottom: 5px; font-weight: 600;">목표액 (만원)</label>
-<input type="number" id="mission-target" class="form-input" placeholder="100" step="1" min="1">
-</div>
-<div style="flex: 2;">
-<label style="display: block; margin-bottom: 5px; font-weight: 600;">설명 (선택사항)</label>
-<input type="text" id="mission-description" class="form-input" placeholder="퇴근미션 설명">
-</div>
-<button onclick="createMission()" class="btn btn-success" style="height: 40px;">➕ 생성</button>
-</div>
+<!-- 퇴근미션 수동 관리 안내 -->
+<div style="background: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+<h5 style="margin-bottom: 10px; color: #1565c0;">📝 퇴근미션 수동 관리</h5>
+<p style="margin: 0; font-size: 14px; color: #1976d2;">
+퇴근미션은 챗봇으로 전송하여 관리합니다. 아래 "📤 챗봇 전송" 버튼을 사용하세요.
+</p>
 </div>
 
 
@@ -269,20 +255,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
-<!-- 퇴근미션 그래프 섹션 -->
-<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-<strong>🎯 퇴근미션 그래프 오버레이</strong>
-<div style="display: flex; gap: 8px;">
-<button onclick="openOverlay('graph')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
-<button onclick="copyOverlayURL('graph')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
-<button onclick="showQRCode('graph')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
-<button onclick="showMissionGraphSettings()" class="btn btn-warning" style="font-size: 12px; padding: 5px 10px;">🎨 설정</button>
-</div>
-</div>
-<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
-<span id="graph-overlay-url">https://donation-manager-ufm1.onrender.com/mission-graph-overlay.html</span>
-</div>
 
 <!-- 총액 목표 그래프 오버레이 섹션 -->
 <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f0f8ff;">
@@ -2213,18 +2185,6 @@ function updateDetailedSummaryTable() {
 }
 
 function updateMissionSettingsUI() { 
-    // 스트리머 선택 드롭다운 업데이트 (미션 생성용)
-    const missionStreamerSelect = document.getElementById('mission-streamer');
-    if (missionStreamerSelect) {
-        const currentValue = missionStreamerSelect.value;
-        missionStreamerSelect.innerHTML = '<option value="">선택하세요</option>' + 
-            streamers.map(streamer => 
-                `<option value="${streamer}">${emojis[streamer] || ''}${streamer}</option>`
-            ).join('');
-        if (streamers.includes(currentValue)) {
-            missionStreamerSelect.value = currentValue;
-        }
-    }
     
 }
 
@@ -5689,45 +5649,7 @@ async function saveMissionGraphSettings(newSettings) {
     }
 }
 
-// 미션 관리 함수들
-async function createMission() {
-    const streamer = document.getElementById('mission-streamer').value;
-    const target = document.getElementById('mission-target').value;
-    const description = document.getElementById('mission-description').value;
-    
-    if (!streamer || !target) {
-        showStatus('스트리머와 목표액을 입력하세요', 'error');
-        return;
-    }
-    
-    if (parseFloat(target) <= 0) {
-        showStatus('목표액은 0보다 커야 합니다', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/missions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ streamer, target, description })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showStatus(`✅ ${streamer}의 퇴근미션이 시작되었습니다! (목표: ${target}만원)`, 'success');
-            // 입력 필드 초기화
-            document.getElementById('mission-streamer').value = '';
-            document.getElementById('mission-target').value = '';
-            document.getElementById('mission-description').value = '';
-        } else {
-            showStatus(`❌ 미션 생성 실패: ${result.error}`, 'error');
-        }
-    } catch (error) {
-        console.error('미션 생성 실패:', error);
-        showStatus('❌ 서버 오류로 미션 생성에 실패했습니다', 'error');
-    }
-}
+// 미션 관리 함수들 (사용 안함 - 챗봇 전송만 사용)
 
 
 async function deleteMission(missionId) {
