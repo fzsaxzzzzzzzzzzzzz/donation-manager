@@ -14,9 +14,9 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: transparent;
-    color: white;
+    color: var(--table-text-color, white);
     overflow: hidden;
-    font-size: 14px;
+    font-size: var(--table-font-size, 14px);
 }
 
 .overlay-container {
@@ -25,7 +25,7 @@ body {
     max-width: 600px;
     width: calc(100vw - 40px);
     min-width: 300px;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, calc(var(--table-opacity, 85) / 100));
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -34,7 +34,7 @@ body {
 }
 
 .section-title {
-    font-size: 20px;
+    font-size: calc(var(--table-font-size, 14px) + 6px);
     font-weight: bold;
     margin-bottom: 15px;
     color: #FFD700;
@@ -44,18 +44,6 @@ body {
     text-align: center;
 }
 
-.total-summary {
-    text-align: center;
-    font-size: 16px;
-    font-weight: bold;
-    color: #FFD700;
-    background: rgba(255,215,0,0.1);
-    padding: 10px;
-    border-radius: 8px;
-    border: 2px solid #FFD700;
-    margin-bottom: 15px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-}
 
 .streamer-table {
     width: 100%;
@@ -70,7 +58,7 @@ body {
     text-align: center;
     font-weight: bold;
     border-bottom: 2px solid #FFD700;
-    font-size: 14px;
+    font-size: var(--table-font-size, 14px);
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
 
@@ -78,8 +66,8 @@ body {
     padding: 10px 8px;
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.1);
-    font-size: 14px;
-    color: white;
+    font-size: var(--table-font-size, 14px);
+    color: var(--table-text-color, white);
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
 
@@ -90,7 +78,7 @@ body {
 .rank-number {
     font-weight: bold;
     color: #FFD700;
-    font-size: 16px;
+    font-size: calc(var(--table-number-size, 16px) * 1px);
 }
 
 .rank-1 .rank-number { color: #FFD700; }
@@ -150,11 +138,7 @@ body {
 <body>
 
 <div class="overlay-container">
-    <div class="section-title">🏆 스트리머별 후원 현황 🏆</div>
-    
-    <div class="total-summary" id="totalSummary">
-        총 후원액: ₩0 (0건)
-    </div>
+    <div class="section-title" id="tableTitle">🏆 스트리머별 후원 현황 🏆</div>
     
     <table class="streamer-table">
         <thead>
@@ -181,6 +165,7 @@ class TotalOnlyOverlay {
     constructor() {
         this.socket = io();
         this.data = null;
+        this.settings = {};
         this.isConnected = false;
         
         this.initializeSocketEvents();
@@ -202,14 +187,27 @@ class TotalOnlyOverlay {
 
         this.socket.on('initialData', (data) => {
             this.data = data;
+            this.settings = data.settings || {};
+            this.applySettings();
             this.renderTable();
             console.log('📊 초기 데이터 수신:', data.donations?.length || 0, '건');
         });
 
         this.socket.on('dataUpdate', (data) => {
             this.data = data;
+            // 설정 데이터가 포함된 경우 설정도 업데이트
+            if (data.settings) {
+                this.settings = { ...this.settings, ...data.settings };
+                this.applySettings();
+            }
             this.renderTable();
             console.log('🔄 데이터 업데이트:', data.donations?.length || 0, '건');
+        });
+
+        this.socket.on('settingsUpdate', (settings) => {
+            this.settings = settings;
+            this.applySettings();
+            this.renderTable();
         });
     }
 
@@ -219,6 +217,29 @@ class TotalOnlyOverlay {
             indicator.classList.remove('disconnected');
         } else {
             indicator.classList.add('disconnected');
+        }
+    }
+
+    applySettings() {
+        const root = document.documentElement;
+        
+        // CSS 변수 설정 (문자열을 숫자로 변환)
+        const fontSize = parseInt(this.settings['table-font-size']) || 14;
+        const numberSize = parseInt(this.settings['table-number-size']) || 16;
+        const textColor = this.settings['table-text-color'] || 'white';
+        const opacity = parseInt(this.settings['table-opacity']) || 85;
+        
+        root.style.setProperty('--table-font-size', fontSize + 'px');
+        root.style.setProperty('--table-number-size', numberSize);
+        root.style.setProperty('--table-text-color', textColor);
+        root.style.setProperty('--table-opacity', opacity);
+        
+        console.log('🔧 총액만 오버레이 설정 적용됨:', { fontSize, numberSize, textColor, opacity });
+
+        // 테이블 제목 (서버 설정 우선)
+        const titleElement = document.getElementById('tableTitle');
+        if (titleElement) {
+            titleElement.textContent = this.settings.tableTitle || this.settings['table-title'] || '🏆 스트리머별 후원 현황 🏆';
         }
     }
 
@@ -237,7 +258,6 @@ class TotalOnlyOverlay {
         }
 
         this.displayTable(streamerTotals);
-        this.updateSummary(streamerTotals);
     }
 
     calculateStreamerTotals() {
@@ -307,18 +327,9 @@ class TotalOnlyOverlay {
         return ranks[index] || (index + 1).toString();
     }
 
-    updateSummary(streamerTotals) {
-        const totalAmount = streamerTotals.reduce((sum, streamer) => sum + streamer.total, 0);
-        const totalCount = this.data.donations?.length || 0;
-        
-        document.getElementById('totalSummary').innerHTML = 
-            `총 후원액: <strong>${totalAmount.toLocaleString('ko-KR')}원</strong> (${totalCount}건)`;
-    }
-
     showNoData() {
         const tbody = document.getElementById('streamerTableBody');
         tbody.innerHTML = '<tr><td colspan="3" class="no-data">아직 후원이 없습니다.</td></tr>';
-        document.getElementById('totalSummary').innerHTML = '총 후원액: ₩0 (0건)';
     }
 
     showNoConnection() {
