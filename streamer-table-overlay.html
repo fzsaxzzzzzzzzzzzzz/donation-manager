@@ -472,14 +472,16 @@ class RealtimeStreamerTable {
 
     updateSummary(streamerStats) {
         if (this.settings.showTotalRow ?? (this.settings['show-total-row'] === 'true')) {
-            const totalAccount = streamerStats.reduce((sum, stat) => sum + stat.account, 0);
-            const totalToonation = streamerStats.reduce((sum, stat) => sum + stat.toonation, 0);
-            const grandTotal = totalAccount + totalToonation;
-            
             if (this.totalOnlyMode) {
+                // 총액만 모드: total 필드의 합계 사용
+                const grandTotal = streamerStats.reduce((sum, stat) => sum + stat.total, 0);
                 document.getElementById('totalSummary').innerHTML = 
                     `총 후원액: <strong>${grandTotal.toLocaleString('ko-KR')}원</strong>`;
             } else {
+                // 일반 모드: 계좌 + 투네 합계 사용
+                const totalAccount = streamerStats.reduce((sum, stat) => sum + stat.account, 0);
+                const totalToonation = streamerStats.reduce((sum, stat) => sum + stat.toonation, 0);
+                const grandTotal = totalAccount + totalToonation;
                 document.getElementById('totalSummary').innerHTML = 
                     `총 후원액: <strong>${grandTotal.toLocaleString('ko-KR')}원</strong> (계좌: ${totalAccount.toLocaleString('ko-KR')}원, 투네: ${totalToonation.toLocaleString('ko-KR')}원)`;
             }
