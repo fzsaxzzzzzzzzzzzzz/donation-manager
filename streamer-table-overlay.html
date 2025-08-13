@@ -373,13 +373,13 @@ class RealtimeStreamerTable {
             if (streamerData.hasOwnProperty(d.streamer)) {
                 const amountInWon = (parseFloat(d.amount) || 0) * 10000; // 만원 → 원 변환
                 
+                // 모든 모드에서 account, toonation 각각 집계
+                if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
+                else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
+                
                 if (this.totalOnlyMode) {
                     // 총액만 모드: 모든 타입의 후원을 총액에 합산
                     streamerData[d.streamer].total += amountInWon;
-                } else {
-                    // 일반 모드: 타입별로 분리 집계
-                    if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
-                    else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
                 }
             }
         });
@@ -402,6 +402,11 @@ class RealtimeStreamerTable {
             total: data.total,
             emoji: this.data.emojis?.[data.name] || ''
         }));
+        
+        // 디버깅: 총액만 모드일 때 결과 확인
+        if (this.totalOnlyMode) {
+            console.log('총액만 모드 - 계산된 스트리머 통계:', result.slice(0, 3));
+        }
         
         return result;
     }
