@@ -438,10 +438,13 @@ class RealtimeStreamerTable {
 
     displayStreamerTable(streamerStats) {
         const tbody = document.getElementById('streamerTableBody');
+        console.log('🎨 테이블 렌더링 시작 - totalOnlyMode:', this.totalOnlyMode);
+        console.log('🎨 스트리머 통계 개수:', streamerStats.length);
         
         if (streamerStats.length === 0) {
             const colspan = this.totalOnlyMode ? '3' : '5';
             tbody.innerHTML = `<tr><td colspan="${colspan}" class="no-data">표시할 스트리머가 없습니다.</td></tr>`;
+            console.log('❌ 스트리머 통계가 비어있음');
             return;
         }
 
@@ -462,9 +465,16 @@ class RealtimeStreamerTable {
             
             html += `<td class="amount total-column">${stat.total.toLocaleString('ko-KR')}</td>`;
             html += `</tr>`;
+            
+            if (index === 0) {
+                console.log(`🎨 첫 번째 행 HTML:`, html);
+                console.log(`🎨 첫 번째 스트리머 total:`, stat.total);
+            }
         });
         
+        console.log('🎨 생성된 HTML 길이:', html.length);
         tbody.innerHTML = html;
+        console.log('✅ 테이블 렌더링 완료');
     }
 
     getRankName(index) {
