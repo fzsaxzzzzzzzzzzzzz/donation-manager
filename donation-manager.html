@@ -278,6 +278,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
+<!-- 총액만 전용 오버레이 섹션 -->
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f0f8ff;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+<strong>💰 총액만 전용 오버레이 <span style="color: #42b72a; font-size: 12px; font-weight: normal;">[NEW]</span></strong>
+<div style="display: flex; gap: 8px;">
+<button onclick="openOverlay('total-only')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
+<button onclick="copyOverlayURL('total-only')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
+<button onclick="showQRCode('total-only')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
+</div>
+</div>
+
+<div style="background: #e8f5e8; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 12px; color: #2d5a2d;">
+<strong>✨ 추천!</strong> 복잡한 설정 없이 바로 사용할 수 있는 총액만 표시 전용 오버레이입니다.
+</div>
+
+<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+<span id="total-only-overlay-url">https://donation-manager-ufm1.onrender.com/total-only-overlay.html</span>
+</div>
+</div>
+
 <!-- 퇴근미션 그래프 섹션 -->
 <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;">
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -4249,6 +4269,8 @@ function getOverlayURL(type) {
         return baseUrl + 'donor-overlay.html';
     } else if (type === 'table') {
         return baseUrl + 'streamer-table-overlay.html';
+    } else if (type === 'total-only') {
+        return baseUrl + 'total-only-overlay.html';
     } else if (type === 'graph') {
         return baseUrl + 'mission-graph-overlay.html';
     } else if (type === 'total-goal') {
@@ -4281,6 +4303,7 @@ function showQRCode(type) {
     const url = getOverlayURL(type);
     const typeName = type === 'donor' ? '후원자별 총액' : 
                      type === 'table' ? '스트리머 테이블' : 
+                     type === 'total-only' ? '총액만 전용' :
                      type === 'graph' ? '퇴근미션 그래프' : 
                      type === 'total-goal' ? '총액 목표' : '오버레이';
     
@@ -4321,7 +4344,8 @@ function showQRCode(type) {
 function openAllOverlays() {
     openOverlay('donor');
     setTimeout(() => openOverlay('table'), 500);
-    setTimeout(() => openOverlay('graph'), 1000); // 그래프 오버레이 추가
+    setTimeout(() => openOverlay('total-only'), 750);
+    setTimeout(() => openOverlay('graph'), 1000);
     showStatus('모든 오버레이가 새 창에서 열렸습니다!', 'info');
 }
 
