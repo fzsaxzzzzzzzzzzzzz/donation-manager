@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 후원 관리</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 500px;
+        }
+        
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .streamer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .streamer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .streamer-item input {
+            width: 80px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .status.success { background: #d4edda; color: #155724; display: block; }
+        .status.error { background: #f8d7da; color: #721c24; display: block; }
+        
+        .donation-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .donation-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .summary-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 첫 번째 패널: 후원 등록 -->
+        <div class="panel">
+            <h2>💰 후원 등록</h2>
+            
+            <div class="form-group">
+                <label class="form-label">후원자명</label>
+                <input type="text" id="donor-input" class="form-input" placeholder="후원자 이름">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">후원 타입</label>
+                <div style="display: flex; gap: 15px; margin-top: 5px;">
+                    <label><input type="radio" name="paytype" value="계좌" checked> 계좌</label>
+                    <label><input type="radio" name="paytype" value="투네"> 투네</label>
+                    <label><input type="radio" name="paytype" value="슈퍼챗"> 슈퍼챗</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">스트리머별 금액(만원)</label>
+                <div class="streamer-grid" id="streamer-inputs">
+                    <!-- 동적으로 생성됨 -->
+                </div>
+            </div>
+            
+            <button onclick="addDonation()" class="btn btn-success" style="width: 100%;">✨ 후원 등록</button>
+            
+            <div id="status" class="status"></div>
+        </div>
+        
+        <!-- 두 번째 패널: 후원 현황 -->
+        <div class="panel">
+            <h2>📊 후원 현황</h2>
+            
+            <div class="summary-box" id="summary-output">
+                로딩 중...
+            </div>
+            
+            <button onclick="copyToClipboard('summary-output')" class="btn btn-primary">📋 복사</button>
+            <button onclick="sendToChatbot()" class="btn btn-success">📤 챗봇 전송</button>
+            
+            <div style="margin-top: 20px;">
+                <h3>🎄 퇴근미션</h3>
+                <div class="summary-box" id="mission-output">
+                    진행 중인 미션이 없습니다.
+                </div>
+                <button onclick="sendMissionToChatbot()" class="btn btn-success">📤 미션 전송</button>
+            </div>
+        </div>
+        
+        <!-- 세 번째 패널: 후원 내역 -->
+        <div class="panel">
+            <h2>📝 후원 내역</h2>
+            
+            <button onclick="refreshData()" class="btn btn-primary">🔄 새로고침</button>
+            
+            <div class="donation-list" id="donation-list">
+                <!-- 동적으로 생성됨 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = { donations: [], streamers: [], emojis: {} };
+        let socket = null;
+        
+        // Socket.io 연결
+        function initializeSocket() {
+            try {
+                socket = io();
+                socket.on('connect', () => {
+                    console.log('✅ 서버 연결됨');
+                });
+                
+                socket.on('initialData', (data) => {
+                    console.log('📊 초기 데이터 수신:', data);
+                    currentData = data;
+                    updateUI();
+                });
+                
+                socket.on('dataUpdate', (data) => {
+                    console.log('🔄 데이터 업데이트:', data);
+                    currentData = data;
+                    updateUI();
+                });
+            } catch (error) {
+                console.error('Socket 초기화 실패:', error);
+                // 백업: HTTP로 데이터 로드
+                loadDataHTTP();
+            }
+        }
+        
+        // HTTP로 데이터 로드 (백업)
+        async function loadDataHTTP() {
+            try {
+                const response = await fetch('/api/data');
+                currentData = await response.json();
+                updateUI();
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+            }
+        }
+        
+        // UI 업데이트
+        function updateUI() {
+            updateStreamerInputs();
+            updateSummary();
+            updateDonationList();
+        }
+        
+        // 스트리머 입력 필드 생성
+        function updateStreamerInputs() {
+            const container = document.getElementById('streamer-inputs');
+            const streamers = currentData.streamers || [];
+            const emojis = currentData.emojis || {};
+            
+            container.innerHTML = streamers.map(streamer => `
+                <div class="streamer-item">
+                    <span>${emojis[streamer] || ''}${streamer}</span>
+                    <input type="number" id="amount-${streamer}" min="0" step="0.1" placeholder="0">
+                </div>
+            `).join('');
+        }
+        
+        // 요약 업데이트
+        function updateSummary() {
+            const donations = currentData.donations || [];
+            const streamers = currentData.streamers || [];
+            const emojis = currentData.emojis || {};
+            
+            // 스트리머별 총액 계산
+            const totals = {};
+            let grandTotal = 0;
+            
+            donations.forEach(d => {
+                if (d.excludeFromTotal || d.isMissionAdjustment) return;
+                
+                const amount = parseFloat(d.amount) || 0;
+                if (streamers.includes(d.streamer)) {
+                    totals[d.streamer] = (totals[d.streamer] || 0) + amount;
+                } else {
+                    totals['국고'] = (totals['국고'] || 0) + amount;
+                }
+                grandTotal += amount;
+            });
+            
+            // 요약 텍스트 생성
+            const summaryParts = streamers.map(streamer => 
+                `${emojis[streamer] || ''}${streamer}(${totals[streamer] || 0})`
+            );
+            
+            const summary = `🔥삼용스쿨🔥 | ${summaryParts.join(' ')} | 💵총합(${grandTotal})`;
+            
+            document.getElementById('summary-output').textContent = summary;
+        }
+        
+        // 후원 내역 업데이트
+        function updateDonationList() {
+            const donations = currentData.donations || [];
+            const container = document.getElementById('donation-list');
+            
+            const html = donations.slice(0, 20).map((d, index) => `
+                <div class="donation-item">
+                    <div>
+                        <strong>${d.donor}</strong> → ${d.streamer} 
+                        <span style="color: #666;">(${d.type})</span>
+                    </div>
+                    <div>
+                        ${d.amount}만원
+                        <button onclick="deleteDonation('${d.time}')" class="btn btn-danger" style="padding: 2px 6px; font-size: 12px; margin-left: 10px;">삭제</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html || '<div style="text-align: center; color: #666;">후원 내역이 없습니다.</div>';
+        }
+        
+        // 후원 추가
+        async function addDonation() {
+            const donor = document.getElementById('donor-input').value.trim();
+            const type = document.querySelector('input[name="paytype"]:checked').value;
+            
+            if (!donor) {
+                showStatus('후원자명을 입력하세요', 'error');
+                return;
+            }
+            
+            const amounts = {};
+            let totalAmount = 0;
+            
+            // 스트리머별 금액 수집
+            (currentData.streamers || []).forEach(streamer => {
+                const input = document.getElementById(`amount-${streamer}`);
+                const amount = parseFloat(input.value) || 0;
+                if (amount > 0) {
+                    amounts[streamer] = amount;
+                    totalAmount += amount;
+                }
+            });
+            
+            if (totalAmount === 0) {
+                showStatus('금액을 입력하세요', 'error');
+                return;
+            }
+            
+            // 각 스트리머별로 후원 등록
+            for (const [streamer, amount] of Object.entries(amounts)) {
+                try {
+                    const response = await fetch('/api/donations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ donor, streamer, type, amount })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('서버 오류');
+                    }
+                } catch (error) {
+                    showStatus(`${streamer} 후원 등록 실패: ${error.message}`, 'error');
+                    return;
+                }
+            }
+            
+            // 입력 필드 초기화
+            document.getElementById('donor-input').value = '';
+            document.querySelectorAll('#streamer-inputs input').forEach(input => input.value = '');
+            
+            showStatus('후원이 등록되었습니다!', 'success');
+        }
+        
+        // 후원 삭제
+        async function deleteDonation(donationId) {
+            if (!confirm('정말 삭제하시겠습니까?')) return;
+            
+            try {
+                const response = await fetch(`/api/donations/${donationId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showStatus('삭제되었습니다', 'success');
+                } else {
+                    showStatus('삭제 실패', 'error');
+                }
+            } catch (error) {
+                showStatus('삭제 실패: ' + error.message, 'error');
+            }
+        }
+        
+        // 상태 메시지 표시
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 클립보드 복사
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('복사되었습니다!', 'success');
+            });
+        }
+        
+        // 챗봇 전송 (더미)
+        function sendToChatbot() {
+            const summary = document.getElementById('summary-output').textContent;
+            console.log('챗봇으로 전송:', summary);
+            showStatus('챗봇으로 전송되었습니다!', 'success');
+        }
+        
+        function sendMissionToChatbot() {
+            showStatus('미션이 챗봇으로 전송되었습니다!', 'success');
+        }
+        
+        // 데이터 새로고침
+        function refreshData() {
+            if (socket && socket.connected) {
+                socket.emit('requestData');
+            } else {
+                loadDataHTTP();
+            }
+            showStatus('새로고침 완료!', 'success');
+        }
+        
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeSocket();
+        });
+    </script>
+</body>
+</html>

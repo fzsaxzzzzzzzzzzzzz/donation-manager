@@ -17,7 +17,7 @@ const io = socketIo(server, {
   allowEIO3: true
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Firebase Admin SDK 초기화
 let firebaseDB = null;
@@ -668,6 +668,13 @@ io.on('connection', (socket) => {
   // ping/pong으로 연결 상태 확인
   socket.on('ping', () => {
     socket.emit('pong');
+  });
+  
+  // 오버레이 총액만 모드 설정 처리
+  socket.on('overlayTotalOnlyMode', (isEnabled) => {
+    console.log('오버레이 총액만 모드 설정:', isEnabled);
+    // 모든 오버레이 클라이언트에게 전송
+    io.emit('overlayTotalOnlyMode', isEnabled);
   });
 });
 

@@ -162,11 +162,24 @@ body {
     font-size: calc(var(--table-font-size, 14px) + 2px);
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
+
+/* 총액만 모드에서 테이블 열 숨기기 */
+.total-only-mode .streamer-table th:nth-child(3),
+.total-only-mode .streamer-table th:nth-child(4),
+.total-only-mode .streamer-table td:nth-child(3),
+.total-only-mode .streamer-table td:nth-child(4) {
+    display: none;
+}
+
+.total-only-mode .streamer-table th:nth-child(5),
+.total-only-mode .streamer-table td:nth-child(5) {
+    width: 40%;
+}
 </style>
 </head>
 <body>
 
-<div class="overlay-container">
+<div class="overlay-container" id="overlayContainer">
     <div class="section-title" id="tableTitle">🏆 스트리머별 후원 현황 🏆</div>
     
     <div class="update-time" id="updateTime" style="display: none;">
@@ -182,9 +195,9 @@ body {
             <tr>
                 <th>순위</th>
                 <th>스트리머</th>
-                <th>계좌후원</th>
-                <th>투네후원</th>
-                <th>총 후원</th>
+                <th class="account-column">계좌후원</th>
+                <th class="toonation-column">투네후원</th>
+                <th class="total-column">총 후원</th>
             </tr>
         </thead>
         <tbody id="streamerTableBody">
@@ -207,9 +220,11 @@ class RealtimeStreamerTable {
         this.settings = {};
         this.isConnected = false;
         this.previousStreamerTotals = new Map();
+        this.totalOnlyMode = false;
         
         this.initializeSocketEvents();
         this.updateConnectionStatus();
+        this.initializeControls();
     }
 
     initializeSocketEvents() {
@@ -251,6 +266,30 @@ class RealtimeStreamerTable {
             this.applySettings();
             this.renderStreamerTable();
         });
+        
+        // 오버레이 총액만 모드 설정 받기
+        this.socket.on('overlayTotalOnlyMode', (isEnabled) => {
+            this.totalOnlyMode = isEnabled;
+            const overlayContainer = document.getElementById('overlayContainer');
+            
+            if (this.totalOnlyMode) {
+                overlayContainer.classList.add('total-only-mode');
+            } else {
+                overlayContainer.classList.remove('total-only-mode');
+            }
+            
+            this.renderStreamerTable();
+        });
+    }
+
+    initializeControls() {
+        // 로컬스토리지에서 초기 설정 복원
+        const savedMode = localStorage.getItem('overlayTotalOnlyMode');
+        if (savedMode === 'true') {
+            this.totalOnlyMode = true;
+            const overlayContainer = document.getElementById('overlayContainer');
+            overlayContainer.classList.add('total-only-mode');
+        }
     }
 
     updateConnectionStatus() {
@@ -369,7 +408,8 @@ class RealtimeStreamerTable {
         const tbody = document.getElementById('streamerTableBody');
         
         if (streamerStats.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="no-data">표시할 스트리머가 없습니다.</td></tr>';
+            const colspan = this.totalOnlyMode ? '3' : '5';
+            tbody.innerHTML = `<tr><td colspan="${colspan}" class="no-data">표시할 스트리머가 없습니다.</td></tr>`;
             return;
         }
 
@@ -382,9 +422,13 @@ class RealtimeStreamerTable {
             html += `<tr class="${rankClass}">`;
             html += `<td><span class="rank-number">${rankName}</span></td>`;
             html += `<td class="streamer-name">${stat.emoji} ${stat.streamer}</td>`;
-            html += `<td class="amount">${stat.account.toLocaleString('ko-KR')}</td>`;
-            html += `<td class="amount">${stat.toonation.toLocaleString('ko-KR')}</td>`;
-            html += `<td class="amount">${stat.total.toLocaleString('ko-KR')}</td>`;
+            
+            if (!this.totalOnlyMode) {
+                html += `<td class="amount account-column">${stat.account.toLocaleString('ko-KR')}</td>`;
+                html += `<td class="amount toonation-column">${stat.toonation.toLocaleString('ko-KR')}</td>`;
+            }
+            
+            html += `<td class="amount total-column">${stat.total.toLocaleString('ko-KR')}</td>`;
             html += `</tr>`;
         });
         
@@ -415,8 +459,13 @@ class RealtimeStreamerTable {
             const totalToonation = streamerStats.reduce((sum, stat) => sum + stat.toonation, 0);
             const grandTotal = totalAccount + totalToonation;
             
-            document.getElementById('totalSummary').innerHTML = 
-                `총 후원액: <strong>${grandTotal.toLocaleString('ko-KR')}원</strong> (계좌: ${totalAccount.toLocaleString('ko-KR')}원, 투네: ${totalToonation.toLocaleString('ko-KR')}원)`;
+            if (this.totalOnlyMode) {
+                document.getElementById('totalSummary').innerHTML = 
+                    `총 후원액: <strong>${grandTotal.toLocaleString('ko-KR')}원</strong>`;
+            } else {
+                document.getElementById('totalSummary').innerHTML = 
+                    `총 후원액: <strong>${grandTotal.toLocaleString('ko-KR')}원</strong> (계좌: ${totalAccount.toLocaleString('ko-KR')}원, 투네: ${totalToonation.toLocaleString('ko-KR')}원)`;
+            }
         }
     }
 
@@ -429,14 +478,16 @@ class RealtimeStreamerTable {
 
     showNoData() {
         const tbody = document.getElementById('streamerTableBody');
-        tbody.innerHTML = '<tr><td colspan="4" class="no-data">아직 후원이 없습니다.</td></tr>';
+        const colspan = this.totalOnlyMode ? '3' : '5';
+        tbody.innerHTML = `<tr><td colspan="${colspan}" class="no-data">아직 후원이 없습니다.</td></tr>`;
         
         document.getElementById('totalSummary').innerHTML = '총 후원액: ₩0 (0건)';
     }
 
     showNoConnection() {
         const tbody = document.getElementById('streamerTableBody');
-        tbody.innerHTML = '<tr><td colspan="4" class="no-data">서버 연결이 끊어졌습니다...</td></tr>';
+        const colspan = this.totalOnlyMode ? '3' : '5';
+        tbody.innerHTML = `<tr><td colspan="${colspan}" class="no-data">서버 연결이 끊어졌습니다...</td></tr>`;
     }
 }
 

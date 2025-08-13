@@ -264,6 +264,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="showQRCode('table')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
 </div>
 </div>
+
+<!-- 총액만 표시 설정 -->
+<div style="margin-bottom: 10px; padding: 10px; background: #e7f3ff; border-radius: 6px; border: 1px solid #b3d9ff;">
+<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1877f2; cursor: pointer;">
+<input type="checkbox" id="overlay-total-only-mode" style="width: 16px; height: 16px; cursor: pointer;"> 총액만 표시 (계좌/투네 열 숨기기)
+</label>
+<p style="font-size: 12px; color: #666; margin: 5px 0 0 24px;">체크하면 오버레이에서 계좌후원/투네후원 열이 숨겨지고 총합만 표시됩니다.</p>
+</div>
+
 <div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
 <span id="table-overlay-url">https://donation-manager-ufm1.onrender.com/streamer-table-overlay.html</span>
 </div>
@@ -1252,6 +1261,7 @@ async function initializeApp() {
         try { loadFromLocalStorage(); } catch (e) { console.error('로컬 스토리지 로드 실패:', e); }
         try { loadYouTubeSettings(); } catch (e) { console.error('YouTube 설정 로드 실패:', e); }
         try { loadOverlaySettings(); } catch (e) { console.error('오버레이 설정 로드 실패:', e); }
+        try { initializeOverlayControls(); } catch (e) { console.error('오버레이 컨트롤 초기화 실패:', e); }
         try { await loadTableSettings(); } catch (e) { console.error('테이블 설정 로드 실패:', e); }
         
         try { 
@@ -4494,6 +4504,37 @@ function loadOverlaySettings() {
     
     // 테이블 설정 로드
     loadTableSettings();
+}
+
+// --- 오버레이 컨트롤 초기화 ---
+function initializeOverlayControls() {
+    const totalOnlyCheckbox = document.getElementById('overlay-total-only-mode');
+    if (!totalOnlyCheckbox) return;
+    
+    // 로컬스토리지에서 설정 복원
+    const savedMode = localStorage.getItem('overlayTotalOnlyMode');
+    if (savedMode === 'true') {
+        totalOnlyCheckbox.checked = true;
+    }
+    
+    // 체크박스 이벤트 바인딩
+    totalOnlyCheckbox.addEventListener('change', function() {
+        const isChecked = this.checked;
+        
+        // 로컬스토리지에 저장
+        localStorage.setItem('overlayTotalOnlyMode', isChecked.toString());
+        
+        // Socket.IO로 모든 오버레이에 설정 전송
+        if (window.socket && window.socket.connected) {
+            window.socket.emit('overlayTotalOnlyMode', isChecked);
+            console.log('오버레이 총액만 모드:', isChecked);
+        }
+        
+        showStatus(
+            isChecked ? '오버레이가 총액만 표시 모드로 변경되었습니다.' : '오버레이가 전체 보기 모드로 변경되었습니다.', 
+            'success'
+        );
+    });
 }
 
 // --- 스트리머 총액 설정 관련 함수 ---
