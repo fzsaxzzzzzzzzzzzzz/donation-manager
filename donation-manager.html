@@ -986,9 +986,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 <!-- 목표치 진행도 그래프 -->
 <div style="margin-bottom: 15px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 14px;">
-        <span id="mission-progress-text">진행률: 0%</span>
-        <span id="mission-amount-text">0 / 0 만원</span>
+    <div style="text-align: center; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #495057;">
+        <span id="mission-remaining-text">목표까지 0만원 남음</span>
     </div>
     <div class="mission-progress-container">
         <div class="mission-progress-bar" id="mission-progress-bar"></div>
@@ -2400,23 +2399,31 @@ function updateMissionProgressGraph(missions) {
     
     const progressPercentage = totalTarget > 0 ? Math.min((totalCurrent / totalTarget) * 100, 100) : 0;
     const isCompleted = progressPercentage >= 100;
+    const remainingAmount = Math.max(0, totalTarget - totalCurrent);
     
-    // 진행률 텍스트 업데이트
-    document.getElementById('mission-progress-text').textContent = `진행률: ${Math.round(progressPercentage)}%`;
-    
-    // 금액 텍스트 업데이트
-    document.getElementById('mission-amount-text').textContent = 
-        `${parseFloat(totalCurrent)} / ${parseFloat(totalTarget)} 만원`;
+    // 남은 금액 텍스트 업데이트
+    const remainingText = document.getElementById('mission-remaining-text');
+    if (remainingText) {
+        if (isCompleted) {
+            remainingText.textContent = '🎉 미션 완료!';
+        } else if (totalTarget === 0) {
+            remainingText.textContent = '진행중인 미션 없음';
+        } else {
+            remainingText.textContent = `목표까지 ${remainingAmount}만원 남음`;
+        }
+    }
     
     // 진행도 바 업데이트
     const progressBar = document.getElementById('mission-progress-bar');
-    progressBar.style.width = `${progressPercentage}%`;
-    
-    // 완료 시 특별 효과
-    if (isCompleted && !progressBar.classList.contains('completed')) {
-        progressBar.classList.add('completed');
-    } else if (!isCompleted) {
-        progressBar.classList.remove('completed');
+    if (progressBar) {
+        progressBar.style.width = `${progressPercentage}%`;
+        
+        // 완료 시 특별 효과
+        if (isCompleted && !progressBar.classList.contains('completed')) {
+            progressBar.classList.add('completed');
+        } else if (!isCompleted) {
+            progressBar.classList.remove('completed');
+        }
     }
 }
 
