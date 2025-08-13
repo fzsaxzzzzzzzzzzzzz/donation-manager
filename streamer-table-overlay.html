@@ -269,6 +269,7 @@ class RealtimeStreamerTable {
         
         // 오버레이 총액만 모드 설정 받기
         this.socket.on('overlayTotalOnlyMode', (isEnabled) => {
+            console.log('🎯 오버레이 총액만 모드 설정 받음:', isEnabled);
             this.totalOnlyMode = isEnabled;
             const overlayContainer = document.getElementById('overlayContainer');
             
@@ -278,6 +279,7 @@ class RealtimeStreamerTable {
                 overlayContainer.classList.remove('total-only-mode');
             }
             
+            console.log('🔄 총액만 모드로 테이블 재렌더링 시작');
             this.renderStreamerTable();
         });
     }
@@ -358,6 +360,9 @@ class RealtimeStreamerTable {
     }
 
     calculateStreamerStats() {
+        console.log('📊 총액 계산 시작 - totalOnlyMode:', this.totalOnlyMode);
+        console.log('📊 전체 후원 데이터:', this.data.donations?.length || 0, '건');
+        
         // 상세 테이블과 동일한 로직 적용
         const hiddenStreamers = this.getHiddenStreamers();
         const summaryStreamers = (this.data.streamers || []).filter(s => s !== '국고' && s !== '후원자조정' && !hiddenStreamers.includes(s));
@@ -369,9 +374,11 @@ class RealtimeStreamerTable {
         });
         
         // 후원 데이터 집계
+        let processedCount = 0;
         (this.data.donations || []).forEach(d => {
             if (streamerData.hasOwnProperty(d.streamer)) {
                 const amountInWon = (parseFloat(d.amount) || 0) * 10000; // 만원 → 원 변환
+                processedCount++;
                 
                 // 모든 모드에서 account, toonation 각각 집계
                 if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
@@ -383,6 +390,8 @@ class RealtimeStreamerTable {
                 }
             }
         });
+        
+        console.log('📊 처리된 후원 건수:', processedCount);
         
         // 총액 계산 후 정렬
         let sortedStreamers = Object.values(streamerData).map(data => { 
