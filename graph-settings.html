@@ -485,6 +485,17 @@ body {
                 <button class="btn btn-secondary" onclick="resetTotalSettings()">🔄 기본값</button>
                 <button class="btn btn-primary" onclick="openTotalOverlay()">🔗 오버레이 열기</button>
             </div>
+            
+            <!-- 로컬 설정 관리 -->
+            <div class="section" style="background: #fff3cd; border-color: #ffc107; margin-top: 20px;">
+                <h4 style="color: #856404; margin-bottom: 15px;">💾 로컬 설정 관리</h4>
+                <p style="color: #856404; font-size: 14px; margin-bottom: 15px;">
+                    설정이 브라우저에 저장되어 새로고침해도 유지됩니다.
+                </p>
+                <div class="buttons">
+                    <button class="btn btn-secondary" onclick="clearLocalSettings()">🗑️ 로컬 설정 초기화</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -568,42 +579,126 @@ function updateSliderValue(slider) {
     }
 }
 
-// 현재 설정 로드
+// 로컬 설정 저장
+function saveLocalSettings() {
+    const localSettings = {
+        // 퇴근미션 그래프 설정
+        'mission-bg-opacity': document.getElementById('mission-bg-opacity').value,
+        'mission-bg-color': document.getElementById('mission-bg-color').value,
+        'mission-text-outline-width': document.getElementById('mission-text-outline-width').value,
+        'mission-text-outline-color': document.getElementById('mission-text-outline-color').value,
+        'mission-title-size': document.getElementById('mission-title-size').value,
+        'mission-stats-size': document.getElementById('mission-stats-size').value,
+        'mission-progress-height': document.getElementById('mission-progress-height').value,
+        'mission-show-progress-text': document.getElementById('mission-show-progress-text').checked,
+        'mission-progress-text-size': document.getElementById('mission-progress-text-size').value,
+        'mission-progress-text-color': document.getElementById('mission-progress-text-color').value,
+        
+        // 총액목표 그래프 설정
+        'daily-goal-target': document.getElementById('daily-goal-target').value,
+        'auto-extend-enabled': document.getElementById('auto-extend-enabled').checked,
+        'extend-amount': document.getElementById('extend-amount').value,
+        'total-bg-opacity': document.getElementById('total-bg-opacity').value,
+        'total-bg-color': document.getElementById('total-bg-color').value,
+        'total-text-outline-width': document.getElementById('total-text-outline-width').value,
+        'total-text-outline-color': document.getElementById('total-text-outline-color').value,
+        'total-show-top-stats': document.getElementById('total-show-top-stats').checked,
+        'total-text-switch-enabled': document.getElementById('total-text-switch-enabled').checked,
+        'total-text-switch-interval': document.getElementById('total-text-switch-interval').value,
+        'total-title-size': document.getElementById('total-title-size').value,
+        'total-stats-size': document.getElementById('total-stats-size').value,
+        'total-progress-height': document.getElementById('total-progress-height').value
+    };
+    
+    localStorage.setItem('graphSettings', JSON.stringify(localSettings));
+    console.log('💾 로컬 설정 저장됨:', localSettings);
+}
+
+// 로컬 설정 로드
+function loadLocalSettings() {
+    try {
+        const saved = localStorage.getItem('graphSettings');
+        if (saved) {
+            const localSettings = JSON.parse(saved);
+            console.log('📂 로컬 설정 로드됨:', localSettings);
+            
+            // 퇴근미션 그래프 설정
+            if (localSettings['mission-bg-opacity']) document.getElementById('mission-bg-opacity').value = localSettings['mission-bg-opacity'];
+            if (localSettings['mission-bg-color']) document.getElementById('mission-bg-color').value = localSettings['mission-bg-color'];
+            if (localSettings['mission-text-outline-width']) document.getElementById('mission-text-outline-width').value = localSettings['mission-text-outline-width'];
+            if (localSettings['mission-text-outline-color']) document.getElementById('mission-text-outline-color').value = localSettings['mission-text-outline-color'];
+            if (localSettings['mission-title-size']) document.getElementById('mission-title-size').value = localSettings['mission-title-size'];
+            if (localSettings['mission-stats-size']) document.getElementById('mission-stats-size').value = localSettings['mission-stats-size'];
+            if (localSettings['mission-progress-height']) document.getElementById('mission-progress-height').value = localSettings['mission-progress-height'];
+            if (localSettings['mission-show-progress-text'] !== undefined) document.getElementById('mission-show-progress-text').checked = localSettings['mission-show-progress-text'];
+            if (localSettings['mission-progress-text-size']) document.getElementById('mission-progress-text-size').value = localSettings['mission-progress-text-size'];
+            if (localSettings['mission-progress-text-color']) document.getElementById('mission-progress-text-color').value = localSettings['mission-progress-text-color'];
+            
+            // 총액목표 그래프 설정
+            if (localSettings['daily-goal-target']) document.getElementById('daily-goal-target').value = localSettings['daily-goal-target'];
+            if (localSettings['auto-extend-enabled'] !== undefined) document.getElementById('auto-extend-enabled').checked = localSettings['auto-extend-enabled'];
+            if (localSettings['extend-amount']) document.getElementById('extend-amount').value = localSettings['extend-amount'];
+            if (localSettings['total-bg-opacity']) document.getElementById('total-bg-opacity').value = localSettings['total-bg-opacity'];
+            if (localSettings['total-bg-color']) document.getElementById('total-bg-color').value = localSettings['total-bg-color'];
+            if (localSettings['total-text-outline-width']) document.getElementById('total-text-outline-width').value = localSettings['total-text-outline-width'];
+            if (localSettings['total-text-outline-color']) document.getElementById('total-text-outline-color').value = localSettings['total-text-outline-color'];
+            if (localSettings['total-show-top-stats'] !== undefined) document.getElementById('total-show-top-stats').checked = localSettings['total-show-top-stats'];
+            if (localSettings['total-text-switch-enabled'] !== undefined) document.getElementById('total-text-switch-enabled').checked = localSettings['total-text-switch-enabled'];
+            if (localSettings['total-text-switch-interval']) document.getElementById('total-text-switch-interval').value = localSettings['total-text-switch-interval'];
+            if (localSettings['total-title-size']) document.getElementById('total-title-size').value = localSettings['total-title-size'];
+            if (localSettings['total-stats-size']) document.getElementById('total-stats-size').value = localSettings['total-stats-size'];
+            if (localSettings['total-progress-height']) document.getElementById('total-progress-height').value = localSettings['total-progress-height'];
+            
+            return true;
+        }
+    } catch (error) {
+        console.error('로컬 설정 로드 실패:', error);
+    }
+    return false;
+}
+
+// 현재 설정 로드 (서버 설정을 백업으로 사용)
 async function loadCurrentSettings() {
+    // 먼저 로컬 설정을 시도
+    const hasLocalSettings = loadLocalSettings();
+    
     try {
         const response = await fetch('/api/data');
         const data = await response.json();
         const settings = data.settings || {};
         
-        // 퇴근미션 그래프 설정
-        document.getElementById('mission-bg-opacity').value = settings['mission-graph-opacity'] || 85;
-        document.getElementById('mission-bg-color').value = settings['mission-graph-bg-color'] || '#000000';
-        document.getElementById('mission-text-outline-width').value = settings['mission-text-outline-width'] || 1;
-        document.getElementById('mission-text-outline-color').value = settings['mission-text-outline-color'] || '#000000';
-        document.getElementById('mission-title-size').value = parseInt(settings['mission-title-font-size']) || 20;
-        document.getElementById('mission-stats-size').value = parseInt(settings['mission-stats-font-size']) || 16;
-        document.getElementById('mission-progress-height').value = parseInt(settings['mission-progress-height']) || 20;
-        document.getElementById('mission-show-progress-text').checked = settings['mission-show-progress-text'] !== false;
-        document.getElementById('mission-progress-text-size').value = parseInt(settings['mission-progress-text-size']) || 12;
-        document.getElementById('mission-progress-text-color').value = settings['mission-progress-text-color'] || '#ffffff';
+        // 로컬 설정이 없는 경우에만 서버 설정 사용
+        if (!hasLocalSettings) {
+            // 퇴근미션 그래프 설정
+            document.getElementById('mission-bg-opacity').value = settings['mission-graph-opacity'] || 85;
+            document.getElementById('mission-bg-color').value = settings['mission-graph-bg-color'] || '#000000';
+            document.getElementById('mission-text-outline-width').value = settings['mission-text-outline-width'] || 1;
+            document.getElementById('mission-text-outline-color').value = settings['mission-text-outline-color'] || '#000000';
+            document.getElementById('mission-title-size').value = parseInt(settings['mission-title-font-size']) || 20;
+            document.getElementById('mission-stats-size').value = parseInt(settings['mission-stats-font-size']) || 16;
+            document.getElementById('mission-progress-height').value = parseInt(settings['mission-progress-height']) || 20;
+            document.getElementById('mission-show-progress-text').checked = settings['mission-show-progress-text'] !== false;
+            document.getElementById('mission-progress-text-size').value = parseInt(settings['mission-progress-text-size']) || 12;
+            document.getElementById('mission-progress-text-color').value = settings['mission-progress-text-color'] || '#ffffff';
         
-        // 총액목표 그래프 설정
-        if (settings.dailyGoal) {
-            document.getElementById('daily-goal-target').value = settings.dailyGoal.target || '';
-            document.getElementById('auto-extend-enabled').checked = settings.dailyGoal.autoExtendEnabled || settings.dailyGoal.autoExtend || false;
-            document.getElementById('extend-amount').value = settings.dailyGoal.extendAmount || 50;
+            // 총액목표 그래프 설정
+            if (settings.dailyGoal) {
+                document.getElementById('daily-goal-target').value = settings.dailyGoal.target || '';
+                document.getElementById('auto-extend-enabled').checked = settings.dailyGoal.autoExtendEnabled || settings.dailyGoal.autoExtend || false;
+                document.getElementById('extend-amount').value = settings.dailyGoal.extendAmount || 50;
+            }
+            
+            document.getElementById('total-bg-opacity').value = settings['total-goal-bg-opacity'] || 0;
+            document.getElementById('total-bg-color').value = settings['total-goal-bg-color'] || '#000000';
+            document.getElementById('total-text-outline-width').value = settings['total-goal-text-outline-width'] || 1;
+            document.getElementById('total-text-outline-color').value = settings['total-goal-text-outline-color'] || '#000000';
+            document.getElementById('total-show-top-stats').checked = settings['total-goal-show-top-stats'] !== false;
+            document.getElementById('total-text-switch-enabled').checked = settings['total-goal-text-switch-enabled'] || false;
+            document.getElementById('total-text-switch-interval').value = settings['total-goal-text-switch-interval'] || 5;
+            document.getElementById('total-title-size').value = parseInt(settings['total-goal-title-font-size']) || 24;
+            document.getElementById('total-stats-size').value = parseInt(settings['total-goal-stats-font-size']) || 20;
+            document.getElementById('total-progress-height').value = parseInt(settings['total-goal-progress-height']) || 30;
         }
-        
-        document.getElementById('total-bg-opacity').value = settings['total-goal-bg-opacity'] || 0;
-        document.getElementById('total-bg-color').value = settings['total-goal-bg-color'] || '#000000';
-        document.getElementById('total-text-outline-width').value = settings['total-goal-text-outline-width'] || 1;
-        document.getElementById('total-text-outline-color').value = settings['total-goal-text-outline-color'] || '#000000';
-        document.getElementById('total-show-top-stats').checked = settings['total-goal-show-top-stats'] !== false;
-        document.getElementById('total-text-switch-enabled').checked = settings['total-goal-text-switch-enabled'] || false;
-        document.getElementById('total-text-switch-interval').value = settings['total-goal-text-switch-interval'] || 5;
-        document.getElementById('total-title-size').value = parseInt(settings['total-goal-title-font-size']) || 24;
-        document.getElementById('total-stats-size').value = parseInt(settings['total-goal-stats-font-size']) || 20;
-        document.getElementById('total-progress-height').value = parseInt(settings['total-goal-progress-height']) || 30;
         
         // 슬라이더 값 업데이트
         document.querySelectorAll('.slider').forEach(slider => updateSliderValue(slider));
@@ -643,6 +738,7 @@ async function saveMissionSettings() {
         
         const result = await response.json();
         if (result.success) {
+            saveLocalSettings(); // 로컬에도 저장
             showStatus('✅ 퇴근미션 그래프 설정이 적용되었습니다!', 'success');
         } else {
             showStatus('❌ 설정 저장 실패: ' + result.error, 'error');
@@ -689,6 +785,7 @@ async function saveTotalSettings() {
         
         const result = await response.json();
         if (result.success) {
+            saveLocalSettings(); // 로컬에도 저장
             showStatus(`✅ 총액목표 그래프 설정이 적용되었습니다! (목표: ${target}만원)`, 'success');
         } else {
             showStatus('❌ 설정 저장 실패: ' + result.error, 'error');
@@ -714,6 +811,7 @@ function resetMissionSettings() {
         document.getElementById('mission-progress-text-color').value = '#ffffff';
         
         document.querySelectorAll('.slider').forEach(slider => updateSliderValue(slider));
+        saveLocalSettings(); // 초기화된 설정을 로컬에도 저장
         showStatus('🔄 퇴근미션 설정이 초기화되었습니다', 'success');
     }
 }
@@ -737,6 +835,7 @@ function resetTotalSettings() {
         document.getElementById('total-progress-height').value = 30;
         
         document.querySelectorAll('.slider').forEach(slider => updateSliderValue(slider));
+        saveLocalSettings(); // 초기화된 설정을 로컬에도 저장
         showStatus('🔄 총액목표 설정이 초기화되었습니다', 'success');
     }
 }
@@ -748,6 +847,19 @@ function openMissionOverlay() {
 
 function openTotalOverlay() {
     window.open('/total-goal-overlay.html', '_blank', 'width=800,height=600');
+}
+
+// 로컬 설정 초기화
+function clearLocalSettings() {
+    if (confirm('🗑️ 저장된 로컬 설정을 모두 삭제하시겠습니까?\n다음 새로고침 시 서버 설정을 불러옵니다.')) {
+        localStorage.removeItem('graphSettings');
+        showStatus('🗑️ 로컬 설정이 삭제되었습니다. 페이지를 새로고침하세요.', 'success');
+        
+        // 3초 후 자동 새로고침
+        setTimeout(() => {
+            location.reload();
+        }, 3000);
+    }
 }
 
 // 상태 메시지 표시
