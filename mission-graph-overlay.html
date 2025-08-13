@@ -239,6 +239,7 @@ class MissionGraphOverlay {
         this.donations = [];
         this.settings = {};
         this.emojis = {};
+        this.data = null; // 전체 데이터 저장용
         
         this.initializeSocket();
         this.applySettings();
@@ -282,9 +283,11 @@ class MissionGraphOverlay {
                 this.missions = data.missions || data.runningMissions || [];
                 this.donations = data.donations || [];
                 this.emojis = data.emojis || {};
+                this.data = data; // 전체 데이터 저장 (missionAdjustments 포함)
                 
                 console.log('🎯 미션 데이터:', this.missions.length, '개');
                 console.log('💾 후원 데이터:', this.donations.length, '건');
+                console.log('🔧 조정 데이터:', (data.missionAdjustments || []).length, '건');
                 
                 // 연결되었지만 데이터가 없는 경우 즉시 처리
                 setTimeout(() => {
@@ -403,10 +406,17 @@ class MissionGraphOverlay {
             );
             
             // 퇴근미션 조정 금액도 포함 (미션 시작 시간 이후의 조정만)
-            const missionAdjustments = (this.data?.missionAdjustments || []).filter(adj => 
+            const allAdjustments = this.data?.missionAdjustments || [];
+            const missionAdjustments = allAdjustments.filter(adj => 
                 adj.streamer === mission.streamer && new Date(adj.time) >= new Date(mission.startTime)
             );
             const adjustmentAmount = missionAdjustments.reduce((sum, adj) => sum + (parseFloat(adj.amount) || 0), 0);
+            
+            console.log(`🔧 [${mission.streamer}] 전체 조정:`, allAdjustments.length, '개');
+            console.log(`🔧 [${mission.streamer}] 해당 미션 조정:`, missionAdjustments.length, '개, 총액:', adjustmentAmount, '만원');
+            if (missionAdjustments.length > 0) {
+                console.log(`🔧 [${mission.streamer}] 조정 세부:`, missionAdjustments);
+            }
             
             const donationAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
             const currentAmount = donationAmount + adjustmentAmount;
