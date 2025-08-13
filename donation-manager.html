@@ -1951,12 +1951,12 @@ function updateSummary() {
         const successMissions = missionWithInfo.filter(m => m.isSuccess);
         if (successMissions.length > 0) {
             const successTexts = successMissions.map(m => `${emojis[m.streamer] || ''}${m.streamer}(성공!)`);
-            missionResultText = ` | 🎄퇴근미션🎄 ${successTexts.join(' ')}`;
+            missionResultText = ` 🎄퇴근미션🎄 ${successTexts.join(' ')}`;
         }
     }
     
     // 출력 형식 (국고 제외 옵션 무시 - 상세 테이블과 일치)
-    let summaryText = `${headerText}| ${samyongSchool} | 💵총합(${displayTotalAmount}) | ${footerText}${missionResultText}`;
+    let summaryText = `${headerText} ${samyongSchool} 💵총합(${displayTotalAmount}) ${footerText}${missionResultText}`;
     
     document.getElementById('summary-output').textContent = summaryText;
     
@@ -2304,7 +2304,7 @@ function updateMissionSummary() {
         parts.push(successMissions.map(m => m.text).join(' '));
     }
     
-    container.textContent = `🎄퇴근미션🎄 | ${parts.join(' | ')}`;
+    container.textContent = `🎄퇴근미션🎄 ${parts.join(' ')}`;
     
     // 목표치 그래프 업데이트
     updateMissionProgressGraph(sortedMissions);

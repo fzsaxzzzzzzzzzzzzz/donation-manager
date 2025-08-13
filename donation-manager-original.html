@@ -1393,7 +1393,7 @@ function updateMissionSummary() {
         const remainingStr = formatAmount(remaining > 0 ? remaining : 0);
         return `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/-${remainingStr})`;
     });
-    container.textContent = `🎄퇴근미션(${formatAmount(totalMissionAmount)}만)🎄 | ${missionTexts.join(' | ')}`;
+    container.textContent = `🎄퇴근미션(${formatAmount(totalMissionAmount)}만)🎄 ${missionTexts.join(' ')}`;
 }
 
 // --- 유틸리티 및 이벤트 핸들러 ---
