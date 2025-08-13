@@ -349,6 +349,29 @@ body {
                 </div>
             </div>
 
+            <!-- 진행바 텍스트 설정 -->
+            <div class="section" style="background: #e8f4fd; border-color: #007bff;">
+                <h4 style="color: #007bff; margin-bottom: 15px;">📋 진행바 텍스트 옵션</h4>
+                <div class="grid grid-2">
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox" id="mission-show-progress-text" checked>
+                        <label>진행바 내부 텍스트 표시</label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">텍스트 크기</label>
+                        <div class="slider-group">
+                            <span class="slider-label">작게</span>
+                            <input type="range" class="slider" id="mission-progress-text-size" min="10" max="16" value="12">
+                            <span class="slider-value" id="mission-progress-text-size-value">12px</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">텍스트 색상</label>
+                    <input type="color" class="color-input" id="mission-progress-text-color" value="#ffffff">
+                </div>
+            </div>
+
             <div class="buttons">
                 <button class="btn btn-success" onclick="saveMissionSettings()">✅ 적용</button>
                 <button class="btn btn-secondary" onclick="resetMissionSettings()">🔄 기본값</button>
@@ -560,6 +583,9 @@ async function loadCurrentSettings() {
         document.getElementById('mission-title-size').value = parseInt(settings['mission-title-font-size']) || 20;
         document.getElementById('mission-stats-size').value = parseInt(settings['mission-stats-font-size']) || 16;
         document.getElementById('mission-progress-height').value = parseInt(settings['mission-progress-height']) || 20;
+        document.getElementById('mission-show-progress-text').checked = settings['mission-show-progress-text'] !== false;
+        document.getElementById('mission-progress-text-size').value = parseInt(settings['mission-progress-text-size']) || 12;
+        document.getElementById('mission-progress-text-color').value = settings['mission-progress-text-color'] || '#ffffff';
         
         // 총액목표 그래프 설정
         if (settings.dailyGoal) {
@@ -603,7 +629,10 @@ async function saveMissionSettings() {
             'mission-text-outline-color': document.getElementById('mission-text-outline-color').value,
             'mission-title-font-size': document.getElementById('mission-title-size').value,
             'mission-stats-font-size': document.getElementById('mission-stats-size').value,
-            'mission-progress-height': document.getElementById('mission-progress-height').value
+            'mission-progress-height': document.getElementById('mission-progress-height').value,
+            'mission-show-progress-text': document.getElementById('mission-show-progress-text').checked,
+            'mission-progress-text-size': document.getElementById('mission-progress-text-size').value,
+            'mission-progress-text-color': document.getElementById('mission-progress-text-color').value
         };
         
         const response = await fetch('/api/settings', {
@@ -680,6 +709,9 @@ function resetMissionSettings() {
         document.getElementById('mission-title-size').value = 20;
         document.getElementById('mission-stats-size').value = 16;
         document.getElementById('mission-progress-height').value = 20;
+        document.getElementById('mission-show-progress-text').checked = true;
+        document.getElementById('mission-progress-text-size').value = 12;
+        document.getElementById('mission-progress-text-color').value = '#ffffff';
         
         document.querySelectorAll('.slider').forEach(slider => updateSliderValue(slider));
         showStatus('🔄 퇴근미션 설정이 초기화되었습니다', 'success');

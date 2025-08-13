@@ -73,6 +73,7 @@ body {
     border: 2px solid #555;
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
     margin-bottom: 10px;
+    position: relative;
 }
 
 .mission-progress-bar {
@@ -117,6 +118,27 @@ body {
         opacity: 0.8;
         box-shadow: 0 4px 20px rgba(255, 215, 0, 1);
     }
+}
+
+/* 진행바 내부 텍스트 */
+.mission-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--progress-text-color, white);
+    font-size: var(--progress-text-size, 12px);
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    z-index: 10;
+    pointer-events: none;
+    white-space: nowrap;
+    text-align: center;
+    width: 100%;
+}
+
+.mission-progress-text.alt {
+    display: none;
 }
 
 /* 미션 상세 정보 */
@@ -175,6 +197,8 @@ body {
     --details-color: #cccccc;
     --no-mission-font-size: 16px;
     --no-mission-color: #888888;
+    --progress-text-color: white;
+    --progress-text-size: 12px;
 }
 </style>
 </head>
@@ -198,6 +222,8 @@ body {
             
             <div class="mission-progress-container">
                 <div class="mission-progress-bar" id="mission-progress-bar"></div>
+                <div class="mission-progress-text" id="mission-progress-text">0% - 0/0만원</div>
+                <div class="mission-progress-text alt" id="mission-progress-text-alt">목표까지 0만원 남음</div>
             </div>
             
             <div class="mission-details" id="mission-details"></div>
@@ -327,6 +353,12 @@ class MissionGraphOverlay {
         if (this.settings['mission-details-font-size']) {
             document.documentElement.style.setProperty('--details-font-size', this.settings['mission-details-font-size'] + 'px');
         }
+        if (this.settings['mission-progress-text-size']) {
+            document.documentElement.style.setProperty('--progress-text-size', this.settings['mission-progress-text-size'] + 'px');
+        }
+        if (this.settings['mission-progress-text-color']) {
+            document.documentElement.style.setProperty('--progress-text-color', this.settings['mission-progress-text-color']);
+        }
     }
     
     updateDisplay() {
@@ -391,7 +423,7 @@ class MissionGraphOverlay {
                         </span>
                         <span style="font-size: var(--details-font-size, 14px); color: var(--amount-color, #ffffff); font-weight: bold;">${Math.round(progressPercent)}% (${currentAmount}/${target}만)</span>
                     </div>
-                    <div style="background: var(--progress-bg-color, #2c2c2c); border-radius: 8px; height: var(--progress-height, 20px); overflow: hidden; border: 1px solid #444;">
+                    <div style="background: var(--progress-bg-color, #2c2c2c); border-radius: 8px; height: var(--progress-height, 20px); overflow: hidden; border: 1px solid #444; position: relative;">
                         <div style="
                             height: 100%; 
                             width: ${progressPercent}%; 
@@ -403,6 +435,19 @@ class MissionGraphOverlay {
                             border-radius: 7px;
                             box-shadow: ${isCompleted ? '0 0 10px rgba(255, 215, 0, 0.5)' : '0 0 8px rgba(66, 183, 42, 0.3)'};
                         "></div>
+                        ${this.settings['mission-show-progress-text'] !== false ? `<div style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            color: var(--progress-text-color, white);
+                            font-size: var(--progress-text-size, 12px);
+                            font-weight: bold;
+                            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+                            z-index: 10;
+                            pointer-events: none;
+                            white-space: nowrap;
+                        ">${Math.round(progressPercent)}% - ${currentAmount}/${target}만원</div>` : ''}
                     </div>
                 </div>
             `;
