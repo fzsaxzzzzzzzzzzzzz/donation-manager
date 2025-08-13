@@ -2148,12 +2148,37 @@ function updateDetailedSummaryTable() {
     const hiddenStreamers = JSON.parse(localStorage.getItem('hidden-streamers') || '[]');
     const summaryStreamers = (streamers || []).filter(s => s !== '국고' && s !== '후원자조정' && !hiddenStreamers.includes(s));
     const streamerData = {};
-    summaryStreamers.forEach(s => { streamerData[s] = { name: s, account: 0, toonation: 0, total: 0 }; });
+    summaryStreamers.forEach(s => { streamerData[s] = { name: s, account: 0, toonation: 0, total: 0, missionStatus: '없음' }; });
     donations.forEach(d => {
         if (streamerData.hasOwnProperty(d.streamer)) {
             const amountInWon = (parseFloat(d.amount) || 0) * 10000; // 만원 → 원 변환
             if (d.type === '계좌') streamerData[d.streamer].account += amountInWon;
             else if (d.type === '투네') streamerData[d.streamer].toonation += amountInWon;
+        }
+    });
+    
+    // 퇴근미션 상태 계산
+    const runningMissions = (currentData && currentData.missions) ? 
+        currentData.missions.filter(m => m.status === 'running' || m.status === 'success') : 
+        Object.values(missionData).filter(m => streamers.includes(m.streamer) && (m.status === 'running' || m.status === 'success'));
+        
+    runningMissions.forEach(mission => {
+        if (streamerData[mission.streamer]) {
+            const missionDonations = donations.filter(d => d.streamer === mission.streamer && new Date(d.time) >= new Date(mission.startTime));
+            const missionAdjustments = (window.currentData?.missionAdjustments || []).filter(adj => 
+                adj.streamer === mission.streamer && new Date(adj.time) >= new Date(mission.startTime)
+            );
+            const adjustmentAmount = missionAdjustments.reduce((sum, adj) => sum + (parseFloat(adj.amount) || 0), 0);
+            const donationAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+            const currentAmount = donationAmount + adjustmentAmount;
+            const target = parseFloat(mission.target) || 0;
+            const remaining = target - currentAmount;
+            
+            if (mission.status === 'success' || remaining <= 0) {
+                streamerData[mission.streamer].missionStatus = `✅완료(${currentAmount}/${target})`;
+            } else {
+                streamerData[mission.streamer].missionStatus = `🎯진행중(${currentAmount}/${target})`;
+            }
         }
     });
     
@@ -2174,10 +2199,10 @@ function updateDetailedSummaryTable() {
         return rankNumber.toString();
     }
     
-    const headerHtml = `<tr><th>순위</th><th>스트리머</th><th>계좌후원</th><th>투네후원</th><th>총 후원</th></tr>`;
+    const headerHtml = `<tr><th>순위</th><th>스트리머</th><th>계좌후원</th><th>투네후원</th><th>총 후원</th><th>퇴근미션</th></tr>`;
     const bodyHtml = sortedStreamers.map((data, index) => { 
         const rankName = getRankName(index);
-        return `<tr><td>${rankName}</td><td>${emojis[data.name] || ''} ${data.name}</td><td>${data.account.toLocaleString('ko-KR')}</td><td>${data.toonation.toLocaleString('ko-KR')}</td><td>${data.total.toLocaleString('ko-KR')}</td></tr>`; 
+        return `<tr><td>${rankName}</td><td>${emojis[data.name] || ''} ${data.name}</td><td>${data.account.toLocaleString('ko-KR')}</td><td>${data.toonation.toLocaleString('ko-KR')}</td><td>${data.total.toLocaleString('ko-KR')}</td><td style="font-size: 12px;">${data.missionStatus}</td></tr>`; 
     }).join('');
     
     // 총합계 행 추가 (옵션에 따라)
@@ -2186,16 +2211,22 @@ function updateDetailedSummaryTable() {
         const totalAccount = sortedStreamers.reduce((sum, s) => sum + s.account, 0);
         const totalToonation = sortedStreamers.reduce((sum, s) => sum + s.toonation, 0);
         const grandTotal = totalAccount + totalToonation;
+        const completedMissions = runningMissions.filter(m => m.status === 'success' || 
+            (streamerData[m.streamer] && streamerData[m.streamer].missionStatus.includes('✅'))).length;
+        const totalMissions = runningMissions.length;
+        const missionSummary = totalMissions > 0 ? `${completedMissions}/${totalMissions}완료` : '없음';
+        
         totalRowHtml = `<tr class="total-row" style="background: rgba(64,64,64,0.6); border-top: 2px solid rgba(255,255,255,0.3); font-weight: bold;">
             <td colspan="2"><strong>🏆 총 합계</strong></td>
             <td><strong>${totalAccount.toLocaleString('ko-KR')}</strong></td>
             <td><strong>${totalToonation.toLocaleString('ko-KR')}</strong></td>
             <td><strong>${grandTotal.toLocaleString('ko-KR')}</strong></td>
+            <td style="font-size: 11px;"><strong>${missionSummary}</strong></td>
         </tr>`;
     }
     
     const finalBodyHtml = bodyHtml.trim() === '' ? 
-        `<tr><td colspan="5">계좌/투네 후원 내역이 없습니다.</td></tr>` : 
+        `<tr><td colspan="6">계좌/투네 후원 내역이 없습니다.</td></tr>` : 
         bodyHtml + totalRowHtml;
     
     tableContainer.innerHTML = `<p style="font-size: 13px; color: #606770; margin-bottom: 10px;">※ 슈퍼챗(국고)을 제외한 후원 내역입니다.</p><table class="table"><thead>${headerHtml}</thead><tbody>${finalBodyHtml}</tbody></table>`;
@@ -2271,7 +2302,7 @@ function updateMissionSummary() {
             currentAmount,
             remaining,
             text: mission.status === 'success' 
-                ? `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/성공!)` 
+                ? `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/${parseFloat(mission.target)}✅)` 
                 : `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/-${remainingStr})`
         };
     });
