@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>총액만 스트리머 오버레이</title>
+
+<!-- Socket.IO -->
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: transparent;
+    color: white;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+.overlay-container {
+    position: relative;
+    margin: 20px auto;
+    max-width: 600px;
+    width: calc(100vw - 40px);
+    min-width: 300px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #FFD700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    border-bottom: 2px solid #FFD700;
+    padding-bottom: 8px;
+    text-align: center;
+}
+
+.total-summary {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #FFD700;
+    background: rgba(255,215,0,0.1);
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid #FFD700;
+    margin-bottom: 15px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.streamer-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+.streamer-table th {
+    background: rgba(255,215,0,0.2);
+    color: #FFD700;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 2px solid #FFD700;
+    font-size: 14px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.streamer-table td {
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 14px;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.streamer-table tr:nth-child(even) {
+    background: rgba(255,255,255,0.05);
+}
+
+.rank-number {
+    font-weight: bold;
+    color: #FFD700;
+    font-size: 16px;
+}
+
+.rank-1 .rank-number { color: #FFD700; }
+.rank-2 .rank-number { color: #C0C0C0; }
+.rank-3 .rank-number { color: #CD7F32; }
+
+.streamer-name {
+    font-weight: 600;
+}
+
+.amount {
+    font-weight: bold;
+    color: #42b72a;
+    font-size: 16px;
+}
+
+.connection-indicator {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #42b72a;
+    z-index: 1000;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 10px rgba(66, 183, 42, 0.5);
+}
+
+.connection-indicator.disconnected {
+    background: #fa383e;
+    animation: none;
+    box-shadow: 0 0 10px rgba(250, 56, 62, 0.5);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(255,255,255,0.7);
+    font-size: 16px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.info-text {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    text-align: center;
+    text-shadow: 1px 1px 0 #000000;
+}
+</style>
+</head>
+<body>
+
+<div class="overlay-container">
+    <div class="section-title">🏆 스트리머별 후원 현황 🏆</div>
+    
+    <div class="total-summary" id="totalSummary">
+        총 후원액: ₩0 (0건)
+    </div>
+    
+    <table class="streamer-table">
+        <thead>
+            <tr>
+                <th>순위</th>
+                <th>스트리머</th>
+                <th>총 후원</th>
+            </tr>
+        </thead>
+        <tbody id="streamerTableBody">
+            <tr>
+                <td colspan="3" class="no-data">실시간 연결 중...</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="info-text">실시간으로 업데이트됩니다</div>
+</div>
+
+<div class="connection-indicator" id="connectionIndicator"></div>
+
+<script>
+class TotalOnlyOverlay {
+    constructor() {
+        this.socket = io();
+        this.data = null;
+        this.isConnected = false;
+        
+        this.initializeSocketEvents();
+        this.updateConnectionStatus();
+    }
+
+    initializeSocketEvents() {
+        this.socket.on('connect', () => {
+            this.isConnected = true;
+            this.updateConnectionStatus();
+            console.log('✅ 총액만 오버레이 서버 연결됨');
+        });
+
+        this.socket.on('disconnect', () => {
+            this.isConnected = false;
+            this.updateConnectionStatus();
+            this.showNoConnection();
+        });
+
+        this.socket.on('initialData', (data) => {
+            this.data = data;
+            this.renderTable();
+            console.log('📊 초기 데이터 수신:', data.donations?.length || 0, '건');
+        });
+
+        this.socket.on('dataUpdate', (data) => {
+            this.data = data;
+            this.renderTable();
+            console.log('🔄 데이터 업데이트:', data.donations?.length || 0, '건');
+        });
+    }
+
+    updateConnectionStatus() {
+        const indicator = document.getElementById('connectionIndicator');
+        if (this.isConnected) {
+            indicator.classList.remove('disconnected');
+        } else {
+            indicator.classList.add('disconnected');
+        }
+    }
+
+    renderTable() {
+        if (!this.data || !this.data.donations || !this.data.streamers) {
+            this.showNoData();
+            return;
+        }
+
+        // 스트리머별 총액 계산
+        const streamerTotals = this.calculateStreamerTotals();
+        
+        if (streamerTotals.length === 0) {
+            this.showNoData();
+            return;
+        }
+
+        this.displayTable(streamerTotals);
+        this.updateSummary(streamerTotals);
+    }
+
+    calculateStreamerTotals() {
+        const streamerData = {};
+        
+        // 스트리머 데이터 초기화 (국고 제외)
+        (this.data.streamers || []).forEach(streamer => {
+            if (streamer !== '국고' && streamer !== '후원자조정') {
+                streamerData[streamer] = {
+                    name: streamer,
+                    total: 0,
+                    emoji: this.data.emojis?.[streamer] || ''
+                };
+            }
+        });
+
+        // 후원 데이터 집계 (모든 타입 합산)
+        (this.data.donations || []).forEach(donation => {
+            if (streamerData[donation.streamer]) {
+                const amountInWon = (parseFloat(donation.amount) || 0) * 10000; // 만원 → 원 변환
+                streamerData[donation.streamer].total += amountInWon;
+            }
+        });
+
+        // 총액 기준 정렬
+        const sortedStreamers = Object.values(streamerData)
+            .filter(streamer => streamer.total > 0) // 후원이 있는 스트리머만
+            .sort((a, b) => b.total - a.total);
+
+        console.log('💰 계산된 스트리머 총액:', sortedStreamers.slice(0, 3).map(s => ({
+            name: s.name,
+            total: s.total
+        })));
+
+        return sortedStreamers;
+    }
+
+    displayTable(streamerTotals) {
+        const tbody = document.getElementById('streamerTableBody');
+        
+        if (streamerTotals.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="no-data">아직 후원이 없습니다.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        streamerTotals.forEach((streamer, index) => {
+            const rankNumber = index + 1;
+            const rankClass = `rank-${rankNumber <= 3 ? rankNumber : 'other'}`;
+            
+            // 커스텀 순위 표시
+            const rankDisplay = this.getRankDisplay(index);
+            
+            html += `<tr class="${rankClass}">`;
+            html += `<td><span class="rank-number">${rankDisplay}</span></td>`;
+            html += `<td class="streamer-name">${streamer.emoji} ${streamer.name}</td>`;
+            html += `<td class="amount">${streamer.total.toLocaleString('ko-KR')}원</td>`;
+            html += `</tr>`;
+        });
+
+        tbody.innerHTML = html;
+        console.log('✅ 테이블 렌더링 완료:', streamerTotals.length, '명');
+    }
+
+    getRankDisplay(index) {
+        const ranks = ['👑왕자', '🤴귀족', '🧙‍♂️기사', '👨‍🌾농민', '🥺거지', '🐛벌레', '🐜개미', '💨먼지', '🪨흙'];
+        return ranks[index] || (index + 1).toString();
+    }
+
+    updateSummary(streamerTotals) {
+        const totalAmount = streamerTotals.reduce((sum, streamer) => sum + streamer.total, 0);
+        const totalCount = this.data.donations?.length || 0;
+        
+        document.getElementById('totalSummary').innerHTML = 
+            `총 후원액: <strong>${totalAmount.toLocaleString('ko-KR')}원</strong> (${totalCount}건)`;
+    }
+
+    showNoData() {
+        const tbody = document.getElementById('streamerTableBody');
+        tbody.innerHTML = '<tr><td colspan="3" class="no-data">아직 후원이 없습니다.</td></tr>';
+        document.getElementById('totalSummary').innerHTML = '총 후원액: ₩0 (0건)';
+    }
+
+    showNoConnection() {
+        const tbody = document.getElementById('streamerTableBody');
+        tbody.innerHTML = '<tr><td colspan="3" class="no-data">서버 연결이 끊어졌습니다...</td></tr>';
+    }
+}
+
+// 앱 시작
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 총액만 오버레이 시작');
+    window.totalOnlyOverlay = new TotalOnlyOverlay();
+});
+</script>
+
+</body>
+</html>
