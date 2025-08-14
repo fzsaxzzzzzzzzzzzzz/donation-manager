@@ -1931,8 +1931,13 @@ function updateSummary() {
     
     const samyongSchool = sortedDetailStreamers.map(s => `${emojis[s.name] || ''}${s.name}(${s.total})`).join(' ');
     
-    // 총합 계산 (상세 테이블과 동일 - 국고 항상 제외)
-    const displayTotalAmount = sortedDetailStreamers.reduce((sum, s) => sum + s.total, 0);
+    // 국고 데이터 계산
+    const gukgoData = streamerDetailData['국고'] || { account: 0, toonation: 0, total: 0 };
+    gukgoData.total = gukgoData.account + gukgoData.toonation;
+    
+    // 총합 계산 (국고 제외 옵션에 따라)
+    const streamerOnlyTotal = sortedDetailStreamers.reduce((sum, s) => sum + s.total, 0);
+    const displayTotalAmount = excludeGukgo ? streamerOnlyTotal : streamerOnlyTotal + gukgoData.total;
     
     // 퇴근 미션 성공 결과 텍스트 생성
     let missionResultText = '';
@@ -1974,8 +1979,15 @@ function updateSummary() {
         }
     }
     
-    // 출력 형식 (국고 제외 옵션 무시 - 상세 테이블과 일치)
-    let summaryText = `${headerText} ${samyongSchool} 💵총합(${displayTotalAmount}) ${footerText}${missionResultText}`;
+    // 출력 형식 (국고 포함 여부에 따른 출력)
+    let summaryText = `${headerText} ${samyongSchool}`;
+    
+    // 국고 표시 (excludeGukgo가 false일 때만)
+    if (!excludeGukgo && gukgoData.total > 0) {
+        summaryText += ` 🏦국고(${gukgoData.total})`;
+    }
+    
+    summaryText += ` 💵총합(${displayTotalAmount}) ${footerText}${missionResultText}`;
     
     document.getElementById('summary-output').textContent = summaryText;
     
