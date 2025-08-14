@@ -2383,9 +2383,16 @@ function updateRunningMissionsList() {
                         <strong style="font-size: 16px;">${emojis[mission.streamer] || ''}${mission.streamer}${completedIcon}</strong>
                         <div style="font-size: 12px; color: #6c757d;">${mission.description || '퇴근미션'}</div>
                     </div>
-                    <button onclick="deleteMission('${mission.id}')" class="btn btn-danger btn-sm">
-                        🗑️ 삭제
-                    </button>
+                    <div style="display: flex; gap: 5px;">
+                        ${mission.status === 'running' && progressPercent < 100 ? 
+                            `<button onclick="completeMission('${mission.id}')" class="btn btn-success btn-sm">
+                                ✅ 완료
+                            </button>` : ''
+                        }
+                        <button onclick="deleteMission('${mission.id}')" class="btn btn-danger btn-sm">
+                            🗑️ 삭제
+                        </button>
+                    </div>
                 </div>
                 
                 <div style="margin-bottom: 8px;">
@@ -5820,6 +5827,30 @@ async function createMission() {
     }
 }
 
+
+async function completeMission(missionId) {
+    if (!confirm('이 퇴근미션을 완료 처리하시겠습니까?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/missions/${missionId}/complete`, {
+            method: 'PUT'
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showStatus('✅ 미션이 완료되었습니다!', 'success');
+            // UI 새로고침
+            updateAllUI();
+        } else {
+            showStatus(`❌ 미션 완료 실패: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('미션 완료 실패:', error);
+        showStatus('❌ 서버 오류로 미션 완료에 실패했습니다', 'error');
+    }
+}
 
 async function deleteMission(missionId) {
     if (!confirm('정말로 이 퇴근미션을 삭제하시겠습니까?')) {
