@@ -934,7 +934,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <input type="text" id="streamer-summary-footer" class="form-input" placeholder="예: 🏧투네/계좌 [8:2] 🎉슈퍼챗은 국고로~!" value="🏧투네/계좌 [8:2] 🎉슈퍼챗은 국고로~!">
 </div>
 <div style="margin-bottom: 10px;">
-<label><input type="checkbox" id="exclude-gukgo" checked> 국고 제외하고 계산</label>
+<label><input type="checkbox" id="exclude-gukgo"> 국고 제외하고 계산</label>
 </div>
 <div style="display: flex; gap: 5px;">
 <button onclick="saveStreamerSummarySettings()" class="btn btn-primary">저장</button>
@@ -4603,16 +4603,19 @@ function saveStreamerSummarySettings() {
 function resetStreamerSummarySettings() {
     document.getElementById('streamer-summary-header').value = '🔥🏫삼용스쿨🏫🔥';
     document.getElementById('streamer-summary-footer').value = '🏧투네/계좌 [8:2] 🎉슈퍼챗은 국고로~!';
-    document.getElementById('exclude-gukgo').checked = true;
+    document.getElementById('exclude-gukgo').checked = false; // 기본값: 국고 포함
     
     localStorage.removeItem('streamer-summary-header');
     localStorage.removeItem('streamer-summary-footer');
     localStorage.removeItem('exclude-gukgo');
     
+    // 강제로 국고 포함 설정 (기존 사용자 대응)
+    localStorage.setItem('exclude-gukgo', 'false');
+    
     // 설정 적용을 위해 요약 업데이트
     updateSummary();
     
-    showStatus('스트리머 총액 설정이 기본값으로 복원되었습니다', 'info');
+    showStatus('스트리머 총액 설정이 기본값으로 복원되었습니다 (국고 포함)', 'info');
 }
 
 // --- 테이블 설정 관련 함수 ---
