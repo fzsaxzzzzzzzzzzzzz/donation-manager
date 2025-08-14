@@ -1966,6 +1966,9 @@ function updateSummary() {
             if (remaining <= 0 && mission.status === 'running') { 
                 mission.status = 'success'; 
                 mission.completedTime = Date.now(); 
+                
+                // 자연 완료된 미션을 서버에 자동 저장
+                autoCompleteMission(mission.id);
             }
             
             return {
@@ -2313,6 +2316,9 @@ function updateMissionSummary() {
         if (remaining <= 0 && mission.status === 'running') { 
             mission.status = 'success'; 
             mission.completedTime = Date.now(); 
+            
+            // 자연 완료된 미션을 서버에 자동 저장
+            autoCompleteMission(mission.id);
         }
         
         const currentAmountStr = parseFloat(currentAmount);
@@ -5868,6 +5874,33 @@ async function completeMission(missionId) {
     } catch (error) {
         console.error('미션 완료 실패:', error);
         showStatus('❌ 서버 오류로 미션 완료에 실패했습니다', 'error');
+    }
+}
+
+// 자연 완료된 미션을 자동으로 서버에 업데이트하는 함수 (중복 방지)
+let autoCompletedMissions = new Set();
+async function autoCompleteMission(missionId) {
+    // 이미 자동 완료 처리된 미션은 건너뛰기
+    if (autoCompletedMissions.has(missionId)) {
+        return;
+    }
+    
+    console.log('🎉 자연 완료된 미션을 서버에 자동 저장:', missionId);
+    
+    try {
+        const response = await fetch(`/api/missions/${missionId}/complete`, {
+            method: 'PUT'
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            autoCompletedMissions.add(missionId);
+            console.log('✅ 자연 완료 미션 서버 저장 성공:', missionId);
+        } else {
+            console.error('❌ 자연 완료 미션 서버 저장 실패:', result.error);
+        }
+    } catch (error) {
+        console.error('자연 완료 미션 저장 실패:', error);
     }
 }
 
