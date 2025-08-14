@@ -2281,6 +2281,13 @@ function updateMissionSummary() {
         currentData.missions.filter(m => m.status === 'running' || m.status === 'completed') : 
         Object.values(missionData).filter(m => streamers.includes(m.streamer) && (m.status === 'running' || m.status === 'success'));
     
+    console.log('🔍 미션 요약 디버그:', { 
+        currentData: !!currentData, 
+        totalMissions: currentData?.missions?.length || 0, 
+        filteredMissions: runningMissions.length,
+        missionStatuses: currentData?.missions?.map(m => ({id: m.id, streamer: m.streamer, status: m.status})) || []
+    });
+    
     if (runningMissions.length === 0) { container.textContent = '퇴근미션이 없습니다.'; return; }
     
     const totalMissionAmount = runningMissions.reduce((total, mission) => {
@@ -2356,6 +2363,13 @@ function updateRunningMissionsList() {
     // 서버에서 받은 미션 데이터 사용 (완료된 미션도 포함)
     const runningMissions = (currentData && currentData.missions) ? 
         currentData.missions.filter(m => m.status === 'running' || m.status === 'completed') : [];
+    
+    console.log('🔍 미션 목록 디버그:', { 
+        currentData: !!currentData, 
+        totalMissions: currentData?.missions?.length || 0, 
+        filteredMissions: runningMissions.length,
+        missionStatuses: currentData?.missions?.map(m => ({id: m.id, streamer: m.streamer, status: m.status})) || []
+    });
     
     if (runningMissions.length === 0) {
         container.innerHTML = `
