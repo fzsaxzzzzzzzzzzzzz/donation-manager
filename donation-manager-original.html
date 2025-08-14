@@ -1161,7 +1161,7 @@ function updateSummary() {
     // 스트리머 총액 설정 로드
     const headerText = localStorage.getItem('streamer-summary-header') || '🔥🏫삼용스쿨🏫🔥';
     const footerText = localStorage.getItem('streamer-summary-footer') || '🏧투네/계좌 [8:2] 🎉슈퍼챗은 국고로~!';
-    const excludeGukgo = localStorage.getItem('exclude-gukgo') === 'true'; // 기본값: false (국고 포함)
+    const excludeGukgo = localStorage.getItem('exclude-gukgo') === null ? false : localStorage.getItem('exclude-gukgo') === 'true'; // 기본값: false (국고 포함)
     
     const hiddenStreamers = JSON.parse(localStorage.getItem('hidden-streamers') || '[]');
     let sortedStreamers = (streamers || []).filter(s => s !== '국고' && s !== '엄삼용' && s !== '후원자조정' && !hiddenStreamers.includes(s)).sort((a,b) => streamerTotals[b] - streamerTotals[a]);
@@ -2973,7 +2973,7 @@ function toggleStreamerSummarySettings() {
 function loadStreamerSummarySettings() {
     const savedHeader = localStorage.getItem('streamer-summary-header') || '🔥🏫삼용스쿨🏫🔥';
     const savedFooter = localStorage.getItem('streamer-summary-footer') || '🏧투네/계좌 [8:2] 🎉슈퍼챗은 국고로~!';
-    const savedExcludeGukgo = localStorage.getItem('exclude-gukgo') === 'true'; // 기본값: false (국고 포함)
+    const savedExcludeGukgo = localStorage.getItem('exclude-gukgo') === null ? false : localStorage.getItem('exclude-gukgo') === 'true'; // 기본값: false (국고 포함)
     
     document.getElementById('streamer-summary-header').value = savedHeader;
     document.getElementById('streamer-summary-footer').value = savedFooter;
