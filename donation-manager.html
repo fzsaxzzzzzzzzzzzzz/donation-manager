@@ -1901,7 +1901,9 @@ function updateSummary() {
     // 스트리머 총액 설정 로드
     const headerText = localStorage.getItem('streamer-summary-header') || '🔥🏫삼용스쿨🏫🔥';
     const footerText = localStorage.getItem('streamer-summary-footer') || '🏧투네/계좌 [8:2] 🎉슈퍼챗은 국고로~!';
-    const excludeGukgo = localStorage.getItem('exclude-gukgo') === null ? false : localStorage.getItem('exclude-gukgo') === 'true'; // 기본값: false (국고 포함)
+    const excludeGukgoValue = localStorage.getItem('exclude-gukgo');
+    const excludeGukgo = excludeGukgoValue === null ? false : excludeGukgoValue === 'true'; // 기본값: false (국고 포함)
+    console.log('🔍 excludeGukgo 디버그:', { excludeGukgoValue, excludeGukgo }); // 디버깅용
     
     // 상세 테이블과 동일한 로직으로 스트리머 데이터 계산 (국고 포함)
     const hiddenStreamers = JSON.parse(localStorage.getItem('hidden-streamers') || '[]');
@@ -1935,6 +1937,7 @@ function updateSummary() {
     // 국고 데이터 계산
     const gukgoData = streamerDetailData['국고'] || { account: 0, toonation: 0, total: 0 };
     gukgoData.total = gukgoData.account + gukgoData.toonation;
+    console.log('🔍 국고 데이터 디버그:', { gukgoData, streamerDetailData: Object.keys(streamerDetailData) }); // 디버깅용
     
     // 총합 계산 (국고 제외 옵션에 따라)
     const streamerOnlyTotal = sortedDetailStreamers.reduce((sum, s) => sum + s.total, 0);
@@ -1983,8 +1986,8 @@ function updateSummary() {
     // 출력 형식 (국고 포함 여부에 따른 출력)
     let summaryText = `${headerText} ${samyongSchool}`;
     
-    // 국고 표시 (excludeGukgo가 false일 때만)
-    if (!excludeGukgo && gukgoData.total > 0) {
+    // 국고 표시 (excludeGukgo가 false일 때 항상 표시, 0원이어도)
+    if (!excludeGukgo) {
         summaryText += ` 🏦국고(${gukgoData.total})`;
     }
     
