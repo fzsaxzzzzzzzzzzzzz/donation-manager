@@ -28,7 +28,7 @@ body {
     font-weight: bold;
     color: white;
     text-shadow: var(--overlay-text-shadow, 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000, 3px 0px 0 #000000, -3px 0px 0 #000000, 0px 3px 0 #000000, 0px -3px 0 #000000) !important;
-    line-height: 1.5;
+    line-height: var(--overlay-line-height, 1.5);
     white-space: pre-line;
     padding: 0;
     text-align: var(--overlay-text-align, left) !important;
@@ -140,14 +140,16 @@ class RealtimeDonorOverlay {
         const fontSize = parseInt(this.settings['overlay-font-size']) || 18;
         const strokeWidth = parseFloat(this.settings['overlay-stroke-width']) || 3;
         const textAlign = this.settings['overlay-text-align'] || 'left';
+        const lineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
         
         root.style.setProperty('--overlay-font-size', fontSize + 'px');
         root.style.setProperty('--overlay-text-align', textAlign);
+        root.style.setProperty('--overlay-line-height', lineHeight);
         root.style.setProperty('--overlay-text-shadow', 
             `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000`
         );
         
-        console.log('🔧 설정 적용됨:', { fontSize, strokeWidth, textAlign });
+        console.log('🔧 설정 적용됨:', { fontSize, strokeWidth, textAlign, lineHeight });
     }
     
     updateDisplay() {

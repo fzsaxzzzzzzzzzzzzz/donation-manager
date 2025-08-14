@@ -636,6 +636,13 @@ body {
                         <span class="range-value" id="overlayStrokeWidthValue">3px</span>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">줄간격</label>
+                    <div class="range-display">
+                        <input type="range" id="overlayLineHeight" class="form-range" min="1.0" max="3.0" step="0.1" value="1.5">
+                        <span class="range-value" id="overlayLineHeightValue">1.5</span>
+                    </div>
+                </div>
 
                 <div class="btn-group">
                     <button class="btn btn-primary" onclick="applyOverlaySettings()">💾 설정 적용</button>
@@ -972,12 +979,15 @@ function updateSettingsDisplay() {
     const fontSize = settings['overlay-font-size'] || '24';
     const textAlign = settings['overlay-text-align'] || 'center';
     const strokeWidth = settings['overlay-stroke-width'] || '3';
+    const lineHeight = settings['overlay-line-height'] || '1.5';
     
     document.getElementById('overlayFontSize').value = fontSize;
     document.getElementById('overlayFontSizeValue').textContent = fontSize + 'px';
     document.getElementById('overlayTextAlign').value = textAlign;
     document.getElementById('overlayStrokeWidth').value = strokeWidth;
     document.getElementById('overlayStrokeWidthValue').textContent = strokeWidth + 'px';
+    document.getElementById('overlayLineHeight').value = lineHeight;
+    document.getElementById('overlayLineHeightValue').textContent = lineHeight;
     
     // 테이블 설정
     const tableOpacity = settings['table-opacity'] || '85';
@@ -1033,12 +1043,14 @@ function updateOverlayPreview() {
     const fontSize = settings['overlay-font-size'] || '24';
     const textAlign = settings['overlay-text-align'] || 'center';
     const strokeWidth = settings['overlay-stroke-width'] || '3';
+    const lineHeight = settings['overlay-line-height'] || '1.5';
     
     const shadow = `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000`;
     
     previewEl.style.fontSize = fontSize + 'px';
     previewEl.style.textAlign = textAlign;
     previewEl.style.textShadow = shadow;
+    previewEl.style.lineHeight = lineHeight;
 }
 
 // 탭 전환
@@ -1203,7 +1215,8 @@ async function applyOverlaySettings() {
     const settings = {
         'overlay-font-size': document.getElementById('overlayFontSize').value,
         'overlay-text-align': document.getElementById('overlayTextAlign').value,
-        'overlay-stroke-width': document.getElementById('overlayStrokeWidth').value
+        'overlay-stroke-width': document.getElementById('overlayStrokeWidth').value,
+        'overlay-line-height': document.getElementById('overlayLineHeight').value
     };
     
     try {
@@ -1399,6 +1412,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('overlayStrokeWidthValue').textContent = e.target.value + 'px';
     });
     
+    document.getElementById('overlayLineHeight').addEventListener('input', (e) => {
+        document.getElementById('overlayLineHeightValue').textContent = e.target.value;
+    });
+    
     document.getElementById('tableOpacity').addEventListener('input', (e) => {
         document.getElementById('tableOpacityValue').textContent = e.target.value + '%';
     });
@@ -1514,6 +1531,8 @@ function resetOverlaySettings() {
     document.getElementById('overlayTextAlign').value = 'center';
     document.getElementById('overlayStrokeWidth').value = 3;
     document.getElementById('overlayStrokeWidthValue').textContent = '3px';
+    document.getElementById('overlayLineHeight').value = 1.5;
+    document.getElementById('overlayLineHeightValue').textContent = '1.5';
     
     applyOverlaySettings();
 }
