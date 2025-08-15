@@ -23,12 +23,12 @@ body {
 .overlay-container {
     position: relative;
     margin: 15px auto;
-    max-width: 600px;
+    max-width: 400px;
     width: calc(100vw - 30px);
-    min-width: 300px;
+    min-width: 280px;
     background: rgba(0, 0, 0, calc(var(--table-opacity, 85) / 100));
     border-radius: 10px;
-    padding: 15px;
+    padding: 12px;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -55,26 +55,27 @@ body {
 .streamer-table th {
     background: rgba(255,215,0,0.2);
     color: #FFD700;
-    padding: 10px 6px;
+    padding: 8px 6px;
     text-align: center;
     font-weight: bold;
     border-bottom: 2px solid #FFD700;
     font-size: var(--table-font-size, 14px);
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    height: 36px;
 }
 
 /* 순위 열 너비 */
 .streamer-table th:first-child,
 .streamer-table td:first-child {
-    width: 60px;
-    min-width: 60px;
+    width: 50px;
+    min-width: 50px;
 }
 
 /* 스트리머 열 너비 - 줄임 */
 .streamer-table th:nth-child(2),
 .streamer-table td:nth-child(2) {
-    width: 100px;
-    min-width: 100px;
+    width: 80px;
+    min-width: 80px;
 }
 
 /* 총 후원 열 - 나머지 공간 */
@@ -86,17 +87,18 @@ body {
 /* 순위명 체크 해제시 2열 구조에서 스트리머 열 너비 */
 .streamer-table th#rankHeader[style*="none"] ~ th:first-of-type,
 .streamer-table td:first-child:not([colspan]) {
-    width: 100px;
-    min-width: 100px;
+    width: 80px;
+    min-width: 80px;
 }
 
 .streamer-table td {
-    padding: 8px 6px;
+    padding: 6px 6px;
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.1);
     font-size: var(--table-font-size, 14px);
     color: var(--table-text-color, white);
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    height: 32px;
 }
 
 .streamer-table tr:nth-child(even) {
@@ -396,10 +398,10 @@ class TotalOnlyOverlay {
         // 순위 열 표시/숨김 처리 및 열 너비 조정
         if (showRanks) {
             rankHeader.style.display = '';
-            // 3열 구조: 순위(60px) | 스트리머(100px) | 총 후원(auto)
+            // 3열 구조: 순위(50px) | 스트리머(80px) | 총 후원(auto)
         } else {
             rankHeader.style.display = 'none';
-            // 2열 구조: 스트리머(100px) | 총 후원(auto)  
+            // 2열 구조: 스트리머(80px) | 총 후원(auto)  
         }
         
         if (streamerTotals.length === 0) {
