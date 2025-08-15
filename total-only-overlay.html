@@ -34,6 +34,18 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* 총액만 있을 때 더 좁은 너비 */
+.overlay-container.total-only {
+    max-width: 200px;
+    min-width: 150px;
+}
+
+/* 2열 구조일 때 더 좁은 너비 */
+.overlay-container.two-columns {
+    max-width: 280px;
+    min-width: 200px;
+}
+
 .section-title {
     font-size: calc(var(--table-font-size, 14px) + 4px);
     font-weight: bold;
@@ -394,19 +406,26 @@ class TotalOnlyOverlay {
         const tbody = document.getElementById('streamerTableBody');
         const rankHeader = document.getElementById('rankHeader');
         const showRanks = this.overlaySettings.showRankNames;
+        const overlayContainer = document.querySelector('.overlay-container');
         
-        // 순위 열 표시/숨김 처리 및 열 너비 조정
+        // 순위 열 표시/숨김 처리 및 컨테이너 너비 조정
         if (showRanks) {
             rankHeader.style.display = '';
+            overlayContainer.classList.remove('total-only', 'two-columns');
             // 3열 구조: 순위(50px) | 스트리머(80px) | 총 후원(auto)
         } else {
             rankHeader.style.display = 'none';
+            overlayContainer.classList.remove('total-only');
+            overlayContainer.classList.add('two-columns');
             // 2열 구조: 스트리머(80px) | 총 후원(auto)  
         }
         
         if (streamerTotals.length === 0) {
             const colSpan = showRanks ? '3' : '2';
             tbody.innerHTML = `<tr><td colspan="${colSpan}" class="no-data">아직 후원이 없습니다.</td></tr>`;
+            // 데이터가 없을 때는 더 좁게
+            overlayContainer.classList.add('total-only');
+            overlayContainer.classList.remove('two-columns');
             return;
         }
 
@@ -478,12 +497,28 @@ class TotalOnlyOverlay {
 
     showNoData() {
         const tbody = document.getElementById('streamerTableBody');
-        tbody.innerHTML = '<tr><td colspan="3" class="no-data">아직 후원이 없습니다.</td></tr>';
+        const overlayContainer = document.querySelector('.overlay-container');
+        const showRanks = this.overlaySettings.showRankNames;
+        const colSpan = showRanks ? '3' : '2';
+        
+        tbody.innerHTML = `<tr><td colspan="${colSpan}" class="no-data">아직 후원이 없습니다.</td></tr>`;
+        
+        // 데이터가 없을 때는 더 좁게
+        overlayContainer.classList.add('total-only');
+        overlayContainer.classList.remove('two-columns');
     }
 
     showNoConnection() {
         const tbody = document.getElementById('streamerTableBody');
-        tbody.innerHTML = '<tr><td colspan="3" class="no-data">서버 연결이 끊어졌습니다...</td></tr>';
+        const overlayContainer = document.querySelector('.overlay-container');
+        const showRanks = this.overlaySettings.showRankNames;
+        const colSpan = showRanks ? '3' : '2';
+        
+        tbody.innerHTML = `<tr><td colspan="${colSpan}" class="no-data">서버 연결이 끊어졌습니다...</td></tr>`;
+        
+        // 연결이 끊어졌을 때도 더 좁게
+        overlayContainer.classList.add('total-only');
+        overlayContainer.classList.remove('two-columns');
     }
 }
 
