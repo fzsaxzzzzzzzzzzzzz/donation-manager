@@ -286,6 +286,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="openOverlay('total-only')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
 <button onclick="copyOverlayURL('total-only')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
 <button onclick="showQRCode('total-only')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
+<button onclick="showTotalOnlySettings()" class="btn btn-warning" style="font-size: 12px; padding: 5px 10px;">🎨 설정</button>
 </div>
 </div>
 
@@ -295,6 +296,62 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 
 <div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
 <span id="total-only-overlay-url">https://donation-manager-ufm1.onrender.com/total-only-overlay.html</span>
+</div>
+
+<!-- 총액만 오버레이 설정 패널 -->
+<div id="total-only-settings" style="display: none; margin-top: 15px; padding: 15px; background: #e8f4ff; border: 1px solid #1877f2; border-radius: 8px;">
+<h5 style="margin-bottom: 15px; color: #1565c0;">📊 총액 오버레이 설정</h5>
+
+<div style="display: grid; gap: 15px; margin-bottom: 20px;">
+<!-- 표시 옵션 -->
+<div>
+<h6 style="margin-bottom: 10px; color: #1565c0; font-size: 14px;">표시 옵션</h6>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+<input type="checkbox" id="totalOnly-showRankNames" style="width: 16px; height: 16px; cursor: pointer;"> 순위명 보이기
+<span style="color: #666; font-size: 11px;">(👑왕자, 🤴귀족 등)</span>
+</label>
+
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+<input type="checkbox" id="totalOnly-showEomsamyong" style="width: 16px; height: 16px; cursor: pointer;"> 엄삼용 보이기
+</label>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin-left: 20px;">
+<input type="checkbox" id="totalOnly-fixEomsamyongFirst" style="width: 16px; height: 16px; cursor: pointer;"> └ 1등 고정
+</label>
+
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+<input type="checkbox" id="totalOnly-showOkgi" style="width: 16px; height: 16px; cursor: pointer;"> 옥기 보이기
+</label>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin-left: 20px;">
+<input type="checkbox" id="totalOnly-fixOkgiLast" style="width: 16px; height: 16px; cursor: pointer;"> └ 꼴지 고정
+</label>
+
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+<input type="checkbox" id="totalOnly-hideGukgo" style="width: 16px; height: 16px; cursor: pointer;"> 국고 보이기 말기
+</label>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin-left: 20px;">
+<input type="checkbox" id="totalOnly-fixGukgoLast" style="width: 16px; height: 16px; cursor: pointer;"> └ 국고 꼴지 고정
+</label>
+</div>
+</div>
+
+<!-- 단위 설정 -->
+<div>
+<h6 style="margin-bottom: 10px; color: #1565c0; font-size: 14px;">단위 설정</h6>
+<div style="display: flex; gap: 15px;">
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+<input type="radio" name="totalOnly-currency" value="won" id="totalOnly-currencyWon" style="width: 16px; height: 16px; cursor: pointer;"> 원 단위
+</label>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+<input type="radio" name="totalOnly-currency" value="manwon" id="totalOnly-currencyManwon" checked style="width: 16px; height: 16px; cursor: pointer;"> 만원 단위
+</label>
+</div>
+</div>
+</div>
+
+<div style="background: #fff3cd; padding: 10px; border-radius: 4px; border: 1px solid #ffc107; font-size: 12px; color: #856404;">
+<strong>💡 안내:</strong> 이 설정들은 총액만 오버레이에 실시간으로 적용됩니다.
+</div>
 </div>
 </div>
 
@@ -5533,6 +5590,22 @@ function showMissionGraphSettings() {
     bindSliderUpdates();
 }
 
+// 총액만 오버레이 설정 패널 표시/숨김
+function showTotalOnlySettings() {
+    const panel = document.getElementById('total-only-settings');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    
+    // 기존 설정 값 로드
+    loadTotalOnlySettings();
+    
+    // 이벤트 핸들러 바인딩
+    bindTotalOnlyEvents();
+}
+
+function hideTotalOnlySettings() {
+    document.getElementById('total-only-settings').style.display = 'none';
+}
+
 // 총액 목표 설정 패널 표시/숨김
 function showTotalGoalSettings() {
     const panel = document.getElementById('total-goal-settings');
@@ -5547,6 +5620,72 @@ function showTotalGoalSettings() {
 
 function hideTotalGoalSettings() {
     document.getElementById('total-goal-settings').style.display = 'none';
+}
+
+// 총액만 오버레이 설정 로드
+function loadTotalOnlySettings() {
+    // 로컬스토리지에서 설정 로드
+    document.getElementById('totalOnly-showRankNames').checked = localStorage.getItem('total-overlay-showRankNames') === 'true';
+    document.getElementById('totalOnly-showEomsamyong').checked = localStorage.getItem('total-overlay-showEomsamyong') === 'true';
+    document.getElementById('totalOnly-fixEomsamyongFirst').checked = localStorage.getItem('total-overlay-fixEomsamyongFirst') === 'true';
+    document.getElementById('totalOnly-showOkgi').checked = localStorage.getItem('total-overlay-showOkgi') === 'true';
+    document.getElementById('totalOnly-fixOkgiLast').checked = localStorage.getItem('total-overlay-fixOkgiLast') === 'true';
+    document.getElementById('totalOnly-hideGukgo').checked = localStorage.getItem('total-overlay-hideGukgo') === 'true';
+    document.getElementById('totalOnly-fixGukgoLast').checked = localStorage.getItem('total-overlay-fixGukgoLast') === 'true';
+    
+    const currency = localStorage.getItem('total-overlay-currency') || 'manwon';
+    document.getElementById(`totalOnly-currency${currency === 'won' ? 'Won' : 'Manwon'}`).checked = true;
+}
+
+// 총액만 오버레이 이벤트 바인딩
+function bindTotalOnlyEvents() {
+    const checkboxes = [
+        'showRankNames', 'showEomsamyong', 'fixEomsamyongFirst',
+        'showOkgi', 'fixOkgiLast', 'hideGukgo', 'fixGukgoLast'
+    ];
+
+    checkboxes.forEach(setting => {
+        const element = document.getElementById(`totalOnly-${setting}`);
+        if (element) {
+            element.addEventListener('change', (e) => {
+                updateTotalOnlySetting(setting, e.target.checked);
+            });
+        }
+    });
+
+    // 라디오 버튼 이벤트
+    document.querySelectorAll('input[name="totalOnly-currency"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                updateTotalOnlySetting('currency', e.target.value);
+            }
+        });
+    });
+}
+
+// 총액만 오버레이 설정 업데이트
+function updateTotalOnlySetting(key, value) {
+    // 로컬스토리지 저장
+    localStorage.setItem(`total-overlay-${key}`, value);
+    
+    // 설정 객체 생성
+    const overlaySettings = {
+        showRankNames: localStorage.getItem('total-overlay-showRankNames') === 'true',
+        showEomsamyong: localStorage.getItem('total-overlay-showEomsamyong') === 'true',
+        fixEomsamyongFirst: localStorage.getItem('total-overlay-fixEomsamyongFirst') === 'true',
+        showOkgi: localStorage.getItem('total-overlay-showOkgi') === 'true',
+        fixOkgiLast: localStorage.getItem('total-overlay-fixOkgiLast') === 'true',
+        hideGukgo: localStorage.getItem('total-overlay-hideGukgo') === 'true',
+        fixGukgoLast: localStorage.getItem('total-overlay-fixGukgoLast') === 'true',
+        currency: localStorage.getItem('total-overlay-currency') || 'manwon'
+    };
+    
+    // 소켓이 있으면 설정 전송
+    if (window.socket) {
+        window.socket.emit('updateTotalOverlaySettings', overlaySettings);
+        console.log(`🔧 총액 오버레이 설정 업데이트: ${key} = ${value}`);
+        showStatus('총액 오버레이 설정이 업데이트되었습니다! 📊', 'saved');
+    }
 }
 
 function loadTotalGoalSettings() {

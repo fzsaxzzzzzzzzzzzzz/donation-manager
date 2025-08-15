@@ -678,6 +678,13 @@ io.on('connection', (socket) => {
     // 모든 오버레이 클라이언트에게 전송
     io.emit('overlayTotalOnlyMode', isEnabled);
   });
+
+  // 총액 오버레이 설정 업데이트
+  socket.on('updateTotalOverlaySettings', (overlaySettings) => {
+    console.log('🔧 총액 오버레이 설정 업데이트 수신:', overlaySettings);
+    // 모든 총액 오버레이 클라이언트에게 전송
+    io.emit('totalOverlaySettingsUpdate', overlaySettings);
+  });
 });
 
 // 서버 시작

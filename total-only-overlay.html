@@ -19,6 +19,7 @@ body {
     font-size: var(--table-font-size, 14px);
 }
 
+
 .overlay-container {
     position: relative;
     margin: 15px auto;
@@ -130,6 +131,7 @@ body {
 </head>
 <body>
 
+
 <div class="overlay-container">
     <div class="section-title" id="tableTitle">🏆 스트리머별 후원 현황 🏆</div>
     
@@ -158,6 +160,18 @@ class TotalOnlyOverlay {
         this.data = null;
         this.settings = {};
         this.isConnected = false;
+        
+        // 오버레이 전용 설정
+        this.overlaySettings = {
+            showRankNames: localStorage.getItem('total-overlay-showRankNames') === 'true',
+            showEomsamyong: localStorage.getItem('total-overlay-showEomsamyong') === 'true',
+            fixEomsamyongFirst: localStorage.getItem('total-overlay-fixEomsamyongFirst') === 'true',
+            showOkgi: localStorage.getItem('total-overlay-showOkgi') === 'true',
+            fixOkgiLast: localStorage.getItem('total-overlay-fixOkgiLast') === 'true',
+            hideGukgo: localStorage.getItem('total-overlay-hideGukgo') === 'true',
+            fixGukgoLast: localStorage.getItem('total-overlay-fixGukgoLast') === 'true',
+            currency: localStorage.getItem('total-overlay-currency') || 'manwon'
+        };
         
         this.initializeSocketEvents();
         this.updateConnectionStatus();
@@ -199,6 +213,20 @@ class TotalOnlyOverlay {
             this.settings = settings;
             this.applySettings();
             this.renderTable();
+        });
+
+        // 총액 오버레이 전용 설정 업데이트 이벤트
+        this.socket.on('totalOverlaySettingsUpdate', (overlaySettings) => {
+            // 서버에서 온 설정으로 오버레이 설정 업데이트
+            Object.assign(this.overlaySettings, overlaySettings);
+            
+            // 로컬스토리지에도 저장
+            Object.keys(overlaySettings).forEach(key => {
+                localStorage.setItem(`total-overlay-${key}`, overlaySettings[key]);
+            });
+            
+            this.renderTable();
+            console.log('🔄 총액 오버레이 설정 업데이트됨:', overlaySettings);
         });
     }
 
@@ -254,9 +282,13 @@ class TotalOnlyOverlay {
     calculateStreamerTotals() {
         const streamerData = {};
         
-        // 스트리머 데이터 초기화 (국고 제외)
+        // 스트리머 데이터 초기화
         (this.data.streamers || []).forEach(streamer => {
-            if (streamer !== '국고' && streamer !== '후원자조정') {
+            // 국고 보이기 말기 설정에 따라 국고 제외/포함 결정
+            const shouldSkip = (streamer === '후원자조정') || 
+                              (this.overlaySettings.hideGukgo && streamer === '국고');
+            
+            if (!shouldSkip) {
                 streamerData[streamer] = {
                     name: streamer,
                     total: 0,
@@ -265,7 +297,7 @@ class TotalOnlyOverlay {
             }
         });
 
-        // 후원 데이터 집계 (모든 타입 합산)
+        // 후원 데이터 집계
         (this.data.donations || []).forEach(donation => {
             if (streamerData[donation.streamer]) {
                 const amountInWon = (parseFloat(donation.amount) || 0) * 10000; // 만원 → 원 변환
@@ -273,9 +305,46 @@ class TotalOnlyOverlay {
             }
         });
 
-        // 총액 기준 정렬 (0원 스트리머도 포함)
-        const sortedStreamers = Object.values(streamerData)
+        // 기본 정렬 (총액 기준)
+        let sortedStreamers = Object.values(streamerData)
             .sort((a, b) => b.total - a.total);
+
+        // 엄삼용 1등 고정 설정 적용
+        if (this.overlaySettings.showEomsamyong && this.overlaySettings.fixEomsamyongFirst) {
+            const eomsamyongIndex = sortedStreamers.findIndex(s => s.name === '엄삼용');
+            if (eomsamyongIndex > 0) { // 1등이 아닐 때만
+                const eomsamyong = sortedStreamers.splice(eomsamyongIndex, 1)[0];
+                sortedStreamers.unshift(eomsamyong); // 맨 앞으로
+            }
+        }
+
+        // 옥기 꼴지 고정 설정 적용
+        if (this.overlaySettings.showOkgi && this.overlaySettings.fixOkgiLast) {
+            const okgiIndex = sortedStreamers.findIndex(s => s.name === '옥기');
+            if (okgiIndex >= 0 && okgiIndex < sortedStreamers.length - 1) { // 꼴지가 아닐 때만
+                const okgi = sortedStreamers.splice(okgiIndex, 1)[0];
+                sortedStreamers.push(okgi); // 맨 뒤로
+            }
+        }
+
+        // 국고 꼴지 고정 설정 적용
+        if (!this.overlaySettings.hideGukgo && this.overlaySettings.fixGukgoLast) {
+            const gukgoIndex = sortedStreamers.findIndex(s => s.name === '국고');
+            if (gukgoIndex >= 0 && gukgoIndex < sortedStreamers.length - 1) { // 꼴지가 아닐 때만
+                const gukgo = sortedStreamers.splice(gukgoIndex, 1)[0];
+                sortedStreamers.push(gukgo); // 맨 뒤로
+            }
+        }
+
+        // 엄삼용 보이기 설정 적용
+        if (!this.overlaySettings.showEomsamyong) {
+            sortedStreamers = sortedStreamers.filter(s => s.name !== '엄삼용');
+        }
+
+        // 옥기 보이기 설정 적용
+        if (!this.overlaySettings.showOkgi) {
+            sortedStreamers = sortedStreamers.filter(s => s.name !== '옥기');
+        }
 
         console.log('💰 계산된 스트리머 총액:', sortedStreamers.slice(0, 3).map(s => ({
             name: s.name,
@@ -298,13 +367,31 @@ class TotalOnlyOverlay {
             const rankNumber = index + 1;
             const rankClass = `rank-${rankNumber <= 3 ? rankNumber : 'other'}`;
             
-            // 커스텀 순위 표시
-            const rankDisplay = this.getRankDisplay(index);
+            // 순위 표시 결정
+            let rankDisplay;
+            if (this.overlaySettings.showRankNames) {
+                // 순위명 보이기가 체크된 경우 커스텀 순위명 사용
+                rankDisplay = this.getRankDisplay(index);
+            } else {
+                // 체크되지 않은 경우 숫자 순위만 표시
+                rankDisplay = rankNumber.toString();
+            }
+            
+            // 금액 표시 형식 결정
+            let amountDisplay;
+            if (this.overlaySettings.currency === 'won') {
+                // 원 단위로 표시
+                amountDisplay = `${streamer.total.toLocaleString('ko-KR')}원`;
+            } else {
+                // 만원 단위로 표시
+                const manwonAmount = streamer.total / 10000;
+                amountDisplay = `${manwonAmount.toLocaleString('ko-KR')}만원`;
+            }
             
             html += `<tr class="${rankClass}">`;
             html += `<td><span class="rank-number">${rankDisplay}</span></td>`;
             html += `<td class="streamer-name">${streamer.emoji} ${streamer.name}</td>`;
-            html += `<td class="amount">${streamer.total.toLocaleString('ko-KR')}원</td>`;
+            html += `<td class="amount">${amountDisplay}</td>`;
             html += `</tr>`;
         });
 

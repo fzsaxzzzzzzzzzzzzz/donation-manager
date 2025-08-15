@@ -249,6 +249,49 @@ body {
     animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-out 2.7s forwards;
 }
 
+/* 총액 오버레이 설정 스타일 */
+.settings-section {
+    margin-bottom: 20px;
+}
+
+.settings-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.checkbox-label, .radio-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.checkbox-label.indent {
+    margin-left: 20px;
+    color: #666;
+    font-size: 13px;
+}
+
+.checkbox-label input, .radio-label input {
+    margin-top: 2px;
+}
+
+.checkbox-label small {
+    display: block;
+    color: #666;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 20px;
+}
+
 @keyframes fadeOut {
     to { opacity: 0; transform: translateX(100%); }
 }
@@ -348,6 +391,69 @@ body {
     </div>
 </div>
 
+<!-- 총액 오버레이 설정 패널 -->
+<div class="container" style="grid-template-columns: 1fr;">
+    <div class="panel">
+        <h2>📊 총액 오버레이 설정</h2>
+        
+        <div class="form-group">
+            <div class="settings-section">
+                <h3 style="margin-bottom: 15px; color: #1877f2; font-size: 1.1rem;">표시 옵션</h3>
+                
+                <div class="settings-grid">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="totalOverlay-showRankNames"> 순위명 보이기
+                        <small>체크시 커스텀 순위명(👑왕자, 🤴귀족 등) 표시</small>
+                    </label>
+                </div>
+                
+                <div class="settings-grid">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="totalOverlay-showEomsamyong"> 엄삼용 보이기
+                    </label>
+                    <label class="checkbox-label indent">
+                        <input type="checkbox" id="totalOverlay-fixEomsamyongFirst"> └ 1등 고정
+                    </label>
+                </div>
+                
+                <div class="settings-grid">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="totalOverlay-showOkgi"> 옥기 보이기
+                    </label>
+                    <label class="checkbox-label indent">
+                        <input type="checkbox" id="totalOverlay-fixOkgiLast"> └ 꼴지 고정
+                    </label>
+                </div>
+                
+                <div class="settings-grid">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="totalOverlay-hideGukgo"> 국고 보이기 말기
+                    </label>
+                    <label class="checkbox-label indent">
+                        <input type="checkbox" id="totalOverlay-fixGukgoLast"> └ 국고 꼴지 고정
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section" style="margin-top: 25px;">
+                <h3 style="margin-bottom: 15px; color: #1877f2; font-size: 1.1rem;">단위 설정</h3>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="totalOverlay-currency" value="won" id="totalOverlay-currencyWon"> 원 단위
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="totalOverlay-currency" value="manwon" id="totalOverlay-currencyManwon" checked> 만원 단위
+                    </label>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #1877f2;">
+                <strong>💡 안내:</strong> 이 설정들은 총액만 표시되는 스트리머 오버레이(total-only-overlay.html)에 실시간으로 적용됩니다.
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="realtime-indicator">
     🔴 실시간 연결됨
 </div>
@@ -361,6 +467,7 @@ class RealtimeDonationManager {
         
         this.initializeSocketEvents();
         this.initializeForm();
+        this.initializeTotalOverlaySettings();
         this.updateConnectionStatus();
     }
 
@@ -395,6 +502,72 @@ class RealtimeDonationManager {
             e.preventDefault();
             this.addDonation();
         });
+    }
+
+    initializeTotalOverlaySettings() {
+        // 총액 오버레이 설정 초기화
+        this.totalOverlaySettings = {
+            showRankNames: localStorage.getItem('total-overlay-showRankNames') === 'true',
+            showEomsamyong: localStorage.getItem('total-overlay-showEomsamyong') === 'true',
+            fixEomsamyongFirst: localStorage.getItem('total-overlay-fixEomsamyongFirst') === 'true',
+            showOkgi: localStorage.getItem('total-overlay-showOkgi') === 'true',
+            fixOkgiLast: localStorage.getItem('total-overlay-fixOkgiLast') === 'true',
+            hideGukgo: localStorage.getItem('total-overlay-hideGukgo') === 'true',
+            fixGukgoLast: localStorage.getItem('total-overlay-fixGukgoLast') === 'true',
+            currency: localStorage.getItem('total-overlay-currency') || 'manwon'
+        };
+
+        // UI에 현재 설정 반영
+        document.getElementById('totalOverlay-showRankNames').checked = this.totalOverlaySettings.showRankNames;
+        document.getElementById('totalOverlay-showEomsamyong').checked = this.totalOverlaySettings.showEomsamyong;
+        document.getElementById('totalOverlay-fixEomsamyongFirst').checked = this.totalOverlaySettings.fixEomsamyongFirst;
+        document.getElementById('totalOverlay-showOkgi').checked = this.totalOverlaySettings.showOkgi;
+        document.getElementById('totalOverlay-fixOkgiLast').checked = this.totalOverlaySettings.fixOkgiLast;
+        document.getElementById('totalOverlay-hideGukgo').checked = this.totalOverlaySettings.hideGukgo;
+        document.getElementById('totalOverlay-fixGukgoLast').checked = this.totalOverlaySettings.fixGukgoLast;
+        document.getElementById(`totalOverlay-currency${this.totalOverlaySettings.currency === 'won' ? 'Won' : 'Manwon'}`).checked = true;
+
+        // 이벤트 리스너 설정
+        this.attachTotalOverlayEvents();
+    }
+
+    attachTotalOverlayEvents() {
+        // 체크박스 이벤트들
+        const checkboxes = [
+            'showRankNames', 'showEomsamyong', 'fixEomsamyongFirst',
+            'showOkgi', 'fixOkgiLast', 'hideGukgo', 'fixGukgoLast'
+        ];
+
+        checkboxes.forEach(setting => {
+            document.getElementById(`totalOverlay-${setting}`).addEventListener('change', (e) => {
+                this.updateTotalOverlaySetting(setting, e.target.checked);
+            });
+        });
+
+        // 라디오 버튼 이벤트
+        document.querySelectorAll('input[name="totalOverlay-currency"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.updateTotalOverlaySetting('currency', e.target.value);
+                }
+            });
+        });
+    }
+
+    updateTotalOverlaySetting(key, value) {
+        // 내부 설정 업데이트
+        this.totalOverlaySettings[key] = value;
+        
+        // 로컬스토리지 저장
+        localStorage.setItem(`total-overlay-${key}`, value);
+        
+        // 소켓을 통해 총액 오버레이에 설정 전송
+        this.socket.emit('updateTotalOverlaySettings', this.totalOverlaySettings);
+        
+        console.log(`🔧 총액 오버레이 설정 업데이트: ${key} = ${value}`);
+        
+        // 알림 표시
+        this.showNotification('총액 오버레이 설정이 업데이트되었습니다! 📊');
     }
 
     updateConnectionStatus() {
