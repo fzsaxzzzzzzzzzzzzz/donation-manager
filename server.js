@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs').promises;
 const admin = require('firebase-admin');
+const session = require('express-session');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,6 +19,12 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3001;
+
+// 비밀번호 설정
+const PASSWORDS = {
+  admin: '1130',      // 일반 관리자 (조회만 가능)
+  superadmin: '2749'  // 최고 관리자 (모든 권한)
+};
 
 // Firebase Admin SDK 초기화
 let firebaseDB = null;
@@ -42,7 +49,79 @@ try {
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.static('.'));
+
+// 세션 설정
+app.use(session({
+  secret: 'donation-tracker-secret-key-2025',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: false, // HTTP에서도 사용 (HTTPS에서는 true)
+    maxAge: 24 * 60 * 60 * 1000 // 24시간
+  }
+}));
+
+// 인증 미들웨어
+function requireAuth(req, res, next) {
+  if (req.session && req.session.authenticated) {
+    return next();
+  } else {
+    // 현재 URL을 redirect 파라미터로 전달
+    const redirectUrl = encodeURIComponent(req.originalUrl);
+    return res.redirect(`/login.html?redirect=${redirectUrl}`);
+  }
+}
+
+// 최고 관리자 권한 체크 미들웨어
+function requireSuperAdmin(req, res, next) {
+  if (req.session && req.session.authenticated && req.session.role === 'superadmin') {
+    return next();
+  } else if (req.session && req.session.authenticated) {
+    return res.status(403).json({ error: '최고 관리자 권한이 필요합니다.' });
+  } else {
+    const redirectUrl = encodeURIComponent(req.originalUrl);
+    return res.redirect(`/login.html?redirect=${redirectUrl}`);
+  }
+}
+
+// 보호된 페이지들 (인증 필요)
+const protectedPages = [
+  'all-in-one.html',
+  'donation-manager-realtime.html', 
+  'admin-settings.html',
+  'settings-sheet.html',
+  'donation-sheet.html'
+];
+
+// 최고 관리자만 접근 가능한 페이지들
+const superAdminPages = [
+  'admin-settings.html',
+  'settings-sheet.html',
+  'donation-manager-realtime.html'
+];
+
+// 보호된 페이지들에 인증 적용
+protectedPages.forEach(page => {
+  if (superAdminPages.includes(page)) {
+    app.get(`/${page}`, requireSuperAdmin, (req, res) => {
+      res.sendFile(path.join(__dirname, page));
+    });
+  } else {
+    app.get(`/${page}`, requireAuth, (req, res) => {
+      res.sendFile(path.join(__dirname, page));
+    });
+  }
+});
+
+// 로그인 페이지는 인증 없이 접근 가능
+app.get('/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+// 나머지 정적 파일들 (오버레이 등은 인증 없이 접근 가능)
+app.use(express.static('.', {
+  index: false // 기본 인덱스 파일 비활성화
+}));
 
 // 현재 데이터 저장소 (메모리 + 파일 백업)
 let currentData = {
@@ -164,9 +243,71 @@ async function saveData(updateTimestamp = true) {
   }
 }
 
+// 인증 API 엔드포인트
+app.post('/api/auth/login', (req, res) => {
+  const { password, role } = req.body;
+  
+  // 입력값 검증
+  if (!password || !role) {
+    return res.status(400).json({ 
+      success: false, 
+      message: '비밀번호와 권한을 모두 입력해주세요.' 
+    });
+  }
+  
+  // 비밀번호 확인
+  if (PASSWORDS[role] && PASSWORDS[role] === password) {
+    req.session.authenticated = true;
+    req.session.role = role;
+    req.session.loginTime = new Date().toISOString();
+    
+    console.log(`🔐 [로그인 성공] ${role} 권한으로 로그인`);
+    
+    res.json({ 
+      success: true, 
+      message: '로그인 성공',
+      role: role,
+      permissions: role === 'superadmin' ? '모든 권한' : '조회 권한만'
+    });
+  } else {
+    console.log(`❌ [로그인 실패] 잘못된 비밀번호 시도 - Role: ${role}`);
+    res.status(401).json({ 
+      success: false, 
+      message: '비밀번호가 틀렸습니다.' 
+    });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const userRole = req.session.role;
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ 
+        success: false, 
+        message: '로그아웃 처리 중 오류가 발생했습니다.' 
+      });
+    }
+    
+    console.log(`🚪 [로그아웃] ${userRole} 권한 사용자 로그아웃`);
+    res.json({ success: true, message: '로그아웃 되었습니다.' });
+  });
+});
+
+app.get('/api/auth/status', (req, res) => {
+  if (req.session && req.session.authenticated) {
+    res.json({
+      authenticated: true,
+      role: req.session.role,
+      loginTime: req.session.loginTime
+    });
+  } else {
+    res.json({ authenticated: false });
+  }
+});
+
 // 헬스체크 엔드포인트
 app.get('/', (req, res) => {
-  res.redirect('/all-in-one.html');
+  res.redirect('/login.html');
 });
 
 app.get('/old', (req, res) => {
@@ -207,12 +348,12 @@ app.get('/ping', (req, res) => {
   });
 });
 
-// API 엔드포인트
-app.get('/api/data', (req, res) => {
+// API 엔드포인트 (인증 적용)
+app.get('/api/data', requireAuth, (req, res) => {
   res.json(currentData);
 });
 
-app.post('/api/donations', async (req, res) => {
+app.post('/api/donations', requireSuperAdmin, async (req, res) => {
   const { donor, streamer, type, amount } = req.body;
   
   const newDonation = {
@@ -237,7 +378,7 @@ app.post('/api/donations', async (req, res) => {
 // 중복된 설정 API 제거됨 (아래에 올바른 버전 존재)
 
 // 후원 삭제 API
-app.delete('/api/donations/:id', async (req, res) => {
+app.delete('/api/donations/:id', requireSuperAdmin, async (req, res) => {
   const donationId = req.params.id;
   console.log('🗑️ 삭제 요청 받음:', donationId);
   console.log('현재 후원 개수:', currentData.donations.length);
@@ -282,7 +423,7 @@ app.delete('/api/donations/:id', async (req, res) => {
 });
 
 // 벌크 업데이트 API (전체 데이터 교체)
-app.put('/api/donations/bulk', async (req, res) => {
+app.put('/api/donations/bulk', requireSuperAdmin, async (req, res) => {
   try {
     const { donations } = req.body;
     
@@ -306,7 +447,7 @@ app.put('/api/donations/bulk', async (req, res) => {
 });
 
 // 스트리머 관리 API
-app.post('/api/streamers', async (req, res) => {
+app.post('/api/streamers', requireSuperAdmin, async (req, res) => {
   try {
     const { name, emoji } = req.body;
     
@@ -344,7 +485,7 @@ app.post('/api/streamers', async (req, res) => {
   }
 });
 
-app.delete('/api/streamers/:name', async (req, res) => {
+app.delete('/api/streamers/:name', requireSuperAdmin, async (req, res) => {
   try {
     const streamerName = decodeURIComponent(req.params.name);
     
@@ -451,7 +592,7 @@ app.post('/api/force-reload', async (req, res) => {
 });
 
 // 미션 관리 API
-app.post('/api/missions', async (req, res) => {
+app.post('/api/missions', requireSuperAdmin, async (req, res) => {
   try {
     const { streamer, target, description } = req.body;
     
@@ -500,7 +641,7 @@ app.post('/api/missions', async (req, res) => {
 });
 
 
-app.delete('/api/missions/:id', async (req, res) => {
+app.delete('/api/missions/:id', requireSuperAdmin, async (req, res) => {
   try {
     const missionId = req.params.id;
     
@@ -526,7 +667,7 @@ app.delete('/api/missions/:id', async (req, res) => {
   }
 });
 
-app.put('/api/missions/:id/complete', async (req, res) => {
+app.put('/api/missions/:id/complete', requireSuperAdmin, async (req, res) => {
   try {
     const missionId = req.params.id;
     
@@ -599,7 +740,7 @@ app.post('/api/reset-settings', async (req, res) => {
 });
 
 // 설정 업데이트 API
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', requireSuperAdmin, async (req, res) => {
   try {
     const { settings } = req.body;
     
