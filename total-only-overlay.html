@@ -137,8 +137,8 @@ body {
     
     <table class="streamer-table">
         <thead>
-            <tr>
-                <th>순위</th>
+            <tr id="tableHeader">
+                <th id="rankHeader">순위</th>
                 <th>스트리머</th>
                 <th>총 후원</th>
             </tr>
@@ -318,9 +318,9 @@ class TotalOnlyOverlay {
             }
         }
 
-        // 옥기 꼴지 고정 설정 적용
+        // 옥긔 꼴지 고정 설정 적용
         if (this.overlaySettings.showOkgi && this.overlaySettings.fixOkgiLast) {
-            const okgiIndex = sortedStreamers.findIndex(s => s.name === '옥기');
+            const okgiIndex = sortedStreamers.findIndex(s => s.name === '옥긔');
             if (okgiIndex >= 0 && okgiIndex < sortedStreamers.length - 1) { // 꼴지가 아닐 때만
                 const okgi = sortedStreamers.splice(okgiIndex, 1)[0];
                 sortedStreamers.push(okgi); // 맨 뒤로
@@ -341,9 +341,9 @@ class TotalOnlyOverlay {
             sortedStreamers = sortedStreamers.filter(s => s.name !== '엄삼용');
         }
 
-        // 옥기 보이기 설정 적용
+        // 옥긔 보이기 설정 적용
         if (!this.overlaySettings.showOkgi) {
-            sortedStreamers = sortedStreamers.filter(s => s.name !== '옥기');
+            sortedStreamers = sortedStreamers.filter(s => s.name !== '옥긔');
         }
 
         console.log('💰 계산된 스트리머 총액:', sortedStreamers.slice(0, 3).map(s => ({
@@ -356,9 +356,19 @@ class TotalOnlyOverlay {
 
     displayTable(streamerTotals) {
         const tbody = document.getElementById('streamerTableBody');
+        const rankHeader = document.getElementById('rankHeader');
+        const showRanks = this.overlaySettings.showRankNames;
+        
+        // 순위 열 표시/숨김 처리
+        if (showRanks) {
+            rankHeader.style.display = '';
+        } else {
+            rankHeader.style.display = 'none';
+        }
         
         if (streamerTotals.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="no-data">아직 후원이 없습니다.</td></tr>';
+            const colSpan = showRanks ? '3' : '2';
+            tbody.innerHTML = `<tr><td colspan="${colSpan}" class="no-data">아직 후원이 없습니다.</td></tr>`;
             return;
         }
 
@@ -366,16 +376,6 @@ class TotalOnlyOverlay {
         streamerTotals.forEach((streamer, index) => {
             const rankNumber = index + 1;
             const rankClass = `rank-${rankNumber <= 3 ? rankNumber : 'other'}`;
-            
-            // 순위 표시 결정
-            let rankDisplay;
-            if (this.overlaySettings.showRankNames) {
-                // 순위명 보이기가 체크된 경우 커스텀 순위명 사용
-                rankDisplay = this.getRankDisplay(index);
-            } else {
-                // 체크되지 않은 경우 숫자 순위만 표시
-                rankDisplay = rankNumber.toString();
-            }
             
             // 금액 표시 형식 결정
             let amountDisplay;
@@ -389,7 +389,13 @@ class TotalOnlyOverlay {
             }
             
             html += `<tr class="${rankClass}">`;
-            html += `<td><span class="rank-number">${rankDisplay}</span></td>`;
+            
+            // 순위명 보이기가 체크된 경우에만 순위 열 표시
+            if (showRanks) {
+                const rankDisplay = this.getRankDisplay(index);
+                html += `<td><span class="rank-number">${rankDisplay}</span></td>`;
+            }
+            
             html += `<td class="streamer-name">${streamer.emoji} ${streamer.name}</td>`;
             html += `<td class="amount">${amountDisplay}</td>`;
             html += `</tr>`;
