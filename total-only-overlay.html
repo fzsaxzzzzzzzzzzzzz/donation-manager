@@ -63,6 +63,33 @@ body {
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
 
+/* 순위 열 너비 */
+.streamer-table th:first-child,
+.streamer-table td:first-child {
+    width: 60px;
+    min-width: 60px;
+}
+
+/* 스트리머 열 너비 - 줄임 */
+.streamer-table th:nth-child(2),
+.streamer-table td:nth-child(2) {
+    width: 100px;
+    min-width: 100px;
+}
+
+/* 총 후원 열 - 나머지 공간 */
+.streamer-table th:last-child,
+.streamer-table td:last-child {
+    width: auto;
+}
+
+/* 순위명 체크 해제시 2열 구조에서 스트리머 열 너비 */
+.streamer-table th#rankHeader[style*="none"] ~ th:first-of-type,
+.streamer-table td:first-child:not([colspan]) {
+    width: 100px;
+    min-width: 100px;
+}
+
 .streamer-table td {
     padding: 8px 6px;
     text-align: center;
@@ -217,6 +244,8 @@ class TotalOnlyOverlay {
 
         // 총액 오버레이 전용 설정 업데이트 이벤트
         this.socket.on('totalOverlaySettingsUpdate', (overlaySettings) => {
+            console.log('🔄 총액 오버레이 설정 업데이트 수신:', overlaySettings);
+            
             // 서버에서 온 설정으로 오버레이 설정 업데이트
             Object.assign(this.overlaySettings, overlaySettings);
             
@@ -225,8 +254,13 @@ class TotalOnlyOverlay {
                 localStorage.setItem(`total-overlay-${key}`, overlaySettings[key]);
             });
             
-            this.renderTable();
-            console.log('🔄 총액 오버레이 설정 업데이트됨:', overlaySettings);
+            // 설정 변경 후 테이블 다시 렌더링 (데이터가 있을 때만)
+            if (this.data && this.data.donations && this.data.streamers) {
+                this.renderTable();
+                console.log('✅ 설정 적용 후 테이블 렌더링 완료');
+            } else {
+                console.log('⏳ 데이터 로드 후 설정이 적용될 예정');
+            }
         });
     }
 
@@ -359,11 +393,13 @@ class TotalOnlyOverlay {
         const rankHeader = document.getElementById('rankHeader');
         const showRanks = this.overlaySettings.showRankNames;
         
-        // 순위 열 표시/숨김 처리
+        // 순위 열 표시/숨김 처리 및 열 너비 조정
         if (showRanks) {
             rankHeader.style.display = '';
+            // 3열 구조: 순위(60px) | 스트리머(100px) | 총 후원(auto)
         } else {
             rankHeader.style.display = 'none';
+            // 2열 구조: 스트리머(100px) | 총 후원(auto)  
         }
         
         if (streamerTotals.length === 0) {

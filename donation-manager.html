@@ -5681,10 +5681,13 @@ function updateTotalOnlySetting(key, value) {
     };
     
     // 소켓이 있으면 설정 전송
-    if (window.socket) {
-        window.socket.emit('updateTotalOverlaySettings', overlaySettings);
+    if (socket && socket.connected) {
+        socket.emit('updateTotalOverlaySettings', overlaySettings);
         console.log(`🔧 총액 오버레이 설정 업데이트: ${key} = ${value}`);
         showStatus('총액 오버레이 설정이 업데이트되었습니다! 📊', 'saved');
+    } else {
+        console.warn('⚠️ 소켓 연결이 없어서 총액 오버레이 설정을 전송할 수 없습니다.');
+        showStatus('소켓 연결을 확인해주세요! ⚠️', 'error');
     }
 }
 
