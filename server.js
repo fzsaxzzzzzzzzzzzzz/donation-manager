@@ -87,6 +87,7 @@ function requireSuperAdmin(req, res, next) {
 // 보호된 페이지들 (인증 필요)
 const protectedPages = [
   'all-in-one.html',
+  'donation-manager.html',
   'donation-manager-realtime.html', 
   'admin-settings.html',
   'settings-sheet.html',
@@ -97,6 +98,7 @@ const protectedPages = [
 const superAdminPages = [
   'admin-settings.html',
   'settings-sheet.html',
+  'donation-manager.html',
   'donation-manager-realtime.html'
 ];
 
