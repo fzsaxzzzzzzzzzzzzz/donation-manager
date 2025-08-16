@@ -623,6 +623,30 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
+<div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 20px;">
+<h5 style="margin-bottom: 15px; color: #1565c0;">🏦 카카오뱅크 계좌 표시</h5>
+
+<div style="margin-bottom: 15px;">
+<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+<input type="checkbox" id="showKakaoBank-checkbox" onchange="updateKakaoBankDisplay()">
+<span>카카오뱅크 계좌 정보 표시</span>
+</label>
+<small style="color: #666; font-size: 12px; margin-left: 24px;">체크시 후원자 오버레이에 카카오뱅크 계좌정보 표시</small>
+</div>
+
+<div style="margin-bottom: 15px;">
+<label class="form-label">크기 조절: <span id="kakaobank-size-value">100%</span></label>
+<input type="range" id="kakaobank-size-range" min="50" max="200" value="100" 
+       onInput="updateKakaoBankSize(this.value)" class="form-input" style="width: 100%;">
+</div>
+
+<div style="margin-bottom: 15px;">
+<label class="form-label">줄간격 조절: <span id="kakaobank-lineheight-value">1.2</span></label>
+<input type="range" id="kakaobank-lineheight-range" min="0.8" max="2.0" step="0.1" value="1.2" 
+       onInput="updateKakaoBankLineHeight(this.value)" class="form-input" style="width: 100%;">
+</div>
+</div>
+
 <div style="margin-bottom: 20px;">
 <button onclick="applyOverlaySettings()" class="btn btn-success">적용</button>
 <button onclick="resetOverlaySettings()" class="btn btn-secondary">기본값 복원</button>
@@ -4575,14 +4599,73 @@ function resetOverlaySettings() {
     updateOverlayStrokeWidth('2');
     setOverlayTextAlign('left');
     
+    // 카카오뱅크 기본값
+    document.getElementById('showKakaoBank-checkbox').checked = false;
+    document.getElementById('kakaobank-size-range').value = '100';
+    document.getElementById('kakaobank-lineheight-range').value = '1.2';
+    updateKakaoBankSize('100');
+    updateKakaoBankLineHeight('1.2');
+    updateKakaoBankDisplay();
+    
     // 기본값으로 서버 설정 업데이트
     updateServerSettings({ 
         'overlay-font-size': '16',
         'overlay-stroke-width': '2',
-        'overlay-text-align': 'left'
+        'overlay-text-align': 'left',
+        'showKakaoBank': false,
+        'kakaoBankSize': 100,
+        'kakaoBankLineHeight': 1.2
     });
     
     showStatus('후원자별 총액 오버레이 설정이 기본값으로 복원되었습니다', 'info');
+}
+
+// 카카오뱅크 관련 함수들
+function updateKakaoBankDisplay() {
+    const isChecked = document.getElementById('showKakaoBank-checkbox').checked;
+    localStorage.setItem('showKakaoBank', isChecked);
+    updateServerSettings({ 'showKakaoBank': isChecked });
+    
+    // Socket.IO로 실시간 전송
+    if (socket) {
+        socket.emit('updateKakaoBankSettings', {
+            showKakaoBank: isChecked,
+            kakaoBankSize: parseInt(document.getElementById('kakaobank-size-range').value),
+            kakaoBankLineHeight: parseFloat(document.getElementById('kakaobank-lineheight-range').value)
+        });
+    }
+    
+    showStatus(isChecked ? '카카오뱅크 계좌 정보가 표시됩니다' : '카카오뱅크 계좌 정보가 숨겨집니다', 'success');
+}
+
+function updateKakaoBankSize(value) {
+    document.getElementById('kakaobank-size-value').textContent = value + '%';
+    localStorage.setItem('kakaoBankSize', value);
+    updateServerSettings({ 'kakaoBankSize': parseInt(value) });
+    
+    // Socket.IO로 실시간 전송
+    if (socket) {
+        socket.emit('updateKakaoBankSettings', {
+            showKakaoBank: document.getElementById('showKakaoBank-checkbox').checked,
+            kakaoBankSize: parseInt(value),
+            kakaoBankLineHeight: parseFloat(document.getElementById('kakaobank-lineheight-range').value)
+        });
+    }
+}
+
+function updateKakaoBankLineHeight(value) {
+    document.getElementById('kakaobank-lineheight-value').textContent = value;
+    localStorage.setItem('kakaoBankLineHeight', value);
+    updateServerSettings({ 'kakaoBankLineHeight': parseFloat(value) });
+    
+    // Socket.IO로 실시간 전송
+    if (socket) {
+        socket.emit('updateKakaoBankSettings', {
+            showKakaoBank: document.getElementById('showKakaoBank-checkbox').checked,
+            kakaoBankSize: parseInt(document.getElementById('kakaobank-size-range').value),
+            kakaoBankLineHeight: parseFloat(value)
+        });
+    }
 }
 
 function setTableColorPreset(preset) {
@@ -4624,6 +4707,17 @@ function loadOverlaySettings() {
     document.getElementById('overlay-font-size-value').textContent = '18px';
     document.getElementById('overlay-stroke-width-value').textContent = '3px';
     setOverlayTextAlign('left');
+    
+    // 카카오뱅크 설정 기본값
+    const showKakaoBank = localStorage.getItem('showKakaoBank') === 'true';
+    const kakaoBankSize = localStorage.getItem('kakaoBankSize') || '100';
+    const kakaoBankLineHeight = localStorage.getItem('kakaoBankLineHeight') || '1.2';
+    
+    document.getElementById('showKakaoBank-checkbox').checked = showKakaoBank;
+    document.getElementById('kakaobank-size-range').value = kakaoBankSize;
+    document.getElementById('kakaobank-lineheight-range').value = kakaoBankLineHeight;
+    document.getElementById('kakaobank-size-value').textContent = kakaoBankSize + '%';
+    document.getElementById('kakaobank-lineheight-value').textContent = kakaoBankLineHeight;
     
     // 스트리머 테이블 오버레이 기본값
     document.getElementById('table-opacity-range').value = '85';

@@ -475,10 +475,14 @@ body {
             </div>
             
             <div class="settings-section" style="margin-top: 25px;">
-                <h3 style="margin-bottom: 15px; color: #1877f2; font-size: 1.1rem;">카카오뱅크 크기</h3>
+                <h3 style="margin-bottom: 15px; color: #1877f2; font-size: 1.1rem;">카카오뱅크 설정</h3>
                 <div class="form-group">
                     <label for="kakaoBankSize" class="form-label">크기 조절: <span id="kakaoBankSizeValue">100</span>%</label>
                     <input type="range" id="kakaoBankSize" min="50" max="200" value="100" class="slider">
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="kakaoBankLineHeight" class="form-label">줄간격 조절: <span id="kakaoBankLineHeightValue">1.2</span></label>
+                    <input type="range" id="kakaoBankLineHeight" min="0.8" max="2.0" step="0.1" value="1.2" class="slider">
                 </div>
             </div>
             
@@ -563,7 +567,8 @@ class RealtimeDonationManager {
             fixGukgoLast: localStorage.getItem('total-overlay-fixGukgoLast') === 'true',
             currency: localStorage.getItem('total-overlay-currency') || 'manwon',
             showKakaoBank: localStorage.getItem('showKakaoBank') === 'true',
-            kakaoBankSize: parseInt(localStorage.getItem('kakaoBankSize') || '100')
+            kakaoBankSize: parseInt(localStorage.getItem('kakaoBankSize') || '100'),
+            kakaoBankLineHeight: parseFloat(localStorage.getItem('kakaoBankLineHeight') || '1.2')
         };
 
         // UI에 현재 설정 반영
@@ -578,6 +583,8 @@ class RealtimeDonationManager {
         document.getElementById('showKakaoBank').checked = this.totalOverlaySettings.showKakaoBank;
         document.getElementById('kakaoBankSize').value = this.totalOverlaySettings.kakaoBankSize;
         document.getElementById('kakaoBankSizeValue').textContent = this.totalOverlaySettings.kakaoBankSize;
+        document.getElementById('kakaoBankLineHeight').value = this.totalOverlaySettings.kakaoBankLineHeight;
+        document.getElementById('kakaoBankLineHeightValue').textContent = this.totalOverlaySettings.kakaoBankLineHeight;
 
         // 이벤트 리스너 설정
         this.attachTotalOverlayEvents();
@@ -616,6 +623,13 @@ class RealtimeDonationManager {
             document.getElementById('kakaoBankSizeValue').textContent = value;
             this.updateKakaoBankSetting('kakaoBankSize', value);
         });
+
+        // 카카오뱅크 줄간격 슬라이더 이벤트
+        document.getElementById('kakaoBankLineHeight').addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            document.getElementById('kakaoBankLineHeightValue').textContent = value;
+            this.updateKakaoBankSetting('kakaoBankLineHeight', value);
+        });
     }
 
     updateTotalOverlaySetting(key, value) {
@@ -644,7 +658,8 @@ class RealtimeDonationManager {
         // 카카오뱅크 설정을 후원자 오버레이에 전송
         const kakaoBankSettings = {
             showKakaoBank: this.totalOverlaySettings.showKakaoBank,
-            kakaoBankSize: this.totalOverlaySettings.kakaoBankSize
+            kakaoBankSize: this.totalOverlaySettings.kakaoBankSize,
+            kakaoBankLineHeight: this.totalOverlaySettings.kakaoBankLineHeight
         };
         
         this.socket.emit('updateKakaoBankSettings', kakaoBankSettings);

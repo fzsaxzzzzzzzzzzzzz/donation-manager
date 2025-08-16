@@ -129,11 +129,11 @@ app.use(express.static('.', {
 let currentData = {
   donations: [],
   streamers: [
-    "엄삼용", "연기", "주옥", "남붕", "옥긔", "국고"
+    "엄삼용", "연기", "주옥", "릴라", "도치", "익수", "국고"
   ],
   emojis: {
     "엄삼용": "🫅", "연기": "🐧", "주옥": "👺", 
-    "남붕": "🤠", "옥긔": "🦆", "국고": "🏦"
+    "릴라": "🐒", "도치": "👀", "익수": "🥰", "국고": "🏦"
   },
   missions: [],
   runningMissions: [],
@@ -155,7 +155,8 @@ let currentData = {
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆",
     "showKakaoBank": false,
-    "kakaoBankSize": 100
+    "kakaoBankSize": 100,
+    "kakaoBankLineHeight": 1.2
   },
   lastUpdated: new Date().toISOString()
 };
@@ -838,6 +839,7 @@ io.on('connection', (socket) => {
     // 현재 데이터에 카카오뱅크 설정 저장
     currentData.settings.showKakaoBank = kakaoBankSettings.showKakaoBank;
     currentData.settings.kakaoBankSize = kakaoBankSettings.kakaoBankSize;
+    currentData.settings.kakaoBankLineHeight = kakaoBankSettings.kakaoBankLineHeight;
     
     // 파일 저장
     saveData();
@@ -845,7 +847,8 @@ io.on('connection', (socket) => {
     // 모든 후원자 오버레이 클라이언트에게 설정 전송
     io.emit('settingsUpdate', {
       showKakaoBank: kakaoBankSettings.showKakaoBank,
-      kakaoBankSize: kakaoBankSettings.kakaoBankSize
+      kakaoBankSize: kakaoBankSettings.kakaoBankSize,
+      kakaoBankLineHeight: kakaoBankSettings.kakaoBankLineHeight
     });
     
     console.log('🏦 카카오뱅크 설정 저장 및 전송 완료');
@@ -863,9 +866,8 @@ async function startServer() {
   if (Object.keys(currentData.emojis).length === 0) {
     console.log('⚠️ 이모지 데이터 없음, 강제 설정 중...');
     currentData.emojis = {
-      "엄삼용": "🫅", "손덕배": "🌺", "연기": "🐧", "동동": "😎", 
-      "주옥": "👺", "불곰": "🎬", "이효팔": "🏝", "남붕": "🤠", 
-      "옥긔": "🦆", "국고": "🏦"
+      "엄삼용": "🫅", "연기": "🐧", "주옥": "👺", 
+      "릴라": "🐒", "도치": "👀", "익수": "🥰", "국고": "🏦"
     };
     await saveData();
     console.log('✅ 이모지 데이터 강제 설정 완료');
@@ -881,10 +883,11 @@ async function startServer() {
     console.log(`📊 테이블: http://localhost:${PORT}/table-realtime.html`);
     console.log(`💾 현재 후원 데이터: ${currentData.donations.length}건`);
     console.log(`🕒 서버 부팅 시간: ${new Date().toISOString()}`);
-    console.log(`🌐 Render 배포 상태: 정상 작동 - 이모지 강제 로드됨`);
+    console.log(`🐝🔥꿀동아리🔥🐝 | 🫅엄삼용(0) 🐧연기(0) 👺주옥(0) 🐒릴라(0) 👀도치(0) 🥰익수(0) 🏦국고(0) 💵총합(0) |🏧투네/계좌 [8:2] | 🎉슈퍼챗은 국고로~!`);
+    console.log(`🌐 Render 배포 상태: 정상 작동 - 새로운 스트리머 라인업 적용됨`);
     console.log(`🔄 자동 재배포 트리거 성공`);
     console.log(`⚙️ 설정 시트 페이지 추가됨: /settings-sheet.html`);
-    console.log(`🚀 서버 재시작 성공 - 503 오류 해결됨`);
+    console.log(`🚀 서버 재시작 성공 - 꿀동아리 라인업 확정!`);
   });
 }
 

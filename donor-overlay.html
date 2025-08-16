@@ -162,14 +162,17 @@ class RealtimeDonorOverlay {
         // 카카오뱅크 크기 설정
         const kakaoBankSize = this.settings.kakaoBankSize || 100;
         
+        // 카카오뱅크 줄간격 설정
+        const kakaoBankLineHeight = this.settings.kakaoBankLineHeight || 1.2;
+        
         if (!this.donations || this.donations.length === 0) {
             let content = '사랑해요♡';
             
             // 카카오뱅크 정보 추가
             if (showKakaoBank) {
-                content = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; color: #FFEB3B; margin-bottom: 10px;">
-                    <div style="font-weight: bold;">카카오뱅크</div>
-                    <div style="font-size: 90%;">3333-25-7378436</div>
+                content = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; line-height: ${kakaoBankLineHeight}; margin-bottom: 10px;">
+                    <div style="font-weight: bold; color: #FFEB3B;">카카오뱅크</div>
+                    <div style="font-size: 90%; color: white;">3333-25-7378436</div>
                 </div>
                 ${content}`;
             }
@@ -252,9 +255,9 @@ class RealtimeDonorOverlay {
         
         // 카카오뱅크 정보 추가 (후원자가 있을 때)
         if (showKakaoBank) {
-            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; color: #FFEB3B; margin-bottom: 10px;">
-                <div style="font-weight: bold;">카카오뱅크</div>
-                <div style="font-size: 90%;">3333-25-7378436</div>
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; line-height: ${kakaoBankLineHeight}; margin-bottom: 10px;">
+                <div style="font-weight: bold; color: #FFEB3B;">카카오뱅크</div>
+                <div style="font-size: 90%; color: white;">3333-25-7378436</div>
             </div>`;
             
             contentEl.innerHTML = kakaoBankHtml + '<div>' + finalText.replace(/\n/g, '<br>') + '</div>';
