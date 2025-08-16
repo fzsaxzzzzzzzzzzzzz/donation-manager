@@ -153,7 +153,9 @@ let currentData = {
     "includeSuperchat": false,
     "show-total-row": "true",
     "show-update-time": "false",
-    "table-title": "🏆 스트리머별 후원 현황 🏆"
+    "table-title": "🏆 스트리머별 후원 현황 🏆",
+    "showKakaoBank": false,
+    "kakaoBankSize": 100
   },
   lastUpdated: new Date().toISOString()
 };
@@ -827,6 +829,26 @@ io.on('connection', (socket) => {
     console.log('🔧 총액 오버레이 설정 업데이트 수신:', overlaySettings);
     // 모든 총액 오버레이 클라이언트에게 전송
     io.emit('totalOverlaySettingsUpdate', overlaySettings);
+  });
+
+  // 카카오뱅크 설정 업데이트
+  socket.on('updateKakaoBankSettings', (kakaoBankSettings) => {
+    console.log('🔧 카카오뱅크 설정 업데이트 수신:', kakaoBankSettings);
+    
+    // 현재 데이터에 카카오뱅크 설정 저장
+    currentData.settings.showKakaoBank = kakaoBankSettings.showKakaoBank;
+    currentData.settings.kakaoBankSize = kakaoBankSettings.kakaoBankSize;
+    
+    // 파일 저장
+    saveData();
+    
+    // 모든 후원자 오버레이 클라이언트에게 설정 전송
+    io.emit('settingsUpdate', {
+      showKakaoBank: kakaoBankSettings.showKakaoBank,
+      kakaoBankSize: kakaoBankSettings.kakaoBankSize
+    });
+    
+    console.log('🏦 카카오뱅크 설정 저장 및 전송 완료');
   });
 });
 

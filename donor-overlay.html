@@ -155,8 +155,26 @@ class RealtimeDonorOverlay {
     updateDisplay() {
         const contentEl = document.getElementById('donor-content');
         
+        // 카카오뱅크 계좌 정보 표시 여부 확인
+        const showKakaoBank = this.settings.showKakaoBank !== undefined ? 
+            this.settings.showKakaoBank : false;
+        
+        // 카카오뱅크 크기 설정
+        const kakaoBankSize = this.settings.kakaoBankSize || 100;
+        
         if (!this.donations || this.donations.length === 0) {
-            contentEl.textContent = '사랑해요♡';
+            let content = '사랑해요♡';
+            
+            // 카카오뱅크 정보 추가
+            if (showKakaoBank) {
+                content = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; color: #FFEB3B; margin-bottom: 10px;">
+                    <div style="font-weight: bold;">카카오뱅크</div>
+                    <div style="font-size: 90%;">3333-25-7378436</div>
+                </div>
+                ${content}`;
+            }
+            
+            contentEl.innerHTML = content;
             contentEl.className = 'no-data';
             return;
         }
@@ -230,8 +248,19 @@ class RealtimeDonorOverlay {
         }).join('\n');
         
         // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
-        const finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡\n후원자가 없습니다';
-        contentEl.textContent = finalText;
+        let finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡\n후원자가 없습니다';
+        
+        // 카카오뱅크 정보 추가 (후원자가 있을 때)
+        if (showKakaoBank) {
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; color: #FFEB3B; margin-bottom: 10px;">
+                <div style="font-weight: bold;">카카오뱅크</div>
+                <div style="font-size: 90%;">3333-25-7378436</div>
+            </div>`;
+            
+            contentEl.innerHTML = kakaoBankHtml + '<div>' + finalText.replace(/\n/g, '<br>') + '</div>';
+        } else {
+            contentEl.textContent = finalText;
+        }
         contentEl.className = 'donor-content';
         
         console.log('📊 화면 업데이트 완료:', sortedGroups.length, '개 그룹의 후원자');

@@ -292,6 +292,38 @@ body {
     gap: 20px;
 }
 
+.slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #ddd;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.slider:hover {
+    opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #1877f2;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #1877f2;
+    cursor: pointer;
+    border: none;
+}
+
 @keyframes fadeOut {
     to { opacity: 0; transform: translateX(100%); }
 }
@@ -433,6 +465,21 @@ body {
                         <input type="checkbox" id="totalOverlay-fixGukgoLast"> └ 국고 꼴지 고정
                     </label>
                 </div>
+                
+                <div class="settings-grid">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showKakaoBank"> 카카오뱅크 계좌 표시
+                        <small>체크시 후원자 오버레이에 카카오뱅크 계좌정보 표시</small>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section" style="margin-top: 25px;">
+                <h3 style="margin-bottom: 15px; color: #1877f2; font-size: 1.1rem;">카카오뱅크 크기</h3>
+                <div class="form-group">
+                    <label for="kakaoBankSize" class="form-label">크기 조절: <span id="kakaoBankSizeValue">100</span>%</label>
+                    <input type="range" id="kakaoBankSize" min="50" max="200" value="100" class="slider">
+                </div>
             </div>
             
             <div class="settings-section" style="margin-top: 25px;">
@@ -514,7 +561,9 @@ class RealtimeDonationManager {
             fixOkgiLast: localStorage.getItem('total-overlay-fixOkgiLast') === 'true',
             hideGukgo: localStorage.getItem('total-overlay-hideGukgo') === 'true',
             fixGukgoLast: localStorage.getItem('total-overlay-fixGukgoLast') === 'true',
-            currency: localStorage.getItem('total-overlay-currency') || 'manwon'
+            currency: localStorage.getItem('total-overlay-currency') || 'manwon',
+            showKakaoBank: localStorage.getItem('showKakaoBank') === 'true',
+            kakaoBankSize: parseInt(localStorage.getItem('kakaoBankSize') || '100')
         };
 
         // UI에 현재 설정 반영
@@ -526,6 +575,9 @@ class RealtimeDonationManager {
         document.getElementById('totalOverlay-hideGukgo').checked = this.totalOverlaySettings.hideGukgo;
         document.getElementById('totalOverlay-fixGukgoLast').checked = this.totalOverlaySettings.fixGukgoLast;
         document.getElementById(`totalOverlay-currency${this.totalOverlaySettings.currency === 'won' ? 'Won' : 'Manwon'}`).checked = true;
+        document.getElementById('showKakaoBank').checked = this.totalOverlaySettings.showKakaoBank;
+        document.getElementById('kakaoBankSize').value = this.totalOverlaySettings.kakaoBankSize;
+        document.getElementById('kakaoBankSizeValue').textContent = this.totalOverlaySettings.kakaoBankSize;
 
         // 이벤트 리스너 설정
         this.attachTotalOverlayEvents();
@@ -552,6 +604,18 @@ class RealtimeDonationManager {
                 }
             });
         });
+
+        // 카카오뱅크 체크박스 이벤트
+        document.getElementById('showKakaoBank').addEventListener('change', (e) => {
+            this.updateKakaoBankSetting('showKakaoBank', e.target.checked);
+        });
+
+        // 카카오뱅크 크기 슬라이더 이벤트
+        document.getElementById('kakaoBankSize').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            document.getElementById('kakaoBankSizeValue').textContent = value;
+            this.updateKakaoBankSetting('kakaoBankSize', value);
+        });
     }
 
     updateTotalOverlaySetting(key, value) {
@@ -568,6 +632,27 @@ class RealtimeDonationManager {
         
         // 알림 표시
         this.showNotification('총액 오버레이 설정이 업데이트되었습니다! 📊');
+    }
+
+    updateKakaoBankSetting(key, value) {
+        // 내부 설정 업데이트
+        this.totalOverlaySettings[key] = value;
+        
+        // 로컬스토리지 저장
+        localStorage.setItem(key, value);
+        
+        // 카카오뱅크 설정을 후원자 오버레이에 전송
+        const kakaoBankSettings = {
+            showKakaoBank: this.totalOverlaySettings.showKakaoBank,
+            kakaoBankSize: this.totalOverlaySettings.kakaoBankSize
+        };
+        
+        this.socket.emit('updateKakaoBankSettings', kakaoBankSettings);
+        
+        console.log(`🔧 카카오뱅크 설정 업데이트: ${key} = ${value}`);
+        
+        // 알림 표시
+        this.showNotification('카카오뱅크 설정이 업데이트되었습니다! 🏦');
     }
 
     updateConnectionStatus() {
