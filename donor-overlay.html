@@ -170,14 +170,15 @@ class RealtimeDonorOverlay {
             
             // 카카오뱅크 정보 추가
             if (showKakaoBank) {
-                content = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; line-height: ${kakaoBankLineHeight}; margin-bottom: 10px;">
-                    <div style="font-weight: bold; color: #FFEB3B;">카카오뱅크</div>
+                const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; line-height: ${kakaoBankLineHeight}; margin-bottom: 5px;">
+                    <div style="font-weight: bold; color: #FFEB3B; margin-bottom: 2px;">카카오뱅크</div>
                     <div style="font-size: 90%; color: white;">3333-25-7378436</div>
-                </div>
-                ${content}`;
+                </div>`;
+                contentEl.innerHTML = kakaoBankHtml + '<div>' + content + '</div>';
+            } else {
+                contentEl.textContent = content;
             }
             
-            contentEl.innerHTML = content;
             contentEl.className = 'no-data';
             return;
         }
@@ -255,12 +256,14 @@ class RealtimeDonorOverlay {
         
         // 카카오뱅크 정보 추가 (후원자가 있을 때)
         if (showKakaoBank) {
-            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; line-height: ${kakaoBankLineHeight}; margin-bottom: 10px;">
-                <div style="font-weight: bold; color: #FFEB3B;">카카오뱅크</div>
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; line-height: ${kakaoBankLineHeight}; margin-bottom: 5px;">
+                <div style="font-weight: bold; color: #FFEB3B; margin-bottom: 2px;">카카오뱅크</div>
                 <div style="font-size: 90%; color: white;">3333-25-7378436</div>
             </div>`;
             
-            contentEl.innerHTML = kakaoBankHtml + '<div>' + finalText.replace(/\n/g, '<br>') + '</div>';
+            // 카카오뱅크 이후 첫 번째 줄바꿈 제거하여 중복 줄바꿈 방지
+            const cleanText = finalText.replace(/^사랑해요♡\n/, '사랑해요♡');
+            contentEl.innerHTML = kakaoBankHtml + '<div>' + cleanText.replace(/\n/g, '<br>') + '</div>';
         } else {
             contentEl.textContent = finalText;
         }
