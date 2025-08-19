@@ -56,7 +56,9 @@ body {
 .kakao-bank-info,
 .donor-content .kakao-bank-info *,
 .no-data .kakao-bank-info *,
-.kakao-bank-info * {
+.kakao-bank-info *,
+.donor-text .kakao-bank-info,
+.donor-text .kakao-bank-info * {
     line-height: 1.0 !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -65,14 +67,16 @@ body {
 
 .donor-content .kakao-bank-info,
 .no-data .kakao-bank-info,
-.kakao-bank-info {
+.kakao-bank-info,
+.donor-text .kakao-bank-info {
     margin-bottom: 2px !important;
     display: block !important;
 }
 
 .donor-content .kakao-bank-info > div:first-child,
 .no-data .kakao-bank-info > div:first-child,
-.kakao-bank-info > div:first-child {
+.kakao-bank-info > div:first-child,
+.donor-text .kakao-bank-info > div:first-child {
     font-weight: bold !important;
     color: #FFEB3B !important;
     margin-bottom: 1px !important;
@@ -81,7 +85,8 @@ body {
 
 .donor-content .kakao-bank-info > div:last-child,
 .no-data .kakao-bank-info > div:last-child,
-.kakao-bank-info > div:last-child {
+.kakao-bank-info > div:last-child,
+.donor-text .kakao-bank-info > div:last-child {
     font-size: 90% !important;
     color: white !important;
     line-height: 1.0 !important;
@@ -307,7 +312,7 @@ class RealtimeDonorOverlay {
             </div>`;
             
             // 줄바꿈을 <br>로 변환하여 HTML에서 제대로 표시
-            contentEl.innerHTML = kakaoBankHtml + '<div style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
+            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text" style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
         } else {
             contentEl.innerHTML = '<div style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
         }
