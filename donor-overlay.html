@@ -292,9 +292,9 @@ class RealtimeDonorOverlay {
             </div>`;
             
             // 줄바꿈을 <br>로 변환하여 HTML에서 제대로 표시
-            contentEl.innerHTML = kakaoBankHtml + '<div style="line-height: var(--overlay-line-height, 1.5);">' + finalText.replace(/\n/g, '<br>') + '</div>';
+            contentEl.innerHTML = kakaoBankHtml + '<div style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
         } else {
-            contentEl.textContent = finalText;
+            contentEl.innerHTML = '<div style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
         }
         contentEl.className = 'donor-content';
         
