@@ -144,7 +144,13 @@ body {
         transparent 100%
     );
     border-radius: 12px;
-    animation: shine 3s infinite;
+}
+
+/* 데스크톱에서만 애니메이션 적용 */
+@media (hover: hover) and (pointer: fine) {
+    .goal-progress-bar::before {
+        animation: shine 3s infinite;
+    }
 }
 
 .goal-progress-bar.completed {
@@ -154,7 +160,12 @@ body {
         var(--complete-end-color, #81c784) 100%
     );
     box-shadow: 0 3px 15px rgba(76, 175, 80, 0.8);
-    animation: pulse-green 2s infinite;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .goal-progress-bar.completed {
+        animation: pulse-green 2s infinite;
+    }
 }
 
 .goal-progress-bar.overtime {
@@ -164,7 +175,12 @@ body {
         var(--overtime-end-color, #fff176) 100%
     );
     box-shadow: 0 3px 15px rgba(255, 215, 0, 1);
-    animation: pulse-gold 2s infinite;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .goal-progress-bar.overtime {
+        animation: pulse-gold 2s infinite;
+    }
 }
 
 @keyframes shine {

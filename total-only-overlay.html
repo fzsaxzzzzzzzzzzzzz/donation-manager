@@ -146,8 +146,14 @@ body {
     border-radius: 50%;
     background: #42b72a;
     z-index: 1000;
-    animation: pulse 2s infinite;
     box-shadow: 0 0 10px rgba(66, 183, 42, 0.5);
+}
+
+/* 데스크톱에서만 애니메이션 적용 */
+@media (hover: hover) and (pointer: fine) {
+    .connection-indicator {
+        animation: pulse 2s infinite;
+    }
 }
 
 .connection-indicator.disconnected {

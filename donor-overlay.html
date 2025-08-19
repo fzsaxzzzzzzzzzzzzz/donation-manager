@@ -48,7 +48,13 @@ body {
     color: #87CEEB;
     text-align: center;
     font-size: 16px;
-    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 데스크톱에서만 애니메이션 적용 */
+@media (hover: hover) and (pointer: fine) {
+    .loading {
+        animation: pulse 1.5s ease-in-out infinite;
+    }
 }
 
 @keyframes pulse {
@@ -82,7 +88,8 @@ class RealtimeDonorOverlay {
         this.settings = {
             'overlay-font-size': 18,
             'overlay-stroke-width': 3,
-            'overlay-text-align': 'left'
+            'overlay-text-align': 'left',
+            'includeSuperchat': localStorage.getItem('include-superchat') === 'true'
         };
         this.isConnected = false;
         
@@ -252,7 +259,7 @@ class RealtimeDonorOverlay {
         }).join('\n');
         
         // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
-        let finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡\n후원자가 없습니다';
+        let finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡';
         
         // 카카오뱅크 정보 추가 (후원자가 있을 때)
         if (showKakaoBank) {
@@ -261,9 +268,8 @@ class RealtimeDonorOverlay {
                 <div style="font-size: 90%; color: white;">3333-25-7378436</div>
             </div>`;
             
-            // 카카오뱅크 이후 첫 번째 줄바꿈 제거하여 중복 줄바꿈 방지
-            const cleanText = finalText.replace(/^사랑해요♡\n/, '사랑해요♡');
-            contentEl.innerHTML = kakaoBankHtml + '<div>' + cleanText.replace(/\n/g, '<br>') + '</div>';
+            // 줄바꿈을 <br>로 변환하여 HTML에서 제대로 표시
+            contentEl.innerHTML = kakaoBankHtml + '<div>' + finalText.replace(/\n/g, '<br>') + '</div>';
         } else {
             contentEl.textContent = finalText;
         }
@@ -280,6 +286,10 @@ class RealtimeDonorOverlay {
     }
     
     flashUpdate() {
+        // 모바일에서 배터리 절약을 위해 flashUpdate 비활성화
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) return;
+        
         const container = document.querySelector('.overlay-container');
         if (container) {
             container.style.opacity = '0.7';
