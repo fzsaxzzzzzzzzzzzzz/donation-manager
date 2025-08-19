@@ -254,13 +254,6 @@ body {
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
-.auto-extend-info {
-    font-size: var(--auto-extend-font-size, 12px);
-    color: var(--auto-extend-color, #b0bec5);
-    text-align: center;
-    margin-top: 10px;
-    font-style: italic;
-}
 
 .no-goal {
     text-align: center;
@@ -318,8 +311,6 @@ body {
     --overtime-end-color: #fff176;
     --details-font-size: 16px;
     --details-color: #e0e0e0;
-    --auto-extend-font-size: 12px;
-    --auto-extend-color: #b0bec5;
     --no-goal-font-size: 20px;
     --no-goal-color: #9e9e9e;
 }
@@ -354,9 +345,6 @@ body {
                 목표까지 <span id="remaining-amount">0</span>만원 남음
             </div>
             
-            <div class="auto-extend-info" id="auto-extend-info" style="display: none;">
-                자동 추가: +<span id="extend-amount">50</span>만원씩
-            </div>
         </div>
     </div>
 </div>
@@ -710,19 +698,6 @@ class TotalGoalOverlay {
             }
         }
         
-        // 자동 추가 정보 표시 (안전한 요소 접근)
-        const isAutoExtendEnabled = this.dailyGoal.autoExtendEnabled || this.dailyGoal.autoExtend;
-        const autoExtendInfoEl = document.getElementById('auto-extend-info');
-        const extendAmountEl = document.getElementById('extend-amount');
-        
-        if (autoExtendInfoEl) {
-            if (isAutoExtendEnabled) {
-                autoExtendInfoEl.style.display = 'block';
-                if (extendAmountEl) extendAmountEl.textContent = this.dailyGoal.extendAmount || '50';
-            } else {
-                autoExtendInfoEl.style.display = 'none';
-            }
-        }
     }
     
     showError() {
@@ -768,22 +743,20 @@ class TotalGoalOverlay {
         
         // 목표 달성시 자동으로 새로운 목표치 추가
         if (currentAmount >= targetAmount && targetAmount > 0) {
-            // 이미 자동 추가된 적이 있는지 확인 (중복 방지)
-            const lastAutoAddTime = this.dailyGoal.lastAutoAddTime || 0;
-            const currentTime = Date.now();
+            // 현재 목표가 이미 달성된 목표인지 확인 (중복 방지)
+            const achievedGoals = this.dailyGoal.achievedGoals || [];
+            const alreadyAchieved = achievedGoals.some(goal => goal.target === targetAmount);
             
-            // 5분 내에 이미 자동 추가된 경우 스킵
-            if (currentTime - lastAutoAddTime < 5 * 60 * 1000) {
-                return;
+            if (alreadyAchieved) {
+                return; // 이미 달성 기록된 목표는 스킵
             }
             
             console.log('🎯 목표 달성! 새로운 목표 자동 추가:', extendAmount, '만원 추가');
             
             // 달성된 목표 기록
-            const achievedGoals = this.dailyGoal.achievedGoals || [];
             achievedGoals.push({
                 target: targetAmount,
-                achievedAt: currentTime,
+                achievedAt: Date.now(),
                 achievedAmount: currentAmount
             });
             
@@ -794,8 +767,7 @@ class TotalGoalOverlay {
                 dailyGoal: {
                     ...this.dailyGoal,
                     target: newTarget,
-                    achievedGoals: achievedGoals,
-                    lastAutoAddTime: currentTime
+                    achievedGoals: achievedGoals
                 }
             };
             
@@ -811,7 +783,9 @@ class TotalGoalOverlay {
                     console.log('🏆 달성된 목표 기록:', targetAmount, '만원');
                     this.dailyGoal.target = newTarget;
                     this.dailyGoal.achievedGoals = achievedGoals;
-                    this.dailyGoal.lastAutoAddTime = currentTime;
+                    
+                    // 화면 즉시 업데이트
+                    this.updateDisplay();
                 }
             })
             .catch(error => {
