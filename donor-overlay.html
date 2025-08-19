@@ -50,27 +50,42 @@ body {
     font-size: 16px;
 }
 
-/* 카카오뱅크 전용 스타일 - 상속 차단 */
+/* 카카오뱅크 전용 스타일 - 상속 차단 및 완전 격리 */
+.donor-content .kakao-bank-info,
+.no-data .kakao-bank-info,
 .kakao-bank-info,
+.donor-content .kakao-bank-info *,
+.no-data .kakao-bank-info *,
 .kakao-bank-info * {
     line-height: 1.0 !important;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: inherit !important;
 }
 
+.donor-content .kakao-bank-info,
+.no-data .kakao-bank-info,
 .kakao-bank-info {
     margin-bottom: 2px !important;
+    display: block !important;
 }
 
+.donor-content .kakao-bank-info > div:first-child,
+.no-data .kakao-bank-info > div:first-child,
 .kakao-bank-info > div:first-child {
     font-weight: bold !important;
     color: #FFEB3B !important;
     margin-bottom: 1px !important;
+    line-height: 1.0 !important;
 }
 
+.donor-content .kakao-bank-info > div:last-child,
+.no-data .kakao-bank-info > div:last-child,
 .kakao-bank-info > div:last-child {
     font-size: 90% !important;
     color: white !important;
+    line-height: 1.0 !important;
+    margin: 0 !important;
 }
 
 /* 데스크톱에서만 애니메이션 적용 */
