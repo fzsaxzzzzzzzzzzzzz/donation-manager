@@ -50,6 +50,29 @@ body {
     font-size: 16px;
 }
 
+/* 카카오뱅크 전용 스타일 - 상속 차단 */
+.kakao-bank-info,
+.kakao-bank-info * {
+    line-height: 1.0 !important;
+    margin: 0;
+    padding: 0;
+}
+
+.kakao-bank-info {
+    margin-bottom: 2px !important;
+}
+
+.kakao-bank-info > div:first-child {
+    font-weight: bold !important;
+    color: #FFEB3B !important;
+    margin-bottom: 1px !important;
+}
+
+.kakao-bank-info > div:last-child {
+    font-size: 90% !important;
+    color: white !important;
+}
+
 /* 데스크톱에서만 애니메이션 적용 */
 @media (hover: hover) and (pointer: fine) {
     .loading {
@@ -177,9 +200,9 @@ class RealtimeDonorOverlay {
             
             // 카카오뱅크 정보 추가
             if (showKakaoBank) {
-                const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; line-height: 1.0 !important; margin-bottom: 2px;">
-                    <div style="font-weight: bold; color: #FFEB3B; margin-bottom: 1px; line-height: 1.0 !important;">카카오뱅크</div>
-                    <div style="font-size: 90%; color: white; line-height: 1.0 !important;">3333-25-7378436</div>
+                const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
+                    <div>카카오뱅크</div>
+                    <div>3333-25-7378436</div>
                 </div>`;
                 contentEl.innerHTML = kakaoBankHtml + '<div>' + content + '</div>';
             } else {
@@ -263,9 +286,9 @@ class RealtimeDonorOverlay {
         
         // 카카오뱅크 정보 추가 (후원자가 있을 때)
         if (showKakaoBank) {
-            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; line-height: 1.0 !important; margin-bottom: 2px;">
-                <div style="font-weight: bold; color: #FFEB3B; margin-bottom: 1px; line-height: 1.0 !important;">카카오뱅크</div>
-                <div style="font-size: 90%; color: white; line-height: 1.0 !important;">3333-25-7378436</div>
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
+                <div>카카오뱅크</div>
+                <div>3333-25-7378436</div>
             </div>`;
             
             // 줄바꿈을 <br>로 변환하여 HTML에서 제대로 표시
