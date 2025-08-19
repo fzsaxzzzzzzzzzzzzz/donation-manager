@@ -41,9 +41,16 @@ body {
     font-weight: bold;
     color: var(--title-color, #ffffff);
     margin-bottom: 15px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
-    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-shadow: 
+        var(--text-outline-width, 1px) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) 0px 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) 0px 0 var(--text-outline-color, #000000),
+        0px var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        0px calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .goal-date {
@@ -65,24 +72,45 @@ body {
 
 .current-amount {
     color: var(--current-color, #4caf50);
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
-    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-shadow: 
+        var(--text-outline-width, 1px) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) 0px 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) 0px 0 var(--text-outline-color, #000000),
+        0px var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        0px calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        1px 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .target-amount {
     color: var(--target-color, #ff9800);
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
-    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-shadow: 
+        var(--text-outline-width, 1px) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) 0px 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) 0px 0 var(--text-outline-color, #000000),
+        0px var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        0px calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        1px 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .progress-percentage {
     color: var(--progress-color, #2196f3);
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
     font-size: var(--percentage-font-size, 28px);
-    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
-    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-shadow: 
+        var(--text-outline-width, 1px) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) 0px 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) 0px 0 var(--text-outline-color, #000000),
+        0px var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        0px calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        1px 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 /* 진행도 바 */
@@ -123,9 +151,16 @@ body {
     color: white;
     font-weight: bold;
     font-size: var(--progress-text-size, 16px);
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
-    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
+    text-shadow: 
+        var(--text-outline-width, 1px) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        var(--text-outline-width, 1px) 0px 0 var(--text-outline-color, #000000),
+        calc(var(--text-outline-width, 1px) * -1) 0px 0 var(--text-outline-color, #000000),
+        0px var(--text-outline-width, 1px) 0 var(--text-outline-color, #000000),
+        0px calc(var(--text-outline-width, 1px) * -1) 0 var(--text-outline-color, #000000),
+        2px 2px 4px rgba(0, 0, 0, 0.8);
     z-index: 10;
     white-space: nowrap;
     transition: opacity 0.3s ease-in-out;
@@ -217,8 +252,6 @@ body {
     text-align: center;
     line-height: 1.4;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
-    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
 }
 
 .auto-extend-info {
@@ -227,8 +260,6 @@ body {
     text-align: center;
     margin-top: 10px;
     font-style: italic;
-    -webkit-text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
-    text-stroke: var(--text-outline-width, 1px) var(--text-outline-color, #000000);
 }
 
 .no-goal {
