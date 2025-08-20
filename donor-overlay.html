@@ -248,13 +248,34 @@ class RealtimeDonorOverlay {
         if (!this.donations || this.donations.length === 0) {
             let content = '사랑해요♡';
             
-            // 카카오뱅크 정보 추가
+            // 카카오뱅크 정보 추가 - DOM 직접 생성
             if (showKakaoBank) {
-                const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">
-                    <div style="margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">카카오뱅크</div>
-                    <div style="margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">3333-25-7378436</div>
-                </div>`;
-                contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text" style="line-height: 1.0 !important; margin: 0 !important; padding: 0 !important;">' + content + '</div>';
+                contentEl.innerHTML = '';
+                
+                // 카카오뱅크 DOM 생성
+                const bankDiv = document.createElement('div');
+                bankDiv.className = 'kakao-bank-info';
+                bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: 1.0 !important; margin: 0 !important; padding: 0 !important;`;
+                
+                const bankName = document.createElement('div');
+                bankName.textContent = '카카오뱅크';
+                bankName.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.0 !important; font-weight: bold; color: #FFEB3B;';
+                
+                const bankAccount = document.createElement('div');
+                bankAccount.textContent = '3333-25-7378436';
+                bankAccount.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.0 !important; font-size: 90%; color: white;';
+                
+                bankDiv.appendChild(bankName);
+                bankDiv.appendChild(bankAccount);
+                
+                // 텍스트 DOM 생성
+                const textDiv = document.createElement('div');
+                textDiv.className = 'donor-text';
+                textDiv.textContent = content;
+                textDiv.style.cssText = 'line-height: 1.0 !important; margin: 0 !important; padding: 0 !important;';
+                
+                contentEl.appendChild(bankDiv);
+                contentEl.appendChild(textDiv);
             } else {
                 contentEl.textContent = content;
             }
@@ -334,15 +355,42 @@ class RealtimeDonorOverlay {
         // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
         let finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡';
         
-        // 카카오뱅크 정보 추가 (후원자가 있을 때) - 간격 완전 제거
+        // 카카오뱅크 정보 추가 (후원자가 있을 때) - DOM 직접 조작 방식
         if (showKakaoBank) {
-            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">
-                <div style="margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">카카오뱅크</div>
-                <div style="margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">3333-25-7378436</div>
-            </div>`;
+            // DOM 요소 직접 생성으로 완전한 제어
+            contentEl.innerHTML = '';
             
-            // 줄바꿈을 <br>로 변환하여 HTML에서 제대로 표시 - 간격 완전 고정
-            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text" style="line-height: 1.0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; outline: 0 !important;">' + finalText.replace(/\n/g, '<br style="line-height: 0 !important; margin: 0 !important; padding: 0 !important; height: 0 !important; display: block !important;">') + '</div>';
+            // 카카오뱅크 정보 DOM 생성
+            const bankDiv = document.createElement('div');
+            bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: 1.0 !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
+            bankDiv.className = 'kakao-bank-info';
+            
+            const bankName = document.createElement('div');
+            bankName.textContent = '카카오뱅크';
+            bankName.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.0 !important; font-weight: bold; color: #FFEB3B;';
+            
+            const bankAccount = document.createElement('div');
+            bankAccount.textContent = '3333-25-7378436';
+            bankAccount.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.0 !important; font-size: 90%; color: white;';
+            
+            bankDiv.appendChild(bankName);
+            bankDiv.appendChild(bankAccount);
+            contentEl.appendChild(bankDiv);
+            
+            // 후원자 텍스트를 각 줄별로 DOM 생성 (br 태그 완전 배제)
+            const textDiv = document.createElement('div');
+            textDiv.className = 'donor-text';
+            textDiv.style.cssText = 'line-height: 1.0 !important; margin: 0 !important; padding: 0 !important; display: block !important;';
+            
+            const lines = finalText.split('\\n');
+            lines.forEach((line, index) => {
+                const lineSpan = document.createElement('span');
+                lineSpan.textContent = line;
+                lineSpan.style.cssText = 'display: block !important; line-height: 1.0 !important; margin: 0 !important; padding: 0 !important;';
+                textDiv.appendChild(lineSpan);
+            });
+            
+            contentEl.appendChild(textDiv);
         } else {
             contentEl.innerHTML = '<div style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
         }
@@ -418,9 +466,10 @@ class RealtimeDonorOverlay {
     }
 }
 
-// 페이지 로드 시 시작
+// 페이지 로드 시 시작 - Cache Buster v2024082001
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎬 실시간 후원자 오버레이 시작');
+    console.log('🎬 실시간 후원자 오버레이 시작 - v2024082001 DOM직접조작방식');
+    console.log('🔧 카카오뱅크 간격 완전고정 - br태그 완전배제 DOM생성방식 적용');
     new RealtimeDonorOverlay();
 });
 </script>
