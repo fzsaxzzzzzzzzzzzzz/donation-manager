@@ -149,11 +149,14 @@ body {
     box-shadow: 0 0 10px rgba(66, 183, 42, 0.5);
 }
 
-/* 데스크톱에서만 애니메이션 적용 */
-@media (hover: hover) and (pointer: fine) {
-    .connection-indicator {
-        animation: pulse 2s infinite;
-    }
+/* 모든 애니메이션 완전 비활성화 */
+*,
+*::before,
+*::after {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    will-change: auto !important;
 }
 
 .connection-indicator.disconnected {

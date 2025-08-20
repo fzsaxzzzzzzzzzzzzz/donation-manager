@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📱 폰방송용 후원자 오버레이</title>
+<title>📱 모바일 전용 후원자 오버레이</title>
 
 <!-- Socket.IO for Real-time -->
 <script src="/socket.io/socket.io.js"></script>
@@ -15,57 +15,56 @@ body {
     font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
     color: white;
     overflow: hidden;
-    /* 모바일 최적화: 하드웨어 가속 최소화 */
-    -webkit-transform: translateZ(0);
+    /* 모바일 최적화: 하드웨어 가속 비활성화 */
     transform: translateZ(0);
-}
-
-/* 모바일 배터리 절약 최적화 */
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
-        font-size: 14px;
-        /* GPU 가속 완전 비활성화 */
-        -webkit-transform: none;
-        transform: none;
-        will-change: auto;
-    }
+    -webkit-transform: translateZ(0);
+    will-change: auto;
 }
 
 .overlay-container {
     background: transparent;
-    max-width: 800px;
+    max-width: 100vw;
     width: 100%;
+    /* 모바일 최적화: 불필요한 효과 제거 */
+    box-shadow: none;
+    backdrop-filter: none;
+    border: none;
 }
 
 .donor-content {
-    font-size: var(--overlay-font-size, 18px) !important;
+    font-size: var(--overlay-font-size, 16px) !important;
     font-weight: bold;
     color: white;
-    text-shadow: var(--overlay-text-shadow, 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000, 3px 0px 0 #000000, -3px 0px 0 #000000, 0px 3px 0 #000000, 0px -3px 0 #000000) !important;
-    line-height: var(--overlay-line-height, 1.5);
+    text-shadow: var(--overlay-text-shadow, 2px 2px 0 #000000, -2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000) !important;
+    line-height: var(--overlay-line-height, 1.4);
     white-space: pre-line;
     padding: 0;
     text-align: var(--overlay-text-align, left) !important;
-    transition: opacity 0.3s ease;
+    /* 모바일 최적화: 애니메이션 완전 제거 */
+    transition: none;
+    animation: none;
 }
 
 .no-data {
-    font-size: var(--overlay-font-size, 20px) !important;
+    font-size: var(--overlay-font-size, 18px) !important;
     font-weight: bold;
     color: white !important;
-    text-shadow: var(--overlay-text-shadow, 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000) !important;
+    text-shadow: var(--overlay-text-shadow, 2px 2px 0 #000000, -2px -2px 0 #000000) !important;
     text-align: var(--overlay-text-align, center) !important;
-    padding: 40px 20px;
+    padding: 20px;
+    /* 모바일 최적화: 애니메이션 제거 */
+    animation: none;
 }
 
 .loading {
     color: #87CEEB;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px;
+    /* 모바일 최적화: 펄스 애니메이션 완전 제거 */
+    animation: none;
 }
 
-/* 카카오뱅크 전용 스타일 - 상속 차단 및 완전 격리 */
+/* 카카오뱅크 전용 스타일 - 모바일 최적화 */
 .kakao-bank-info,
 .kakao-bank-info *,
 * .kakao-bank-info,
@@ -98,17 +97,25 @@ div .kakao-bank-info * {
     margin: 0 !important;
 }
 
-/* 모든 애니메이션 완전 비활성화 */
+/* 모바일 최적화: 모든 애니메이션 비활성화 */
 * {
     animation: none !important;
     transition: none !important;
     transform: none !important;
-    will-change: auto !important;
+    filter: none !important;
+    backdrop-filter: none !important;
 }
 
-/* 연결 상태 표시 제거됨 */
+/* 배터리 절약: GPU 가속 비활성화 */
+*,
+*::before,
+*::after {
+    will-change: auto;
+    transform: none;
+    -webkit-transform: none;
+}
 
-/* 크로마키 지원 */
+/* 크로마키 지원 - 모바일 최적화 */
 .transparent-mode {
     background: #00FF00;
 }
@@ -118,39 +125,65 @@ div .kakao-bank-info * {
 
 <div class="overlay-container">
     <div class="donor-content" id="donor-content">
-        <div class="loading">실시간 서버 연결 중...</div>
+        <div class="loading">모바일 서버 연결 중...</div>
     </div>
 </div>
 
-<!-- 연결 상태 표시 제거됨 -->
-
 <script>
-class RealtimeDonorOverlay {
+class MobileDonorOverlay {
     constructor() {
+        console.log('📱 모바일 전용 후원자 오버레이 시작');
+        
+        // 모바일 감지
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (!this.isMobile) {
+            console.warn('⚠️ 이 오버레이는 모바일 전용입니다');
+        }
+        
         this.socket = io();
         this.donations = [];
         this.settings = {
-            'overlay-font-size': 18,
-            'overlay-stroke-width': 3,
+            'overlay-font-size': 16,
+            'overlay-stroke-width': 2,
             'overlay-text-align': 'left',
             'includeSuperchat': localStorage.getItem('include-superchat') === 'true'
         };
         this.isConnected = false;
         
+        // 배터리 절약 모드 활성화
+        this.enableBatterySaving();
         this.initializeSocket();
         this.setupKeyboardControls();
+    }
+    
+    enableBatterySaving() {
+        // 화면 새로고침 최소화
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('📱 앱이 백그라운드로 이동 - 절전 모드');
+                // 백그라운드에서는 업데이트 빈도 줄이기
+                this.batterySaveMode = true;
+            } else {
+                console.log('📱 앱이 포그라운드로 복귀');
+                this.batterySaveMode = false;
+                this.updateDisplay(); // 즉시 업데이트
+            }
+        });
+        
+        // 불필요한 DOM 조작 최소화
+        this.updateThrottle = false;
     }
     
     initializeSocket() {
         this.socket.on('connect', () => {
             this.isConnected = true;
-            console.log('🔗 실시간 서버 연결됨');
+            console.log('🔗 모바일 서버 연결됨');
         });
         
         this.socket.on('disconnect', () => {
             this.isConnected = false;
-            console.log('❌ 실시간 서버 연결 끊어짐');
-            this.showError('서버와의 연결이 끊어졌습니다.');
+            console.log('❌ 서버 연결 끊어짐');
+            this.showError('서버 연결 끊어짐');
         });
         
         this.socket.on('initialData', (data) => {
@@ -162,70 +195,75 @@ class RealtimeDonorOverlay {
         });
         
         this.socket.on('dataUpdate', (data) => {
-            console.log('🔄 실시간 데이터 업데이트 수신:', data.donations?.length || 0, '건');
+            // 배터리 절약: 백그라운드에서는 업데이트 스킵
+            if (this.batterySaveMode) {
+                console.log('📱 절전 모드: 업데이트 스킵');
+                return;
+            }
+            
+            console.log('🔄 데이터 업데이트 수신:', data.donations?.length || 0, '건');
             this.donations = data.donations || [];
             
-            // 설정 데이터가 포함된 경우 설정도 업데이트
             if (data.settings) {
-                console.log('⚙️ 설정 업데이트 포함:', Object.keys(data.settings));
                 this.settings = { ...this.settings, ...data.settings };
                 this.applySettings();
             }
             
-            this.updateDisplay();
-            this.flashUpdate();
+            this.throttledUpdate();
         });
         
         this.socket.on('settingsUpdate', (settings) => {
-            console.log('⚙️ 설정 업데이트 수신:', settings);
+            console.log('⚙️ 설정 업데이트:', settings);
             this.settings = { ...this.settings, ...settings };
             this.applySettings();
             this.updateDisplay();
         });
     }
     
-    // 연결 상태 표시 제거됨
+    // 배터리 절약: 업데이트 쓰로틀링
+    throttledUpdate() {
+        if (this.updateThrottle) return;
+        
+        this.updateThrottle = true;
+        requestAnimationFrame(() => {
+            this.updateDisplay();
+            this.updateThrottle = false;
+        });
+    }
     
     applySettings() {
         const root = document.documentElement;
-        const fontSize = parseInt(this.settings['overlay-font-size']) || 18;
-        const strokeWidth = parseFloat(this.settings['overlay-stroke-width']) || 3;
+        const fontSize = parseInt(this.settings['overlay-font-size']) || 16;
+        const strokeWidth = parseFloat(this.settings['overlay-stroke-width']) || 2;
         const textAlign = this.settings['overlay-text-align'] || 'left';
-        const lineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
+        const lineHeight = parseFloat(this.settings['overlay-line-height']) || 1.4;
         
         root.style.setProperty('--overlay-font-size', fontSize + 'px');
         root.style.setProperty('--overlay-text-align', textAlign);
         root.style.setProperty('--overlay-line-height', lineHeight);
         root.style.setProperty('--overlay-text-shadow', 
-            `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000, ${strokeWidth}px 0px 0 #000000, -${strokeWidth}px 0px 0 #000000, 0px ${strokeWidth}px 0 #000000, 0px -${strokeWidth}px 0 #000000`
+            `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000`
         );
         
-        console.log('🔧 설정 적용됨:', { fontSize, strokeWidth, textAlign, lineHeight });
+        console.log('🔧 모바일 설정 적용:', { fontSize, strokeWidth, textAlign, lineHeight });
     }
     
     updateDisplay() {
         const contentEl = document.getElementById('donor-content');
         
-        // 카카오뱅크 계좌 정보 표시 여부 확인
         const showKakaoBank = this.settings.showKakaoBank !== undefined ? 
             this.settings.showKakaoBank : false;
-        
-        // 카카오뱅크 크기 설정
         const kakaoBankSize = this.settings.kakaoBankSize || 100;
-        
-        // 카카오뱅크 줄간격 설정
-        const kakaoBankLineHeight = this.settings.kakaoBankLineHeight || 1.2;
         
         if (!this.donations || this.donations.length === 0) {
             let content = '사랑해요♡';
             
-            // 카카오뱅크 정보 추가
             if (showKakaoBank) {
                 const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
                     <div>카카오뱅크</div>
                     <div>3333-25-7378436</div>
                 </div>`;
-                contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text" style="line-height: 1.2;">' + content + '</div>';
+                contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + content + '</div>';
             } else {
                 contentEl.textContent = content;
             }
@@ -234,10 +272,8 @@ class RealtimeDonorOverlay {
             return;
         }
         
-        // 후원자별 총액 계산 (계좌 + 슈퍼챗 옵션) - 정산요약과 동일한 로직
+        // 후원자별 총액 계산 (최적화된 로직)
         const donorAccountTotals = {};
-        
-        // 슈퍼챗 포함 옵션 확인 (서버 설정 우선, 없으면 로컬 설정)
         const includeSuperchat = this.settings.includeSuperchat !== undefined ? 
             this.settings.includeSuperchat : (localStorage.getItem('include-superchat') === 'true');
             
@@ -245,20 +281,12 @@ class RealtimeDonorOverlay {
             const amount = parseFloat(d.amount) || 0;
             const shouldInclude = d.type === '계좌' || (includeSuperchat && d.type === '슈퍼챗');
             
-            if (shouldInclude) {
-                // 스트리머별 조정은 제외, 후원자별 조정은 포함
+            if (shouldInclude && amount > 0) {
                 if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
-                    // 스트리머별 조정 → 제외
-                    return;
+                    return; // 스트리머별 조정 제외
                 }
                 
-                // 후원자명에서 (조정+금액) 부분 제거
-                let cleanDonorName = d.donor;
-                if (cleanDonorName.includes('(조정')) {
-                    cleanDonorName = cleanDonorName.replace(/\(조정[^)]*\)/g, '');
-                }
-                
-                // 계좌후원자님은 그대로 표시 (특별 처리)
+                let cleanDonorName = d.donor.replace(/\(조정[^)]*\)/g, '');
                 if (cleanDonorName === '계좌후원자님' || cleanDonorName === '계좌후원자') {
                     cleanDonorName = '계좌후원자님';
                 }
@@ -267,24 +295,18 @@ class RealtimeDonorOverlay {
             }
         });
 
-        // 그룹화 임계값 로드 (서버 설정 우선, 없으면 로컬 설정)
         const groupThreshold = this.settings.groupThreshold || parseInt(localStorage.getItem('group-threshold') || '2');
         
-        // 금액별 그룹화
+        // 금액별 그룹화 (최적화)
         const amountGroups = {};
-        for (const donor in donorAccountTotals) {
-            const amount = donorAccountTotals[donor];
-            if (amount > 0) {
-                if (!amountGroups[amount]) { 
-                    amountGroups[amount] = []; 
-                }
+        Object.entries(donorAccountTotals).forEach(([donor, amount]) => {
+            if (amount >= 0.1) { // 0.1만원 이상만
+                if (!amountGroups[amount]) amountGroups[amount] = [];
                 amountGroups[amount].push(donor);
             }
-        }
+        });
 
-        // 소액 필터링 (0.1만원 미만 제외)
-        const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 0.1);
-        const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
+        const sortedGroups = Object.entries(amountGroups).sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
         
         if (sortedGroups.length === 0) {
             contentEl.textContent = '사랑해요♡';
@@ -292,7 +314,7 @@ class RealtimeDonorOverlay {
             return;
         }
         
-        // 정산요약과 동일한 형식으로 텍스트 생성
+        // 텍스트 생성 (모바일 최적화)
         const donorTotalText = sortedGroups.map(([amount, donors]) => {
             const amountStr = `${parseFloat(amount)}만`;
             if (donors.length >= groupThreshold) {
@@ -302,24 +324,21 @@ class RealtimeDonorOverlay {
             }
         }).join('\n');
         
-        // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
         let finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡';
         
-        // 카카오뱅크 정보 추가 (후원자가 있을 때)
+        // 카카오뱅크 정보 추가
         if (showKakaoBank) {
             const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
                 <div>카카오뱅크</div>
                 <div>3333-25-7378436</div>
             </div>`;
-            
-            // 줄바꿈을 <br>로 변환하여 HTML에서 제대로 표시
-            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text" style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
+            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + finalText.replace(/\n/g, '<br>') + '</div>';
         } else {
-            contentEl.innerHTML = '<div style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
+            contentEl.innerHTML = '<div>' + finalText.replace(/\n/g, '<br>') + '</div>';
         }
         contentEl.className = 'donor-content';
         
-        console.log('📊 화면 업데이트 완료:', sortedGroups.length, '개 그룹의 후원자');
+        console.log('📱 모바일 화면 업데이트:', sortedGroups.length, '개 그룹');
     }
     
     showError(message) {
@@ -329,58 +348,39 @@ class RealtimeDonorOverlay {
         contentEl.style.color = '#ffcccb';
     }
     
-    flashUpdate() {
-        // 모바일에서 배터리 절약을 위해 flashUpdate 비활성화
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const isSmallScreen = window.innerWidth <= 768;
-        
-        if (isMobile || isSmallScreen) {
-            console.log('📱 모바일/소화면 감지: flashUpdate 비활성화');
-            return;
-        }
-        
-        const container = document.querySelector('.overlay-container');
-        if (container) {
-            container.style.opacity = '0.7';
-            setTimeout(() => {
-                container.style.opacity = '1';
-            }, 200);
-        }
-    }
-    
     setupKeyboardControls() {
         document.addEventListener('keydown', (e) => {
             if (e.altKey) {
                 switch(e.key) {
-                    case '1': // Alt+1: 왼쪽 정렬
+                    case '1':
                         this.settings['overlay-text-align'] = 'left';
                         this.applySettings();
                         this.updateDisplay();
-                        console.log('정렬: 왼쪽');
+                        console.log('📱 정렬: 왼쪽');
                         break;
-                    case '2': // Alt+2: 가운데 정렬
+                    case '2':
                         this.settings['overlay-text-align'] = 'center';
                         this.applySettings();
                         this.updateDisplay();
-                        console.log('정렬: 가운데');
+                        console.log('📱 정렬: 가운데');
                         break;
-                    case '3': // Alt+3: 오른쪽 정렬
+                    case '3':
                         this.settings['overlay-text-align'] = 'right';
                         this.applySettings();
                         this.updateDisplay();
-                        console.log('정렬: 오른쪽');
+                        console.log('📱 정렬: 오른쪽');
                         break;
-                    case '=': // Alt+=: 폰트 크기 증가
-                        this.settings['overlay-font-size'] = Math.min(50, (this.settings['overlay-font-size'] || 18) + 2);
+                    case '=':
+                        this.settings['overlay-font-size'] = Math.min(40, (this.settings['overlay-font-size'] || 16) + 2);
                         this.applySettings();
                         this.updateDisplay();
-                        console.log('폰트 크기:', this.settings['overlay-font-size']);
+                        console.log('📱 폰트 크기:', this.settings['overlay-font-size']);
                         break;
-                    case '-': // Alt+-: 폰트 크기 감소
-                        this.settings['overlay-font-size'] = Math.max(10, (this.settings['overlay-font-size'] || 18) - 2);
+                    case '-':
+                        this.settings['overlay-font-size'] = Math.max(8, (this.settings['overlay-font-size'] || 16) - 2);
                         this.applySettings();
                         this.updateDisplay();
-                        console.log('폰트 크기:', this.settings['overlay-font-size']);
+                        console.log('📱 폰트 크기:', this.settings['overlay-font-size']);
                         break;
                 }
                 e.preventDefault();
@@ -391,8 +391,8 @@ class RealtimeDonorOverlay {
 
 // 페이지 로드 시 시작
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎬 실시간 후원자 오버레이 시작');
-    new RealtimeDonorOverlay();
+    console.log('📱 모바일 전용 후원자 오버레이 초기화');
+    new MobileDonorOverlay();
 });
 </script>
 

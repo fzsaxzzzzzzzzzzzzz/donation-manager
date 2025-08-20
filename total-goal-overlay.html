@@ -181,11 +181,16 @@ body {
     border-radius: 12px;
 }
 
-/* 데스크톱에서만 애니메이션 적용 */
-@media (hover: hover) and (pointer: fine) {
-    .goal-progress-bar::before {
-        animation: shine 3s infinite;
-    }
+/* 모든 애니메이션 완전 비활성화 */
+*,
+*::before,
+*::after {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    will-change: auto !important;
+    backdrop-filter: none !important;
+    filter: none !important;
 }
 
 .goal-progress-bar.completed {
@@ -197,12 +202,6 @@ body {
     box-shadow: 0 3px 15px rgba(76, 175, 80, 0.8);
 }
 
-@media (hover: hover) and (pointer: fine) {
-    .goal-progress-bar.completed {
-        animation: pulse-green 2s infinite;
-    }
-}
-
 .goal-progress-bar.overtime {
     background: linear-gradient(90deg, 
         var(--overtime-start-color, #ffd700) 0%, 
@@ -210,12 +209,6 @@ body {
         var(--overtime-end-color, #fff176) 100%
     );
     box-shadow: 0 3px 15px rgba(255, 215, 0, 1);
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .goal-progress-bar.overtime {
-        animation: pulse-gold 2s infinite;
-    }
 }
 
 @keyframes shine {
@@ -483,9 +476,14 @@ class TotalGoalOverlay {
                 
                 // API 폴백 모드에서는 30초마다 갱신 (중복 방지)
                 if (!this.apiPollInterval) {
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    const interval = isMobile ? 60000 : 30000; // 모바일: 60초, PC: 30초
+                    
                     this.apiPollInterval = setInterval(() => {
                         this.fallbackToAPI();
-                    }, 30000);
+                    }, interval);
+                    
+                    console.log(`📱 API 폴링 간격: ${interval/1000}초`);
                     console.log('🔄 [총액그래프] API 폴링 모드 시작 (30초 간격)');
                 }
             } else {
@@ -562,9 +560,14 @@ class TotalGoalOverlay {
         if (this.settings['total-goal-text-switch-enabled']) {
             const intervalSeconds = parseInt(this.settings['total-goal-text-switch-interval']) || 5;
             
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const mobileInterval = isMobile ? intervalSeconds * 3 : intervalSeconds; // 모바일에서는 3배 느리게
+            
             this.textSwitchInterval = setInterval(() => {
                 this.switchProgressText();
-            }, intervalSeconds * 1000);
+            }, mobileInterval * 1000);
+            
+            console.log(`📱 텍스트 전환 간격: ${mobileInterval}초`);
             
             console.log('🔄 텍스트 전환 활성화:', intervalSeconds, '초 간격');
         } else {
@@ -790,13 +793,18 @@ class TotalGoalOverlay {
     }
     
     startAutoExtendChecker() {
-        // 10초마다 자동추가 체크 (실시간 업데이트 보조용)
+        // 자동추가 체크 - 모바일에서는 빈도 줄이기
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const checkInterval = isMobile ? 30000 : 10000; // 모바일: 30초, PC: 10초
+        
         this.autoExtendCheckInterval = setInterval(() => {
             if (this.dailyGoal && (this.dailyGoal.autoExtendEnabled || this.dailyGoal.autoExtend)) {
                 console.log('⏰ 정기 자동추가 체크 실행');
                 this.checkAutoExtend();
             }
-        }, 10000); // 10초 간격
+        }, checkInterval);
+        
+        console.log(`📱 자동추가 체크 간격: ${checkInterval/1000}초`);
         
         console.log('🔄 자동추가 정기 체크 시작 (10초 간격)');
     }
