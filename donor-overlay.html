@@ -252,27 +252,31 @@ class RealtimeDonorOverlay {
             if (showKakaoBank) {
                 contentEl.innerHTML = '';
                 
+                // 카카오뱅크 줄간격 설정값 적용
+                const bankLineHeight = this.settings.kakaoBankLineHeight || 1.0;
+                const textLineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
+                
                 // 카카오뱅크 DOM 생성
                 const bankDiv = document.createElement('div');
                 bankDiv.className = 'kakao-bank-info';
-                bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: 1.0 !important; margin: 0 !important; padding: 0 !important;`;
+                bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
                 
                 const bankName = document.createElement('div');
                 bankName.textContent = '카카오뱅크';
-                bankName.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.0 !important; font-weight: bold; color: #FFEB3B;';
+                bankName.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
                 
                 const bankAccount = document.createElement('div');
                 bankAccount.textContent = '3333-25-7378436';
-                bankAccount.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.0 !important; font-size: 90%; color: white;';
+                bankAccount.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-size: 90%; color: white;`;
                 
                 bankDiv.appendChild(bankName);
                 bankDiv.appendChild(bankAccount);
                 
-                // 텍스트 DOM 생성
+                // 텍스트 DOM 생성 - 줄간격 설정값 적용
                 const textDiv = document.createElement('div');
                 textDiv.className = 'donor-text';
                 textDiv.textContent = content;
-                textDiv.style.cssText = 'line-height: 1.0 !important; margin: 0 !important; padding: 0 !important;';
+                textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
                 
                 contentEl.appendChild(bankDiv);
                 contentEl.appendChild(textDiv);
@@ -360,33 +364,39 @@ class RealtimeDonorOverlay {
             // DOM 요소 직접 생성으로 완전한 제어
             contentEl.innerHTML = '';
             
+            // 카카오뱅크 줄간격 설정값 적용
+            const bankLineHeight = this.settings.kakaoBankLineHeight || 1.0;
+            
             // 카카오뱅크 정보 DOM 생성
             const bankDiv = document.createElement('div');
-            bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: 1.0 !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
+            bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
             bankDiv.className = 'kakao-bank-info';
             
             const bankName = document.createElement('div');
             bankName.textContent = '카카오뱅크';
-            bankName.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.0 !important; font-weight: bold; color: #FFEB3B;';
+            bankName.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
             
             const bankAccount = document.createElement('div');
             bankAccount.textContent = '3333-25-7378436';
-            bankAccount.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.0 !important; font-size: 90%; color: white;';
+            bankAccount.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-size: 90%; color: white;`;
             
             bankDiv.appendChild(bankName);
             bankDiv.appendChild(bankAccount);
             contentEl.appendChild(bankDiv);
             
+            // 후원자 텍스트 줄간격 설정값 적용 
+            const textLineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
+            
             // 후원자 텍스트를 각 줄별로 DOM 생성 (br 태그 완전 배제)
             const textDiv = document.createElement('div');
             textDiv.className = 'donor-text';
-            textDiv.style.cssText = 'line-height: 1.0 !important; margin: 0 !important; padding: 0 !important; display: block !important;';
+            textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
             
             const lines = finalText.split('\\n');
             lines.forEach((line, index) => {
                 const lineSpan = document.createElement('span');
                 lineSpan.textContent = line;
-                lineSpan.style.cssText = 'display: block !important; line-height: 1.0 !important; margin: 0 !important; padding: 0 !important;';
+                lineSpan.style.cssText = `display: block !important; line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
                 textDiv.appendChild(lineSpan);
             });
             
