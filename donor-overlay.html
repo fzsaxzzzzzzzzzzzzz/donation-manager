@@ -71,12 +71,17 @@ body {
 * .kakao-bank-info,
 * .kakao-bank-info *,
 div .kakao-bank-info,
-div .kakao-bank-info * {
+div .kakao-bank-info *,
+.kakao-bank-info div,
+.kakao-bank-info div * {
     line-height: 1.0 !important;
     margin: 0 !important;
     padding: 0 !important;
     font-size: inherit !important;
     vertical-align: baseline !important;
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
 }
 
 .kakao-bank-info {
@@ -115,12 +120,19 @@ br {
     display: block !important;
 }
 
-/* 모든 애니메이션 완전 비활성화 */
+/* 모든 애니메이션 완전 비활성화 + 간격 통제 */
 * {
     animation: none !important;
     transition: none !important;
     transform: none !important;
     will-change: auto !important;
+}
+
+/* 전체 간격 완전 통제 - 카카오뱅크 관련 */
+div, span, p, br {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: inherit !important;
 }
 
 /* 연결 상태 표시 제거됨 */
@@ -238,11 +250,11 @@ class RealtimeDonorOverlay {
             
             // 카카오뱅크 정보 추가
             if (showKakaoBank) {
-                const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
-                    <div>카카오뱅크</div>
-                    <div>3333-25-7378436</div>
+                const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">
+                    <div style="margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">카카오뱅크</div>
+                    <div style="margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">3333-25-7378436</div>
                 </div>`;
-                contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text" style="line-height: 1.2;">' + content + '</div>';
+                contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text" style="line-height: 1.0 !important; margin: 0 !important; padding: 0 !important;">' + content + '</div>';
             } else {
                 contentEl.textContent = content;
             }
@@ -322,15 +334,15 @@ class RealtimeDonorOverlay {
         // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
         let finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡';
         
-        // 카카오뱅크 정보 추가 (후원자가 있을 때)
+        // 카카오뱅크 정보 추가 (후원자가 있을 때) - 간격 완전 제거
         if (showKakaoBank) {
-            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
-                <div>카카오뱅크</div>
-                <div>3333-25-7378436</div>
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%; margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">
+                <div style="margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">카카오뱅크</div>
+                <div style="margin: 0 !important; padding: 0 !important; line-height: 1.0 !important;">3333-25-7378436</div>
             </div>`;
             
             // 줄바꿈을 <br>로 변환하여 HTML에서 제대로 표시 - 간격 완전 고정
-            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text" style="line-height: 1.0; margin-top: 0 !important; padding-top: 0 !important;">' + finalText.replace(/\n/g, '<br style="line-height: 0;">') + '</div>';
+            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text" style="line-height: 1.0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; outline: 0 !important;">' + finalText.replace(/\n/g, '<br style="line-height: 0 !important; margin: 0 !important; padding: 0 !important; height: 0 !important; display: block !important;">') + '</div>';
         } else {
             contentEl.innerHTML = '<div style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
         }
