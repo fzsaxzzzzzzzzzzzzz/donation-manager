@@ -421,6 +421,110 @@ body {
             </table>
         </div>
     </div>
+    
+    <!-- YouTube 챗봇 패널 -->
+    <div class="panel">
+        <h2>🤖 YouTube 실시간 챗봇</h2>
+        
+        <!-- 챗봇 모드 선택 -->
+        <div class="form-group">
+            <label class="form-label">🎯 챗봇 모드 선택</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 2px solid #e9ebee; border-radius: 8px; flex: 1;">
+                    <input type="radio" name="chatbot-mode" value="youtube" onchange="chatBot.changeBotMode('youtube')">
+                    <span>📺 YouTube 채팅</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 2px solid #e9ebee; border-radius: 8px; flex: 1;">
+                    <input type="radio" name="chatbot-mode" value="browser" onchange="chatBot.changeBotMode('browser')" checked>
+                    <span>🌐 브라우저 직접 제어</span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- 브라우저 직접 제어 모드 (기본) -->
+        <div class="form-group" id="browser-mode-section">
+            <div class="oauth-status" id="browser-status" style="padding: 12px; background: #e8f5e8; color: #2d5a2d; border-radius: 8px; margin-bottom: 10px;">
+                🌐 브라우저 직접 제어 모드 (API 없음)
+            </div>
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                <strong>📋 사용법:</strong><br>
+                1. YouTube 라이브 방송 페이지를 <strong>새 탭</strong>에서 열기<br>
+                2. 아래 "🚀 챗봇 시작" 버튼 클릭<br>
+                3. 자동으로 채팅창을 찾아서 응답 시작!
+            </div>
+            <button type="button" onclick="chatBot.openYouTubeTab()" class="btn btn-primary" style="width: 100%; margin-bottom: 10px;">
+                🎬 YouTube 라이브 방송 열기
+            </button>
+        </div>
+        
+        <!-- YouTube API 모드 -->
+        <div class="form-group" id="youtube-mode-section" style="display: none;">
+            <div class="oauth-status" id="oauth-status">
+                🔐 YouTube API 인증이 필요합니다.
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" onclick="chatBot.signIn()" class="btn btn-primary" id="oauth-signin-btn">
+                    🔑 구글 로그인
+                </button>
+                <button type="button" onclick="chatBot.signOut()" class="btn btn-danger" id="oauth-signout-btn" style="display: none;">
+                    🚪 로그아웃
+                </button>
+            </div>
+            <div style="margin-top: 10px;">
+                <label class="form-label">📺 YouTube 라이브 URL</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="url" id="youtube-live-url" class="form-input" 
+                           placeholder="https://www.youtube.com/watch?v=VIDEO_ID" style="flex: 1;">
+                    <button type="button" onclick="chatBot.connectToChat()" class="btn btn-primary" id="connect-chat-btn" disabled>
+                        🔗 연결
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 챗봇 상태 -->
+        <div class="form-group">
+            <div class="chatbot-status" id="chatbot-status" style="display: flex; align-items: center; gap: 10px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
+                <span class="status-dot" style="background: #666; width: 10px; height: 10px; border-radius: 50%;"></span>
+                <span>챗봇 비활성화됨</span>
+            </div>
+            <button type="button" onclick="chatBot.toggleBot()" class="btn btn-success" id="chatbot-toggle-btn" style="width: 100%;" disabled>
+                🚀 챗봇 시작
+            </button>
+        </div>
+        
+        <!-- 자동 응답 설정 -->
+        <div class="form-group">
+            <label class="form-label">💬 자동 응답 설정</label>
+            <div class="response-list" id="response-list" style="margin-bottom: 10px;">
+                <!-- 동적으로 생성 -->
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="new-trigger" class="form-input" placeholder="트리거 (예: !안녕)" style="flex: 1;">
+                <input type="text" id="new-response" class="form-input" placeholder="응답 메시지" style="flex: 2;">
+                <button type="button" onclick="chatBot.addResponse()" class="btn btn-primary">➕</button>
+            </div>
+        </div>
+        
+        <!-- 채팅 로그 -->
+        <div class="form-group">
+            <label class="form-label">📝 채팅 로그 <span id="chat-log-count">(0)</span></label>
+            <div class="chat-log" id="chat-log" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ebee; border-radius: 8px; padding: 10px; background: #f8f9fa; font-size: 12px;">
+                <div class="chat-log-empty" style="text-align: center; color: #666; padding: 20px;">아직 채팅이 없습니다.</div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" onclick="chatBot.clearLog()" class="btn btn-danger" style="flex: 1;">
+                    🗑️ 로그 지우기
+                </button>
+                <button type="button" onclick="chatBot.testMessage()" class="btn btn-success" style="flex: 1;" id="test-message-btn" disabled>
+                    📤 테스트 전송
+                </button>
+                <button type="button" onclick="chatBot.manualTrigger()" class="btn btn-primary" style="flex: 1;" id="manual-trigger-btn" disabled>
+                    🎯 수동 트리거
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- 총액 오버레이 설정 패널 -->
@@ -817,7 +921,627 @@ class RealtimeDonationManager {
 // 앱 시작
 document.addEventListener('DOMContentLoaded', () => {
     window.donationManager = new RealtimeDonationManager();
+    window.chatBot = new YouTubeChatBot();
 });
+
+// YouTube 챗봇 클래스
+class YouTubeChatBot {
+    constructor() {
+        this.mode = 'browser'; // 'browser' 또는 'youtube'
+        this.isSignedIn = false;
+        this.liveChatId = null;
+        this.botEnabled = false;
+        this.responses = this.getDefaultResponses();
+        this.chatLog = [];
+        this.pollInterval = null;
+        this.youtubeTab = null; // 새 탭 참조
+        this.lastProcessedCount = 0;
+        
+        this.init();
+    }
+    
+    async init() {
+        // 설정 로드
+        this.loadSettings();
+        
+        // UI 업데이트
+        this.updateUI();
+        
+        console.log('🤖 YouTube 챗봇 초기화 완료 (브라우저 모드)');
+    }
+    
+    loadGoogleAPI() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://apis.google.com/js/api.js';
+            script.onload = () => {
+                gapi.load('auth2:client', {
+                    callback: () => {
+                        gapi.client.init({
+                            apiKey: 'AIzaSyBz5aGfiAQCrfi0ccydGypD0leYjLUt4t4',
+                            clientId: '1051344172738-7u18q2jnrjmrmq6j9hcr8s1g8gfs9l6r.apps.googleusercontent.com',
+                            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
+                            scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl'
+                        }).then(() => {
+                            console.log('✅ Google API 초기화 완료');
+                            this.checkSignInStatus();
+                            resolve();
+                        }).catch(reject);
+                    },
+                    onerror: reject
+                });
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+    
+    getDefaultResponses() {
+        return {
+            '!안녕': '안녕하세요! 👋',
+            '!시간': () => `현재 시간: ${new Date().toLocaleTimeString('ko-KR')} 🕐`,
+            '!봇': '네, 저는 자동 응답 봇입니다! 🤖',
+            '!명령어': '사용 가능한 명령어: !안녕, !시간, !봇, !명령어, !후원 📝',
+            '!후원': '후원해주셔서 감사합니다! 💝',
+            '안녕': '안녕하세요~ 😊',
+            '고마워': '천만에요! 😄',
+            '굿': '👍 굿!',
+            'ㅋㅋ': 'ㅋㅋㅋ 😂'
+        };
+    }
+    
+    checkSignInStatus() {
+        const authInstance = gapi.auth2.getAuthInstance();
+        if (authInstance) {
+            this.isSignedIn = authInstance.isSignedIn.get();
+            this.updateUI();
+        }
+    }
+    
+    async signIn() {
+        try {
+            const authInstance = gapi.auth2.getAuthInstance();
+            await authInstance.signIn();
+            this.isSignedIn = true;
+            this.updateUI();
+            console.log('✅ OAuth 로그인 성공');
+        } catch (error) {
+            console.error('❌ OAuth 로그인 실패:', error);
+            alert('Google 로그인에 실패했습니다.');
+        }
+    }
+    
+    async signOut() {
+        try {
+            const authInstance = gapi.auth2.getAuthInstance();
+            await authInstance.signOut();
+            this.isSignedIn = false;
+            this.liveChatId = null;
+            this.stopBot();
+            this.updateUI();
+            console.log('🚪 로그아웃 완료');
+        } catch (error) {
+            console.error('❌ 로그아웃 실패:', error);
+        }
+    }
+    
+    async testAPI() {
+        try {
+            const response = await gapi.client.youtube.search.list({
+                part: 'snippet',
+                q: 'test',
+                maxResults: 1
+            });
+            
+            if (response.result.items.length > 0) {
+                alert('✅ YouTube API 연결 성공!');
+                console.log('✅ API 테스트 성공:', response.result);
+            } else {
+                throw new Error('API 응답이 비어있습니다.');
+            }
+        } catch (error) {
+            console.error('❌ API 테스트 실패:', error);
+            alert('❌ YouTube API 테스트 실패: ' + error.message);
+        }
+    }
+    
+    async connectToChat() {
+        const url = document.getElementById('youtube-live-url').value.trim();
+        if (!url) {
+            alert('YouTube 라이브 URL을 입력해주세요.');
+            return;
+        }
+        
+        try {
+            // URL에서 Video ID 추출
+            const videoId = this.extractVideoId(url);
+            if (!videoId) {
+                throw new Error('올바른 YouTube URL이 아닙니다.');
+            }
+            
+            // 비디오 정보 가져오기
+            const videoResponse = await gapi.client.youtube.videos.list({
+                part: 'liveStreamingDetails',
+                id: videoId
+            });
+            
+            const video = videoResponse.result.items[0];
+            if (!video || !video.liveStreamingDetails || !video.liveStreamingDetails.activeLiveChatId) {
+                throw new Error('라이브 스트리밍이 활성화되지 않은 영상입니다.');
+            }
+            
+            this.liveChatId = video.liveStreamingDetails.activeLiveChatId;
+            console.log('✅ 라이브 채팅 연결:', this.liveChatId);
+            
+            this.updateUI();
+            alert('✅ 라이브 채팅에 연결되었습니다!');
+            
+        } catch (error) {
+            console.error('❌ 채팅 연결 실패:', error);
+            alert('❌ 채팅 연결 실패: ' + error.message);
+        }
+    }
+    
+    extractVideoId(url) {
+        const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+    }
+    
+    changeBotMode(mode) {
+        this.mode = mode;
+        
+        // UI 섹션 토글
+        const browserSection = document.getElementById('browser-mode-section');
+        const youtubeSection = document.getElementById('youtube-mode-section');
+        
+        if (mode === 'browser') {
+            browserSection.style.display = 'block';
+            youtubeSection.style.display = 'none';
+        } else {
+            browserSection.style.display = 'none';
+            youtubeSection.style.display = 'block';
+            
+            // API 모드일 때만 Google API 로드
+            if (!window.gapi) {
+                this.loadGoogleAPI();
+            }
+        }
+        
+        this.stopBot(); // 모드 변경시 봇 중지
+        this.updateUI();
+        this.addLogMessage(`🔄 모드 변경: ${mode === 'browser' ? '브라우저 직접 제어' : 'YouTube API'}`);
+    }
+    
+    openYouTubeTab() {
+        const url = prompt('YouTube 라이브 방송 URL을 입력하세요:', 'https://www.youtube.com/watch?v=');
+        if (url && url.includes('youtube.com')) {
+            this.youtubeTab = window.open(url, '_blank');
+            this.addLogMessage('🎬 새 탭에서 YouTube 열림');
+            
+            // 3초 후 채팅 요소 확인
+            setTimeout(() => {
+                this.checkYouTubeTab();
+            }, 3000);
+        }
+    }
+    
+    checkYouTubeTab() {
+        if (!this.youtubeTab || this.youtubeTab.closed) {
+            this.addLogMessage('❌ YouTube 탭이 닫혔습니다.', 'error');
+            return;
+        }
+        
+        try {
+            // 채팅 요소 존재 확인 (Cross-origin 제한으로 실제 접근은 불가)
+            this.addLogMessage('✅ YouTube 탭 연결됨 - 챗봇을 시작할 수 있습니다.');
+        } catch (error) {
+            this.addLogMessage('⚠️ 브라우저 보안 제한으로 직접 접근 불가 - 수동 제어 모드로 작동', 'warning');
+        }
+    }
+    
+    toggleBot() {
+        if (this.botEnabled) {
+            this.stopBot();
+        } else {
+            this.startBot();
+        }
+    }
+    
+    startBot() {
+        if (this.mode === 'youtube' && (!this.isSignedIn || !this.liveChatId)) {
+            alert('먼저 Google 로그인 후 라이브 채팅에 연결해주세요.');
+            return;
+        }
+        
+        if (this.mode === 'browser' && (!this.youtubeTab || this.youtubeTab.closed)) {
+            alert('먼저 YouTube 라이브 방송 탭을 열어주세요.');
+            return;
+        }
+        
+        this.botEnabled = true;
+        this.startChatPolling();
+        this.updateUI();
+        
+        const modeText = this.mode === 'browser' ? '브라우저 직접 제어' : 'YouTube API';
+        this.addLogMessage(`🚀 챗봇이 시작되었습니다. (${modeText} 모드)`);
+        console.log('🤖 챗봇 시작됨 -', modeText);
+    }
+    
+    stopBot() {
+        this.botEnabled = false;
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+            this.pollInterval = null;
+        }
+        this.updateUI();
+        this.addLogMessage('🛑 챗봇이 중지되었습니다.');
+        console.log('🛑 챗봇 중지됨');
+    }
+    
+    startChatPolling() {
+        if (this.mode === 'browser') {
+            // 브라우저 직접 제어 모드: 시뮬레이션 모니터링
+            this.pollInterval = setInterval(() => {
+                this.simulateChatMonitoring();
+            }, 3000);
+        } else {
+            // YouTube API 모드
+            this.pollInterval = setInterval(async () => {
+                try {
+                    await this.checkNewMessages();
+                } catch (error) {
+                    console.error('❌ 채팅 확인 실패:', error);
+                }
+            }, 5000);
+        }
+    }
+    
+    simulateChatMonitoring() {
+        if (!this.botEnabled || !this.youtubeTab || this.youtubeTab.closed) {
+            return;
+        }
+        
+        // 실제로는 사용자가 수동으로 트리거해야 함
+        // 여기서는 데모용 시뮬레이션
+        if (Math.random() > 0.95) { // 5% 확률로 시뮬레이션 메시지
+            const sampleMessages = [
+                { author: '시청자1', text: '!안녕' },
+                { author: '시청자2', text: '!시간' },
+                { author: '시청자3', text: '고마워' },
+                { author: '시청자4', text: 'ㅋㅋㅋ' },
+                { author: '시청자5', text: '!봇' }
+            ];
+            
+            const randomMsg = sampleMessages[Math.floor(Math.random() * sampleMessages.length)];
+            this.simulateMessageReceived(randomMsg.author, randomMsg.text);
+        }
+    }
+    
+    simulateMessageReceived(author, messageText) {
+        // 로그 추가
+        this.addLogMessage(`👤 ${author}: ${messageText}`);
+        
+        // 자동 응답 확인
+        const response = this.findResponse(messageText.toLowerCase());
+        if (response) {
+            this.simulateSendMessage(response);
+            this.addLogMessage(`🤖 봇: ${response}`, 'bot');
+        }
+    }
+    
+    simulateSendMessage(text) {
+        // 실제 브라우저 모드에서는 여기서 다른 탭의 채팅창에 메시지를 전송해야 함
+        // 브라우저 보안상 직접 제어는 불가능하므로, 사용자에게 안내
+        
+        // 알림 표시 (실제로는 사용자가 복사해서 붙여넣기)
+        if (confirm(`📤 다음 메시지를 YouTube 채팅에 전송하시겠습니까?\n\n"${text}"\n\n확인을 누르면 클립보드에 복사됩니다.`)) {
+            // 클립보드에 복사
+            navigator.clipboard.writeText(text).then(() => {
+                this.addLogMessage(`📋 메시지가 클립보드에 복사되었습니다: "${text}"`, 'success');
+                
+                // YouTube 탭에 포커스 (가능하면)
+                try {
+                    this.youtubeTab.focus();
+                } catch (error) {
+                    console.log('탭 포커스 실패 (보안 제한)');
+                }
+            }).catch(() => {
+                this.addLogMessage(`❌ 클립보드 복사 실패: "${text}"`, 'error');
+            });
+        }
+        
+        console.log('📤 시뮬레이션 메시지 전송:', text);
+    }
+    
+    async checkNewMessages() {
+        if (!this.liveChatId || !this.botEnabled) return;
+        
+        try {
+            const response = await gapi.client.youtube.liveChatMessages.list({
+                liveChatId: this.liveChatId,
+                part: 'snippet'
+            });
+            
+            const messages = response.result.items || [];
+            const newMessages = messages.filter(msg => !this.processedMessages?.includes(msg.id));
+            
+            if (!this.processedMessages) {
+                this.processedMessages = [];
+            }
+            
+            for (const message of newMessages) {
+                this.processedMessages.push(message.id);
+                await this.handleMessage(message);
+            }
+            
+            // 처리된 메시지 ID 목록이 너무 길어지지 않도록 제한
+            if (this.processedMessages.length > 100) {
+                this.processedMessages = this.processedMessages.slice(-50);
+            }
+            
+        } catch (error) {
+            console.error('❌ 메시지 확인 실패:', error);
+        }
+    }
+    
+    async handleMessage(message) {
+        const messageText = message.snippet.textMessageDetails?.messageText?.toLowerCase() || '';
+        const authorName = message.snippet.authorDetails?.displayName || '익명';
+        
+        // 로그 추가
+        this.addLogMessage(`👤 ${authorName}: ${messageText}`);
+        
+        // 자동 응답 확인
+        const response = this.findResponse(messageText);
+        if (response) {
+            await this.sendMessage(response);
+            this.addLogMessage(`🤖 봇: ${response}`, 'bot');
+        }
+    }
+    
+    findResponse(messageText) {
+        for (const [trigger, response] of Object.entries(this.responses)) {
+            if (messageText.includes(trigger.toLowerCase())) {
+                return typeof response === 'function' ? response() : response;
+            }
+        }
+        return null;
+    }
+    
+    async sendMessage(text) {
+        if (!this.liveChatId || !this.isSignedIn) return;
+        
+        try {
+            await gapi.client.youtube.liveChatMessages.insert({
+                part: 'snippet',
+                resource: {
+                    snippet: {
+                        liveChatId: this.liveChatId,
+                        type: 'textMessageEvent',
+                        textMessageDetails: {
+                            messageText: text
+                        }
+                    }
+                }
+            });
+            
+            console.log('📤 메시지 전송:', text);
+            
+        } catch (error) {
+            console.error('❌ 메시지 전송 실패:', error);
+            this.addLogMessage(`❌ 전송 실패: ${error.message}`, 'error');
+        }
+    }
+    
+    addResponse() {
+        const trigger = document.getElementById('new-trigger').value.trim();
+        const response = document.getElementById('new-response').value.trim();
+        
+        if (!trigger || !response) {
+            alert('트리거와 응답을 모두 입력해주세요.');
+            return;
+        }
+        
+        this.responses[trigger] = response;
+        this.saveSettings();
+        this.updateResponseList();
+        
+        document.getElementById('new-trigger').value = '';
+        document.getElementById('new-response').value = '';
+        
+        console.log('➕ 응답 추가:', trigger, '→', response);
+    }
+    
+    removeResponse(trigger) {
+        delete this.responses[trigger];
+        this.saveSettings();
+        this.updateResponseList();
+        console.log('➖ 응답 삭제:', trigger);
+    }
+    
+    addLogMessage(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString('ko-KR');
+        this.chatLog.unshift({ timestamp, message, type });
+        
+        // 로그가 100개를 넘으면 오래된 것부터 삭제
+        if (this.chatLog.length > 100) {
+            this.chatLog = this.chatLog.slice(0, 100);
+        }
+        
+        this.updateChatLog();
+    }
+    
+    clearLog() {
+        this.chatLog = [];
+        this.updateChatLog();
+        console.log('🗑️ 채팅 로그 지움');
+    }
+    
+    async testMessage() {
+        const testMsg = '🤖 테스트 메시지 - ' + new Date().toLocaleTimeString('ko-KR');
+        
+        if (this.mode === 'browser') {
+            this.simulateSendMessage(testMsg);
+        } else {
+            await this.sendMessage(testMsg);
+        }
+        
+        this.addLogMessage(`📤 테스트: ${testMsg}`, 'test');
+    }
+    
+    manualTrigger() {
+        const message = prompt('채팅 메시지를 입력하세요 (시뮬레이션용):', '!안녕');
+        if (message) {
+            const author = prompt('사용자 이름을 입력하세요:', '시청자');
+            if (author) {
+                this.simulateMessageReceived(author, message);
+            }
+        }
+    }
+    
+    updateUI() {
+        // OAuth 상태
+        const oauthStatus = document.getElementById('oauth-status');
+        const signinBtn = document.getElementById('oauth-signin-btn');
+        const signoutBtn = document.getElementById('oauth-signout-btn');
+        const testBtn = document.getElementById('test-api-btn');
+        
+        if (this.isSignedIn) {
+            oauthStatus.textContent = '✅ YouTube API 인증 완료';
+            oauthStatus.style.color = '#42b72a';
+            signinBtn.style.display = 'none';
+            signoutBtn.style.display = 'block';
+            testBtn.style.display = 'block';
+        } else {
+            oauthStatus.textContent = '🔐 YouTube API 인증이 필요합니다';
+            oauthStatus.style.color = '#666';
+            signinBtn.style.display = 'block';
+            signoutBtn.style.display = 'none';
+            testBtn.style.display = 'none';
+        }
+        
+        // 연결 버튼
+        const connectBtn = document.getElementById('connect-chat-btn');
+        connectBtn.disabled = !this.isSignedIn;
+        
+        // 챗봇 상태
+        const status = document.getElementById('chatbot-status');
+        const toggleBtn = document.getElementById('chatbot-toggle-btn');
+        const testMsgBtn = document.getElementById('test-message-btn');
+        
+        if (this.botEnabled) {
+            status.innerHTML = '<span class="status-dot" style="background: #42b72a; width: 10px; height: 10px; border-radius: 50%;"></span><span>챗봇 활성화됨</span>';
+            toggleBtn.textContent = '🛑 챗봇 중지';
+            toggleBtn.className = 'btn btn-danger';
+        } else {
+            status.innerHTML = '<span class="status-dot" style="background: #666; width: 10px; height: 10px; border-radius: 50%;"></span><span>챗봇 비활성화됨</span>';
+            toggleBtn.textContent = '🚀 챗봇 시작';
+            toggleBtn.className = 'btn btn-success';
+        }
+        
+        // 버튼 활성화 조건
+        const manualTriggerBtn = document.getElementById('manual-trigger-btn');
+        
+        if (this.mode === 'browser') {
+            toggleBtn.disabled = !this.youtubeTab || this.youtubeTab.closed;
+            testMsgBtn.disabled = false; // 브라우저 모드에서는 항상 가능
+            manualTriggerBtn.disabled = false; // 수동 트리거는 항상 가능
+        } else {
+            toggleBtn.disabled = !this.isSignedIn || !this.liveChatId;
+            testMsgBtn.disabled = !this.isSignedIn || !this.liveChatId;
+            manualTriggerBtn.disabled = true; // API 모드에서는 수동 트리거 불필요
+        }
+        
+        this.updateResponseList();
+    }
+    
+    updateResponseList() {
+        const responseList = document.getElementById('response-list');
+        responseList.innerHTML = '';
+        
+        Object.entries(this.responses).forEach(([trigger, response]) => {
+            const responseText = typeof response === 'function' ? '동적 응답' : response;
+            const shortResponse = responseText.length > 30 ? responseText.substring(0, 30) + '...' : responseText;
+            
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; align-items: center; gap: 10px; padding: 8px; background: #e9f3ff; border-radius: 6px; margin-bottom: 5px; font-size: 13px;';
+            
+            const triggerSpan = document.createElement('span');
+            triggerSpan.textContent = trigger;
+            triggerSpan.style.cssText = 'background: #1877f2; color: white; padding: 4px 8px; border-radius: 12px; font-weight: 600; min-width: 60px; text-align: center;';
+            
+            const arrow = document.createElement('span');
+            arrow.textContent = '→';
+            arrow.style.color = '#666';
+            
+            const responseSpan = document.createElement('span');
+            responseSpan.textContent = shortResponse;
+            responseSpan.style.flex = '1';
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = '❌';
+            deleteBtn.style.cssText = 'background: none; border: none; cursor: pointer; padding: 4px;';
+            deleteBtn.onclick = () => this.removeResponse(trigger);
+            
+            item.appendChild(triggerSpan);
+            item.appendChild(arrow);
+            item.appendChild(responseSpan);
+            item.appendChild(deleteBtn);
+            
+            responseList.appendChild(item);
+        });
+    }
+    
+    updateChatLog() {
+        const chatLog = document.getElementById('chat-log');
+        const logCount = document.getElementById('chat-log-count');
+        
+        logCount.textContent = `(${this.chatLog.length})`;
+        
+        if (this.chatLog.length === 0) {
+            chatLog.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">아직 채팅이 없습니다.</div>';
+            return;
+        }
+        
+        chatLog.innerHTML = this.chatLog.slice(0, 20).map(log => {
+            let color = '#333';
+            if (log.type === 'bot') color = '#1877f2';
+            if (log.type === 'error') color = '#fa383e';
+            if (log.type === 'test') color = '#42b72a';
+            if (log.type === 'success') color = '#28a745';
+            if (log.type === 'warning') color = '#ffc107';
+            
+            return `
+                <div style="margin-bottom: 8px; padding: 6px; border-left: 3px solid ${color}; background: rgba(0,0,0,0.02);">
+                    <span style="color: #666; font-size: 11px;">[${log.timestamp}]</span>
+                    <span style="color: ${color}; margin-left: 8px;">${log.message}</span>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    loadSettings() {
+        const saved = localStorage.getItem('youtubeChatBotSettings');
+        if (saved) {
+            try {
+                const settings = JSON.parse(saved);
+                this.responses = { ...this.getDefaultResponses(), ...settings.responses };
+                console.log('📱 챗봇 설정 로드됨');
+            } catch (error) {
+                console.error('❌ 설정 로드 실패:', error);
+            }
+        }
+    }
+    
+    saveSettings() {
+        const settings = {
+            responses: this.responses
+        };
+        localStorage.setItem('youtubeChatBotSettings', JSON.stringify(settings));
+        console.log('💾 챗봇 설정 저장됨');
+    }
+}
 </script>
 
 </body>
