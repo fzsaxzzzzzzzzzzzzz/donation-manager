@@ -212,8 +212,8 @@ class RealtimeDonorOverlay {
             }
         }).join('\n');
         
-        // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
-        const finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡\n후원자가 없습니다';
+        // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일) + 카카오뱅크 계좌 항상 포함
+        const finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}\n\n카카오뱅크\n3333-25-7378436` : '사랑해요♡\n후원자가 없습니다\n\n카카오뱅크\n3333-25-7378436';
         contentEl.textContent = finalText;
         contentEl.className = 'donor-content';
         
