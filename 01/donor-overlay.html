@@ -341,7 +341,44 @@ class RealtimeDonorOverlay {
         const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
         
         if (sortedGroups.length === 0) {
-            contentEl.textContent = '사랑해요♡';
+            let content = '사랑해요♡';
+            
+            // 카카오뱅크 정보 추가 - 후원자가 없어도 항상 표시
+            if (showKakaoBank) {
+                contentEl.innerHTML = '';
+                
+                // 카카오뱅크 줄간격 설정값 적용
+                const bankLineHeight = this.settings.kakaoBankLineHeight || 1.0;
+                const textLineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
+                
+                // 카카오뱅크 DOM 생성
+                const bankDiv = document.createElement('div');
+                bankDiv.className = 'kakao-bank-info';
+                bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
+                
+                const bankName = document.createElement('div');
+                bankName.textContent = '카카오뱅크';
+                bankName.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
+                
+                const bankAccount = document.createElement('div');
+                bankAccount.textContent = '3333-25-7378436';
+                bankAccount.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-size: 90%; color: white;`;
+                
+                bankDiv.appendChild(bankName);
+                bankDiv.appendChild(bankAccount);
+                
+                // 텍스트 DOM 생성 - 줄간격 설정값 적용
+                const textDiv = document.createElement('div');
+                textDiv.className = 'donor-text';
+                textDiv.textContent = content;
+                textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
+                
+                contentEl.appendChild(bankDiv);
+                contentEl.appendChild(textDiv);
+            } else {
+                contentEl.textContent = content;
+            }
+            
             contentEl.className = 'no-data';
             return;
         }
