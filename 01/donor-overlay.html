@@ -185,10 +185,13 @@ class RealtimeDonorOverlay {
         this.socket.on('initialData', (data) => {
             console.log('📊 초기 데이터 수신:', data);
             this.donations = data.donations || [];
-            // 🔥 초기 설정에서도 카카오뱅크는 강제 true
+            // 초기 설정 적용 - 카카오뱅크는 기본값 true
             const initialSettings = data.settings || {};
-            delete initialSettings.showKakaoBank; // 서버에서 오는 showKakaoBank 설정 무시
-            this.settings = { ...this.settings, ...initialSettings, showKakaoBank: true }; // 강제 true
+            this.settings = { ...this.settings, ...initialSettings };
+            // showKakaoBank가 undefined면 기본값 true 설정
+            if (this.settings.showKakaoBank === undefined) {
+                this.settings.showKakaoBank = true;
+            }
             this.applySettings();
             this.updateDisplay();
         });
@@ -200,10 +203,12 @@ class RealtimeDonorOverlay {
             // 설정 데이터가 포함된 경우 설정도 업데이트 (카카오뱅크 설정 제외)
             if (data.settings) {
                 console.log('⚙️ 설정 업데이트 포함:', Object.keys(data.settings));
-                // 🔥 카카오뱅크 설정은 무시하고 항상 true로 고정
-                const filteredSettings = { ...data.settings };
-                delete filteredSettings.showKakaoBank; // 매니저에서 오는 showKakaoBank 설정 무시
-                this.settings = { ...this.settings, ...filteredSettings, showKakaoBank: true }; // 강제 true
+                // 설정 업데이트 - 카카오뱅크는 기본값 true
+                this.settings = { ...this.settings, ...data.settings };
+                // showKakaoBank가 undefined면 기본값 true 설정  
+                if (this.settings.showKakaoBank === undefined) {
+                    this.settings.showKakaoBank = true;
+                }
                 this.applySettings();
             }
             
@@ -213,10 +218,12 @@ class RealtimeDonorOverlay {
         
         this.socket.on('settingsUpdate', (settings) => {
             console.log('⚙️ 설정 업데이트 수신:', settings);
-            // 🔥 카카오뱅크 설정은 무시하고 항상 true로 고정
-            const filteredSettings = { ...settings };
-            delete filteredSettings.showKakaoBank; // 매니저에서 오는 showKakaoBank 설정 무시
-            this.settings = { ...this.settings, ...filteredSettings, showKakaoBank: true }; // 강제 true
+            // 설정 업데이트 - 카카오뱅크는 기본값 true  
+            this.settings = { ...this.settings, ...settings };
+            // showKakaoBank가 undefined면 기본값 true 설정
+            if (this.settings.showKakaoBank === undefined) {
+                this.settings.showKakaoBank = true;
+            }
             this.applySettings();
             this.updateDisplay();
         });
@@ -244,8 +251,8 @@ class RealtimeDonorOverlay {
     updateDisplay() {
         const contentEl = document.getElementById('donor-content');
         
-        // 🔥 카카오뱅크 계좌 정보 표시 여부 확인 - 매니저 설정 무시하고 강제 true
-        const showKakaoBank = true; // 매니저 설정 완전 무시
+        // 카카오뱅크 계좌 정보 표시 여부 확인 - 기본값 true, 사용자 설정 존중
+        const showKakaoBank = this.settings.showKakaoBank !== false; // false가 아닌 모든 경우 표시
         
         // 카카오뱅크 크기 설정
         const kakaoBankSize = this.settings.kakaoBankSize || 100;
@@ -535,7 +542,7 @@ class RealtimeDonorOverlay {
     }
 }
 
-// 페이지 로드 시 시작 - Cache Buster v2024083007
+// 페이지 로드 시 시작 - Cache Buster v2024083008
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🎬 실시간 후원자 오버레이 시작 - v2024082001 DOM직접조작방식');
     console.log('🔧 카카오뱅크 간격 완전고정 - br태그 완전배제 DOM생성방식 적용');
