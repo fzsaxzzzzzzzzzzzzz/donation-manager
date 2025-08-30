@@ -4600,7 +4600,7 @@ function resetOverlaySettings() {
     setOverlayTextAlign('left');
     
     // 카카오뱅크 기본값
-    document.getElementById('showKakaoBank-checkbox').checked = false;
+    document.getElementById('showKakaoBank-checkbox').checked = true;
     document.getElementById('kakaobank-size-range').value = '100';
     document.getElementById('kakaobank-lineheight-range').value = '1.2';
     updateKakaoBankSize('100');
@@ -4612,7 +4612,7 @@ function resetOverlaySettings() {
         'overlay-font-size': '16',
         'overlay-stroke-width': '2',
         'overlay-text-align': 'left',
-        'showKakaoBank': false,
+        'showKakaoBank': true,
         'kakaoBankSize': 100,
         'kakaoBankLineHeight': 1.2
     });
