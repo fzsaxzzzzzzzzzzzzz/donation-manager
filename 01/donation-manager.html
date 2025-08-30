@@ -4624,12 +4624,13 @@ function resetOverlaySettings() {
 function updateKakaoBankDisplay() {
     const isChecked = document.getElementById('showKakaoBank-checkbox').checked;
     localStorage.setItem('showKakaoBank', isChecked);
-    updateServerSettings({ 'showKakaoBank': isChecked });
+    // 🔥 카카오뱅크 설정은 항상 true로 강제 전송
+    updateServerSettings({ 'showKakaoBank': true });
     
     // Socket.IO로 실시간 전송
     if (socket) {
         socket.emit('updateKakaoBankSettings', {
-            showKakaoBank: isChecked,
+            showKakaoBank: true, // 🔥 항상 true로 강제 전송
             kakaoBankSize: parseInt(document.getElementById('kakaobank-size-range').value),
             kakaoBankLineHeight: parseFloat(document.getElementById('kakaobank-lineheight-range').value)
         });
