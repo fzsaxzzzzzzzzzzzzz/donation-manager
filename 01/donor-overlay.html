@@ -296,12 +296,7 @@ class RealtimeDonorOverlay {
             
         this.donations.forEach(d => {
             const amount = parseFloat(d.amount) || 0;
-            // 타입 입력 실수 방지 - '계좌' 외에도 유사한 입력 허용
-            const accountTypes = ['계좌', '투네', '계좌이체', 'account', '후원', '기부'];
-            const superchatTypes = ['슈퍼챗', 'superchat', 'super', '슈챗'];
-            const isAccount = accountTypes.includes(d.type) || (!d.type && d.amount > 0);
-            const isSuperchat = superchatTypes.includes(d.type);
-            const shouldInclude = isAccount || (includeSuperchat && isSuperchat);
+            const shouldInclude = d.type === '계좌' || (includeSuperchat && d.type === '슈퍼챗');
             
             if (shouldInclude) {
                 // 스트리머별 조정은 제외, 후원자별 조정은 포함
@@ -517,7 +512,7 @@ class RealtimeDonorOverlay {
     }
 }
 
-// 페이지 로드 시 시작 - Cache Buster v2024083003
+// 페이지 로드 시 시작 - Cache Buster v2024083004
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🎬 실시간 후원자 오버레이 시작 - v2024082001 DOM직접조작방식');
     console.log('🔧 카카오뱅크 간격 완전고정 - br태그 완전배제 DOM생성방식 적용');
