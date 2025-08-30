@@ -235,9 +235,8 @@ class RealtimeDonorOverlay {
     updateDisplay() {
         const contentEl = document.getElementById('donor-content');
         
-        // 카카오뱅크 계좌 정보 표시 여부 확인
-        const showKakaoBank = this.settings.showKakaoBank !== undefined ? 
-            this.settings.showKakaoBank : true;
+        // 카카오뱅크 계좌 정보 표시 여부 확인 - 강제 true
+        const showKakaoBank = true;
         
         // 카카오뱅크 크기 설정
         const kakaoBankSize = this.settings.kakaoBankSize || 100;
@@ -513,7 +512,7 @@ class RealtimeDonorOverlay {
     }
 }
 
-// 페이지 로드 시 시작 - Cache Buster v2024083001
+// 페이지 로드 시 시작 - Cache Buster v2024083002
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🎬 실시간 후원자 오버레이 시작 - v2024082001 DOM직접조작방식');
     console.log('🔧 카카오뱅크 간격 완전고정 - br태그 완전배제 DOM생성방식 적용');
