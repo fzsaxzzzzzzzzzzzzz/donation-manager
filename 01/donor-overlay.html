@@ -294,9 +294,16 @@ class RealtimeDonorOverlay {
         const includeSuperchat = this.settings.includeSuperchat !== undefined ? 
             this.settings.includeSuperchat : (localStorage.getItem('include-superchat') === 'true');
             
-        this.donations.forEach(d => {
+        // 🔍 디버깅 로그 추가
+        console.log('🔍 [디버깅] 전체 후원 데이터:', this.donations?.length || 0, '건');
+        console.log('🔍 [디버깅] includeSuperchat:', includeSuperchat);
+            
+        this.donations.forEach((d, index) => {
             const amount = parseFloat(d.amount) || 0;
             const shouldInclude = d.type === '계좌' || (includeSuperchat && d.type === '슈퍼챗');
+            
+            // 🔍 각 데이터 디버깅
+            console.log(`🔍 [${index+1}] donor: "${d.donor}", type: "${d.type}", amount: ${amount}, shouldInclude: ${shouldInclude}`);
             
             if (shouldInclude) {
                 // 스트리머별 조정은 제외, 후원자별 조정은 포함
@@ -335,9 +342,16 @@ class RealtimeDonorOverlay {
             }
         }
 
+        // 🔍 계산 결과 디버깅
+        console.log('🔍 [계산결과] donorAccountTotals:', donorAccountTotals);
+        console.log('🔍 [계산결과] amountGroups:', amountGroups);
+        
         // 소액 필터링 (0.1만원 미만 제외)
         const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 0.1);
         const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
+        
+        console.log('🔍 [최종결과] sortedGroups:', sortedGroups);
+        console.log('🔍 [최종결과] 표시할 그룹 수:', sortedGroups.length);
         
         if (sortedGroups.length === 0) {
             let content = '사랑해요♡';
@@ -512,7 +526,7 @@ class RealtimeDonorOverlay {
     }
 }
 
-// 페이지 로드 시 시작 - Cache Buster v2024083004
+// 페이지 로드 시 시작 - Cache Buster v2024083005
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🎬 실시간 후원자 오버레이 시작 - v2024082001 DOM직접조작방식');
     console.log('🔧 카카오뱅크 간격 완전고정 - br태그 완전배제 DOM생성방식 적용');
