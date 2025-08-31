@@ -185,7 +185,13 @@ class RealtimeDonorOverlay {
         this.socket.on('initialData', (data) => {
             console.log('📊 초기 데이터 수신:', data);
             this.donations = data.donations || [];
-            this.settings = { ...this.settings, ...(data.settings || {}) };
+            // 초기 설정 적용 - 카카오뱅크는 기본값 true
+            const initialSettings = data.settings || {};
+            this.settings = { ...this.settings, ...initialSettings };
+            // showKakaoBank가 undefined면 기본값 true 설정
+            if (this.settings.showKakaoBank === undefined) {
+                this.settings.showKakaoBank = true;
+            }
             this.applySettings();
             this.updateDisplay();
         });
@@ -194,10 +200,15 @@ class RealtimeDonorOverlay {
             console.log('🔄 실시간 데이터 업데이트 수신:', data.donations?.length || 0, '건');
             this.donations = data.donations || [];
             
-            // 설정 데이터가 포함된 경우 설정도 업데이트
+            // 설정 데이터가 포함된 경우 설정도 업데이트 (카카오뱅크 설정 제외)
             if (data.settings) {
                 console.log('⚙️ 설정 업데이트 포함:', Object.keys(data.settings));
+                // 설정 업데이트 - 카카오뱅크는 기본값 true
                 this.settings = { ...this.settings, ...data.settings };
+                // showKakaoBank가 undefined면 기본값 true 설정  
+                if (this.settings.showKakaoBank === undefined) {
+                    this.settings.showKakaoBank = true;
+                }
                 this.applySettings();
             }
             
@@ -207,7 +218,12 @@ class RealtimeDonorOverlay {
         
         this.socket.on('settingsUpdate', (settings) => {
             console.log('⚙️ 설정 업데이트 수신:', settings);
+            // 설정 업데이트 - 카카오뱅크는 기본값 true  
             this.settings = { ...this.settings, ...settings };
+            // showKakaoBank가 undefined면 기본값 true 설정
+            if (this.settings.showKakaoBank === undefined) {
+                this.settings.showKakaoBank = true;
+            }
             this.applySettings();
             this.updateDisplay();
         });
@@ -235,9 +251,8 @@ class RealtimeDonorOverlay {
     updateDisplay() {
         const contentEl = document.getElementById('donor-content');
         
-        // 카카오뱅크 계좌 정보 표시 여부 확인
-        const showKakaoBank = this.settings.showKakaoBank !== undefined ? 
-            this.settings.showKakaoBank : false;
+        // 🔥 카카오뱅크 계좌 정보 표시 - 항상 true로 강제 설정
+        const showKakaoBank = true;
         
         // 카카오뱅크 크기 설정
         const kakaoBankSize = this.settings.kakaoBankSize || 100;
@@ -246,10 +261,10 @@ class RealtimeDonorOverlay {
         const kakaoBankLineHeight = this.settings.kakaoBankLineHeight || 1.2;
         
         if (!this.donations || this.donations.length === 0) {
-            let content = '사랑해요♡';
+            let content = '사랑해욘♡';
             
-            // 카카오뱅크 정보 추가 - DOM 직접 생성
-            if (showKakaoBank) {
+            // 🔥 카카오뱅크 정보 추가 - DOM 직접 생성 - 무조건 항상 표시  
+            if (true) {
                 contentEl.innerHTML = '';
                 
                 // 카카오뱅크 줄간격 설정값 적용
@@ -295,9 +310,22 @@ class RealtimeDonorOverlay {
         const includeSuperchat = this.settings.includeSuperchat !== undefined ? 
             this.settings.includeSuperchat : (localStorage.getItem('include-superchat') === 'true');
             
-        this.donations.forEach(d => {
+        // 🔍 디버깅 로그 추가
+        console.log('🔍 [디버깅] 전체 후원 데이터:', this.donations?.length || 0, '건');
+        console.log('🔍 [디버깅] includeSuperchat:', includeSuperchat);
+            
+        this.donations.forEach((d, index) => {
             const amount = parseFloat(d.amount) || 0;
+            // 🔥 투네이션은 오버레이에서 완전 제외, 계좌이체만 표시
             const shouldInclude = d.type === '계좌' || (includeSuperchat && d.type === '슈퍼챗');
+            // 투네이션 타입은 무조건 제외
+            if (d.type === '투네이션') {
+                console.log(`🚫 투네이션 제외: ${d.donor}님 ${amount}만원`);
+                return;
+            }
+            
+            // 🔍 각 데이터 디버깅
+            console.log(`🔍 [${index+1}] donor: "${d.donor}", type: "${d.type}", amount: ${amount}, shouldInclude: ${shouldInclude}`);
             
             if (shouldInclude) {
                 // 스트리머별 조정은 제외, 후원자별 조정은 포함
@@ -336,19 +364,63 @@ class RealtimeDonorOverlay {
             }
         }
 
+        // 🔍 계산 결과 디버깅
+        console.log('🔍 [계산결과] donorAccountTotals:', donorAccountTotals);
+        console.log('🔍 [계산결과] amountGroups:', amountGroups);
+        
         // 소액 필터링 (0.1만원 미만 제외)
         const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 0.1);
         const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
         
+        console.log('🔍 [최종결과] sortedGroups:', sortedGroups);
+        console.log('🔍 [최종결과] 표시할 그룹 수:', sortedGroups.length);
+        
         if (sortedGroups.length === 0) {
-            contentEl.textContent = '사랑해요♡';
+            let content = '사랑해욘♡';
+            
+            // 🔥 카카오뱅크 정보 추가 - 무조건 항상 표시
+            if (true) {
+                contentEl.innerHTML = '';
+                
+                // 카카오뱅크 줄간격 설정값 적용
+                const bankLineHeight = this.settings.kakaoBankLineHeight || 1.0;
+                const textLineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
+                
+                // 카카오뱅크 DOM 생성
+                const bankDiv = document.createElement('div');
+                bankDiv.className = 'kakao-bank-info';
+                bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
+                
+                const bankName = document.createElement('div');
+                bankName.textContent = '카카오뱅크';
+                bankName.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
+                
+                const bankAccount = document.createElement('div');
+                bankAccount.textContent = '3333-25-7378436';
+                bankAccount.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-size: 90%; color: white;`;
+                
+                bankDiv.appendChild(bankName);
+                bankDiv.appendChild(bankAccount);
+                
+                // 텍스트 DOM 생성 - 줄간격 설정값 적용
+                const textDiv = document.createElement('div');
+                textDiv.className = 'donor-text';
+                textDiv.textContent = content;
+                textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
+                
+                contentEl.appendChild(bankDiv);
+                contentEl.appendChild(textDiv);
+            } else {
+                contentEl.textContent = content;
+            }
+            
             contentEl.className = 'no-data';
             return;
         }
         
         // 정산요약과 동일한 형식으로 텍스트 생성
         const donorTotalText = sortedGroups.map(([amount, donors]) => {
-            const amountStr = `${parseFloat(amount)}만`;
+            const amountStr = `${parseFloat(amount).toFixed(1)}만`;
             if (donors.length >= groupThreshold) {
                 return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
             } else {
@@ -356,11 +428,11 @@ class RealtimeDonorOverlay {
             }
         }).join('\n');
         
-        // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
-        let finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡';
+        // "사랑해욘♡" 인사말과 함께 표시 (정산요약과 동일)
+        let finalText = donorTotalText ? `사랑해욘♡\n${donorTotalText}` : '사랑해욘♡';
         
-        // 카카오뱅크 정보 추가 (후원자가 있을 때) - DOM 직접 조작 방식
-        if (showKakaoBank) {
+        // 🔥 카카오뱅크 정보 추가 (후원자가 있을 때) - 무조건 항상 표시
+        if (true) {
             // DOM 요소 직접 생성으로 완전한 제어
             contentEl.innerHTML = '';
             
@@ -392,7 +464,7 @@ class RealtimeDonorOverlay {
             textDiv.className = 'donor-text';
             textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
             
-            const lines = finalText.split('\\n');
+            const lines = finalText.split('\n');
             lines.forEach((line, index) => {
                 const lineSpan = document.createElement('span');
                 lineSpan.textContent = line;
@@ -474,13 +546,59 @@ class RealtimeDonorOverlay {
             }
         });
     }
+    
+    // 🔥 카카오뱅크 강제 보호 - 절대 사라지지 않도록 감시
+    forceKakaoBankProtection() {
+        const contentEl = document.getElementById('donor-content');
+        if (!contentEl) return;
+        
+        const currentHTML = contentEl.innerHTML;
+        
+        // 카카오뱅크 정보가 없으면 강제 추가
+        if (!currentHTML.includes('카카오뱅크') || !currentHTML.includes('3333-25-7378436')) {
+            console.log('🚨 카카오뱅크 정보 없음 감지 - 강제 복구');
+            
+            // 기존 텍스트 보존하면서 카카오뱅크만 추가
+            const existingText = contentEl.textContent || '사랑해욘♡';
+            
+            contentEl.innerHTML = '';
+            
+            // 카카오뱅크 DOM 생성
+            const bankDiv = document.createElement('div');
+            bankDiv.className = 'kakao-bank-info';
+            bankDiv.style.cssText = 'font-size: 100%; line-height: 1.2 !important; margin: 0 !important; padding: 0 !important; font-weight: bold; color: #FFEB3B;';
+            
+            const bankName = document.createElement('div');
+            bankName.textContent = '카카오뱅크';
+            const bankAccount = document.createElement('div');
+            bankAccount.textContent = '3333-25-7378436';
+            bankAccount.style.fontSize = '90%';
+            
+            bankDiv.appendChild(bankName);
+            bankDiv.appendChild(bankAccount);
+            
+            // 텍스트 DOM 생성
+            const textDiv = document.createElement('div');
+            textDiv.className = 'donor-text';
+            textDiv.textContent = existingText.replace('카카오뱅크', '').replace('3333-25-7378436', '').trim() || '사랑해욘♡';
+            textDiv.style.cssText = 'line-height: 1.5 !important; margin: 0 !important; padding: 0 !important;';
+            
+            contentEl.appendChild(bankDiv);
+            contentEl.appendChild(textDiv);
+        }
+    }
 }
 
-// 페이지 로드 시 시작 - Cache Buster v2024082001
+// 페이지 로드 시 시작 - Cache Buster v2024083009
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🎬 실시간 후원자 오버레이 시작 - v2024082001 DOM직접조작방식');
     console.log('🔧 카카오뱅크 간격 완전고정 - br태그 완전배제 DOM생성방식 적용');
-    new RealtimeDonorOverlay();
+    const overlay = new RealtimeDonorOverlay();
+    
+    // 🔥 카카오뱅크 강제 보호 - 1초마다 감시
+    setInterval(() => {
+        overlay.forceKakaoBankProtection();
+    }, 1000);
 });
 </script>
 

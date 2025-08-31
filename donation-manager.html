@@ -2116,7 +2116,7 @@ function updateSummary() {
     const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 0.1);
     const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
     const donorTotalText = sortedGroups.flatMap(([amount, donors]) => {
-        const amountStr = `${parseFloat(amount)}만`;
+        const amountStr = `${parseFloat(amount).toFixed(1)}만`;
         if (donors.length >= groupThreshold) {
             return [`${donors.map(d => d + '님').join(', ')} ${amountStr}`];
         } else {
@@ -2124,8 +2124,8 @@ function updateSummary() {
         }
     }).join('\n');
     
-    // "사랑해요♡" 인사말과 함께 표시
-    const finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡\n후원자가 없습니다';
+    // "사랑해욘♡" 인사말과 함께 표시
+    const finalText = donorTotalText ? `사랑해욘♡\n${donorTotalText}` : '사랑해욘♡\n후원자가 없습니다';
     document.getElementById('donor-total').textContent = finalText;
 
     const minutes = parseInt(document.getElementById('recent-minutes').value, 10);
@@ -2557,7 +2557,7 @@ function updateMissionProgressGraph(missions) {
 }
 
 // --- 유틸리티 및 이벤트 핸들러 ---
-function formatAmount(num) { const number = parseFloat(num); if (isNaN(number)) return '0'; return parseFloat(number.toFixed(1)).toString(); }
+function formatAmount(num) { const number = parseFloat(num); if (isNaN(number)) return '0'; return number.toFixed(1); }
 
 function initEventListeners() {
     document.getElementById('auto-save-toggle').addEventListener('change', e => autoSaveEnabled = e.target.checked);
@@ -4600,7 +4600,7 @@ function resetOverlaySettings() {
     setOverlayTextAlign('left');
     
     // 카카오뱅크 기본값
-    document.getElementById('showKakaoBank-checkbox').checked = false;
+    document.getElementById('showKakaoBank-checkbox').checked = true;
     document.getElementById('kakaobank-size-range').value = '100';
     document.getElementById('kakaobank-lineheight-range').value = '1.2';
     updateKakaoBankSize('100');
@@ -4612,7 +4612,7 @@ function resetOverlaySettings() {
         'overlay-font-size': '16',
         'overlay-stroke-width': '2',
         'overlay-text-align': 'left',
-        'showKakaoBank': false,
+        'showKakaoBank': true,
         'kakaoBankSize': 100,
         'kakaoBankLineHeight': 1.2
     });
@@ -4623,13 +4623,15 @@ function resetOverlaySettings() {
 // 카카오뱅크 관련 함수들
 function updateKakaoBankDisplay() {
     const isChecked = document.getElementById('showKakaoBank-checkbox').checked;
-    localStorage.setItem('showKakaoBank', isChecked);
-    updateServerSettings({ 'showKakaoBank': isChecked });
+    // 🔥 카카오뱅크는 항상 true로 강제 저장
+    localStorage.setItem('showKakaoBank', 'true');
+    // 🔥 카카오뱅크 설정은 항상 true로 강제 전송
+    updateServerSettings({ 'showKakaoBank': true });
     
     // Socket.IO로 실시간 전송
     if (socket) {
         socket.emit('updateKakaoBankSettings', {
-            showKakaoBank: isChecked,
+            showKakaoBank: true, // 🔥 항상 true로 강제 전송
             kakaoBankSize: parseInt(document.getElementById('kakaobank-size-range').value),
             kakaoBankLineHeight: parseFloat(document.getElementById('kakaobank-lineheight-range').value)
         });
@@ -4646,7 +4648,7 @@ function updateKakaoBankSize(value) {
     // Socket.IO로 실시간 전송
     if (socket) {
         socket.emit('updateKakaoBankSettings', {
-            showKakaoBank: document.getElementById('showKakaoBank-checkbox').checked,
+            showKakaoBank: true, // 🔥 항상 true로 강제 전송
             kakaoBankSize: parseInt(value),
             kakaoBankLineHeight: parseFloat(document.getElementById('kakaobank-lineheight-range').value)
         });
@@ -4661,7 +4663,7 @@ function updateKakaoBankLineHeight(value) {
     // Socket.IO로 실시간 전송
     if (socket) {
         socket.emit('updateKakaoBankSettings', {
-            showKakaoBank: document.getElementById('showKakaoBank-checkbox').checked,
+            showKakaoBank: true, // 🔥 항상 true로 강제 전송
             kakaoBankSize: parseInt(document.getElementById('kakaobank-size-range').value),
             kakaoBankLineHeight: parseFloat(value)
         });
@@ -4708,12 +4710,12 @@ function loadOverlaySettings() {
     document.getElementById('overlay-stroke-width-value').textContent = '3px';
     setOverlayTextAlign('left');
     
-    // 카카오뱅크 설정 기본값
-    const showKakaoBank = localStorage.getItem('showKakaoBank') === 'true';
+    // 🔥 카카오뱅크 설정 기본값 - 항상 true로 강제 설정
+    const showKakaoBank = true;
     const kakaoBankSize = localStorage.getItem('kakaoBankSize') || '100';
     const kakaoBankLineHeight = localStorage.getItem('kakaoBankLineHeight') || '1.2';
     
-    document.getElementById('showKakaoBank-checkbox').checked = showKakaoBank;
+    document.getElementById('showKakaoBank-checkbox').checked = true; // 🔥 항상 체크 상태
     document.getElementById('kakaobank-size-range').value = kakaoBankSize;
     document.getElementById('kakaobank-lineheight-range').value = kakaoBankLineHeight;
     document.getElementById('kakaobank-size-value').textContent = kakaoBankSize + '%';
