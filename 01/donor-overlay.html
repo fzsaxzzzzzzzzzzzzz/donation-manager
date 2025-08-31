@@ -540,13 +540,47 @@ class RealtimeDonorOverlay {
             }
         });
     }
+    
+    // 🔥 카카오뱅크 강제 보호 - 절대 사라지지 않도록 감시
+    forceKakaoBankProtection() {
+        const contentEl = document.getElementById('donor-content');
+        if (!contentEl) return;
+        
+        const currentHTML = contentEl.innerHTML;
+        
+        // 카카오뱅크 정보가 없으면 강제 추가
+        if (!currentHTML.includes('카카오뱅크') || !currentHTML.includes('3333-25-7378436')) {
+            console.log('🚨 카카오뱅크 정보 없음 감지 - 강제 복구');
+            
+            const bankDiv = document.createElement('div');
+            bankDiv.className = 'kakao-bank-info';
+            bankDiv.style.cssText = 'font-size: 100%; line-height: 1.2 !important; margin: 0 !important; padding: 0 !important; font-weight: bold; color: #FFEB3B;';
+            
+            const bankName = document.createElement('div');
+            bankName.textContent = '카카오뱅크';
+            const bankAccount = document.createElement('div');
+            bankAccount.textContent = '3333-25-7378436';
+            bankAccount.style.fontSize = '90%';
+            
+            bankDiv.appendChild(bankName);
+            bankDiv.appendChild(bankAccount);
+            
+            // 기존 내용 앞에 카카오뱅크 정보 추가
+            contentEl.insertBefore(bankDiv, contentEl.firstChild);
+        }
+    }
 }
 
 // 페이지 로드 시 시작 - Cache Buster v2024083009
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🎬 실시간 후원자 오버레이 시작 - v2024082001 DOM직접조작방식');
     console.log('🔧 카카오뱅크 간격 완전고정 - br태그 완전배제 DOM생성방식 적용');
-    new RealtimeDonorOverlay();
+    const overlay = new RealtimeDonorOverlay();
+    
+    // 🔥 카카오뱅크 강제 보호 - 1초마다 감시
+    setInterval(() => {
+        overlay.forceKakaoBankProtection();
+    }, 1000);
 });
 </script>
 

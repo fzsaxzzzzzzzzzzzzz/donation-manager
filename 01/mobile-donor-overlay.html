@@ -387,12 +387,38 @@ class MobileDonorOverlay {
             }
         });
     }
+    
+    // 🔥 카카오뱅크 강제 보호 - 절대 사라지지 않도록 감시  
+    forceKakaoBankProtection() {
+        const contentEl = document.getElementById('donor-content');
+        if (!contentEl) return;
+        
+        const currentHTML = contentEl.innerHTML;
+        
+        // 카카오뱅크 정보가 없으면 강제 추가
+        if (!currentHTML.includes('카카오뱅크') || !currentHTML.includes('3333-25-7378436')) {
+            console.log('📱🚨 모바일: 카카오뱅크 정보 없음 감지 - 강제 복구');
+            
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: 100%; font-weight: bold; color: #FFEB3B;">
+                <div>카카오뱅크</div>
+                <div style="font-size: 90%;">3333-25-7378436</div>
+            </div>`;
+            
+            // 기존 내용 앞에 카카오뱅크 정보 추가
+            contentEl.innerHTML = kakaoBankHtml + contentEl.innerHTML;
+        }
+    }
 }
 
 // 페이지 로드 시 시작
 document.addEventListener('DOMContentLoaded', () => {
     console.log('📱 모바일 전용 후원자 오버레이 초기화');
-    new MobileDonorOverlay();
+    const overlay = new MobileDonorOverlay();
+    
+    // 🔥 카카오뱅크 강제 보호 - 1초마다 감시
+    setInterval(() => {
+        overlay.forceKakaoBankProtection();
+    }, 1000);
 });
 </script>
 

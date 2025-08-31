@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>🔥 테스트용 오버레이 - 카카오뱅크 강제 표시</title>
+<style>
+body { 
+    margin: 0; padding: 20px; background: transparent; 
+    font-family: 'Malgun Gothic', sans-serif; color: white; 
+}
+.overlay-container { background: transparent; }
+.donor-content { 
+    font-size: 18px; font-weight: bold; color: white;
+    text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
+    line-height: 1.5; white-space: pre-line;
+}
+.kakao-bank-info { color: #FFEB3B; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="overlay-container">
+    <div class="donor-content" id="donor-content">
+        <div class="kakao-bank-info">카카오뱅크<br>3333-25-7378436</div>
+        <br>사랑해요♡<br>테스트 중...
+    </div>
+</div>
+
+<script>
+// 🔥 절대 사라지지 않는 카카오뱅크 표시
+function forceShowKakaoBank() {
+    const contentEl = document.getElementById('donor-content');
+    const currentContent = contentEl.innerHTML;
+    
+    // 카카오뱅크 정보가 없으면 강제 추가
+    if (!currentContent.includes('카카오뱅크')) {
+        const bankInfo = '<div class="kakao-bank-info">카카오뱅크<br>3333-25-7378436</div><br>';
+        contentEl.innerHTML = bankInfo + currentContent;
+        console.log('🔥 카카오뱅크 강제 추가됨');
+    }
+}
+
+// 1초마다 강제 확인
+setInterval(forceShowKakaoBank, 1000);
+
+console.log('🔥 테스트용 오버레이 시작 - 카카오뱅크 절대 사라지지 않음');
+</script>
+</body>
+</html>
