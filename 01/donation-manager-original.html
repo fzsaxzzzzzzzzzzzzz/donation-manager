@@ -1206,7 +1206,7 @@ function updateSummary() {
             return donors.map(d => `${d}님 ${amountStr}`).join('\n');
         }
     }).join('\n');
-    document.getElementById('donor-total').textContent = "사랑해요♡\n" + donorTotalText;
+    document.getElementById('donor-total').textContent = "사랑해욘♡\n" + donorTotalText;
 
     const minutes = parseInt(document.getElementById('recent-minutes').value, 10);
     const recentDonations = (donations || []).filter(d => (Date.now() - new Date(d.time).getTime()) < minutes * 60 * 1000);
