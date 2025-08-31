@@ -374,8 +374,21 @@ class RealtimeDonorOverlay {
         console.log('🔍 [계산결과] donorAccountTotals:', donorAccountTotals);
         console.log('🔍 [계산결과] amountGroups:', amountGroups);
         
+        // 🏦 계좌후원자 최종 확인
+        for (const donor in donorAccountTotals) {
+            if (donor.includes('계좌후원자')) {
+                console.log(`🏦 최종 확인: ${donor} = ${donorAccountTotals[donor]}만원`);
+            }
+        }
+        
         // 소액 필터링 (0.1만원 미만 제외)
-        const filteredGroups = Object.entries(amountGroups).filter(([amount]) => parseFloat(amount) >= 0.1);
+        const filteredGroups = Object.entries(amountGroups).filter(([amount]) => {
+            const isValid = parseFloat(amount) >= 0.1;
+            if (!isValid) {
+                console.log(`🚫 소액 필터링 제외: ${amount}만원 (0.1만원 미만)`);
+            }
+            return isValid;
+        });
         const sortedGroups = filteredGroups.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
         
         console.log('🔍 [최종결과] sortedGroups:', sortedGroups);
