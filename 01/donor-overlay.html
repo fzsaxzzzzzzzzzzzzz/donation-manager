@@ -458,7 +458,7 @@ class RealtimeDonorOverlay {
             textDiv.className = 'donor-text';
             textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
             
-            const lines = finalText.split('\\n');
+            const lines = finalText.split('\n');
             lines.forEach((line, index) => {
                 const lineSpan = document.createElement('span');
                 lineSpan.textContent = line;
