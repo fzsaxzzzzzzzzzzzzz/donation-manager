@@ -323,7 +323,9 @@ class MobileDonorOverlay {
         
         // 텍스트 생성 (모바일 최적화)
         const donorTotalText = sortedGroups.map(([amount, donors]) => {
-            const amountStr = `${parseFloat(amount).toFixed(1)}만`;
+            // 정수는 소수점 제거, 소수점 있는 건 그대로
+            const num = parseFloat(amount);
+            const amountStr = `${num % 1 === 0 ? num.toString() : num.toFixed(1)}만`;
             if (donors.length >= groupThreshold) {
                 return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
             } else {
