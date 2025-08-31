@@ -4647,7 +4647,7 @@ function updateKakaoBankSize(value) {
     // Socket.IO로 실시간 전송
     if (socket) {
         socket.emit('updateKakaoBankSettings', {
-            showKakaoBank: document.getElementById('showKakaoBank-checkbox').checked,
+            showKakaoBank: true, // 🔥 항상 true로 강제 전송
             kakaoBankSize: parseInt(value),
             kakaoBankLineHeight: parseFloat(document.getElementById('kakaobank-lineheight-range').value)
         });
@@ -4662,7 +4662,7 @@ function updateKakaoBankLineHeight(value) {
     // Socket.IO로 실시간 전송
     if (socket) {
         socket.emit('updateKakaoBankSettings', {
-            showKakaoBank: document.getElementById('showKakaoBank-checkbox').checked,
+            showKakaoBank: true, // 🔥 항상 true로 강제 전송
             kakaoBankSize: parseInt(document.getElementById('kakaobank-size-range').value),
             kakaoBankLineHeight: parseFloat(value)
         });
