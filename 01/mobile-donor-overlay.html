@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📱 모바일 전용 후원자 오버레이</title>
+
+<!-- Socket.IO for Real-time -->
+<script src="/socket.io/socket.io.js"></script>
+<style>
+body {
+    margin: 0;
+    padding: 20px;
+    background: transparent;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    color: white;
+    overflow: hidden;
+    /* 모바일 최적화: 하드웨어 가속 비활성화 */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: auto;
+}
+
+.overlay-container {
+    background: transparent;
+    max-width: 100vw;
+    width: 100%;
+    /* 모바일 최적화: 불필요한 효과 제거 */
+    box-shadow: none;
+    backdrop-filter: none;
+    border: none;
+}
+
+.donor-content {
+    font-size: var(--overlay-font-size, 16px) !important;
+    font-weight: bold;
+    color: white;
+    text-shadow: var(--overlay-text-shadow, 2px 2px 0 #000000, -2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000) !important;
+    line-height: var(--overlay-line-height, 1.4);
+    white-space: pre-line;
+    padding: 0;
+    text-align: var(--overlay-text-align, left) !important;
+    /* 모바일 최적화: 애니메이션 완전 제거 */
+    transition: none;
+    animation: none;
+}
+
+.no-data {
+    font-size: var(--overlay-font-size, 18px) !important;
+    font-weight: bold;
+    color: white !important;
+    text-shadow: var(--overlay-text-shadow, 2px 2px 0 #000000, -2px -2px 0 #000000) !important;
+    text-align: var(--overlay-text-align, center) !important;
+    padding: 20px;
+    /* 모바일 최적화: 애니메이션 제거 */
+    animation: none;
+}
+
+.loading {
+    color: #87CEEB;
+    text-align: center;
+    font-size: 14px;
+    /* 모바일 최적화: 펄스 애니메이션 완전 제거 */
+    animation: none;
+}
+
+/* 카카오뱅크 전용 스타일 - 모바일 최적화 */
+.kakao-bank-info,
+.kakao-bank-info *,
+* .kakao-bank-info,
+* .kakao-bank-info *,
+div .kakao-bank-info,
+div .kakao-bank-info * {
+    line-height: 1.0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: inherit !important;
+    vertical-align: baseline !important;
+}
+
+.kakao-bank-info {
+    margin-bottom: 2px !important;
+    display: block !important;
+}
+
+.kakao-bank-info > div:first-child {
+    font-weight: bold !important;
+    color: #FFEB3B !important;
+    margin-bottom: 1px !important;
+    line-height: 1.0 !important;
+}
+
+.kakao-bank-info > div:last-child {
+    font-size: 90% !important;
+    color: white !important;
+    line-height: 1.0 !important;
+    margin: 0 !important;
+}
+
+/* 모바일 최적화: 모든 애니메이션 비활성화 */
+* {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* 배터리 절약: GPU 가속 비활성화 */
+*,
+*::before,
+*::after {
+    will-change: auto;
+    transform: none;
+    -webkit-transform: none;
+}
+
+/* 크로마키 지원 - 모바일 최적화 */
+.transparent-mode {
+    background: #00FF00;
+}
+</style>
+</head>
+<body>
+
+<div class="overlay-container">
+    <div class="donor-content" id="donor-content">
+        <div class="loading">모바일 서버 연결 중...</div>
+    </div>
+</div>
+
+<script>
+class MobileDonorOverlay {
+    constructor() {
+        console.log('📱 모바일 전용 후원자 오버레이 시작');
+        
+        // 모바일 감지
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (!this.isMobile) {
+            console.warn('⚠️ 이 오버레이는 모바일 전용입니다');
+        }
+        
+        this.socket = io();
+        this.donations = [];
+        this.settings = {
+            'overlay-font-size': 16,
+            'overlay-stroke-width': 2,
+            'overlay-text-align': 'left',
+            'includeSuperchat': localStorage.getItem('include-superchat') === 'true'
+        };
+        this.isConnected = false;
+        
+        // 배터리 절약 모드 활성화
+        this.enableBatterySaving();
+        this.initializeSocket();
+        this.setupKeyboardControls();
+    }
+    
+    enableBatterySaving() {
+        // 화면 새로고침 최소화
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('📱 앱이 백그라운드로 이동 - 절전 모드');
+                // 백그라운드에서는 업데이트 빈도 줄이기
+                this.batterySaveMode = true;
+            } else {
+                console.log('📱 앱이 포그라운드로 복귀');
+                this.batterySaveMode = false;
+                this.updateDisplay(); // 즉시 업데이트
+            }
+        });
+        
+        // 불필요한 DOM 조작 최소화
+        this.updateThrottle = false;
+    }
+    
+    initializeSocket() {
+        this.socket.on('connect', () => {
+            this.isConnected = true;
+            console.log('🔗 모바일 서버 연결됨');
+        });
+        
+        this.socket.on('disconnect', () => {
+            this.isConnected = false;
+            console.log('❌ 서버 연결 끊어짐');
+            this.showError('서버 연결 끊어짐');
+        });
+        
+        this.socket.on('initialData', (data) => {
+            console.log('📊 초기 데이터 수신:', data);
+            this.donations = data.donations || [];
+            this.settings = { ...this.settings, ...(data.settings || {}) };
+            this.applySettings();
+            this.updateDisplay();
+        });
+        
+        this.socket.on('dataUpdate', (data) => {
+            // 배터리 절약: 백그라운드에서는 업데이트 스킵
+            if (this.batterySaveMode) {
+                console.log('📱 절전 모드: 업데이트 스킵');
+                return;
+            }
+            
+            console.log('🔄 데이터 업데이트 수신:', data.donations?.length || 0, '건');
+            this.donations = data.donations || [];
+            
+            if (data.settings) {
+                this.settings = { ...this.settings, ...data.settings };
+                this.applySettings();
+            }
+            
+            this.throttledUpdate();
+        });
+        
+        this.socket.on('settingsUpdate', (settings) => {
+            console.log('⚙️ 설정 업데이트:', settings);
+            this.settings = { ...this.settings, ...settings };
+            this.applySettings();
+            this.updateDisplay();
+        });
+    }
+    
+    // 배터리 절약: 업데이트 쓰로틀링
+    throttledUpdate() {
+        if (this.updateThrottle) return;
+        
+        this.updateThrottle = true;
+        requestAnimationFrame(() => {
+            this.updateDisplay();
+            this.updateThrottle = false;
+        });
+    }
+    
+    applySettings() {
+        const root = document.documentElement;
+        const fontSize = parseInt(this.settings['overlay-font-size']) || 16;
+        const strokeWidth = parseFloat(this.settings['overlay-stroke-width']) || 2;
+        const textAlign = this.settings['overlay-text-align'] || 'left';
+        const lineHeight = parseFloat(this.settings['overlay-line-height']) || 1.4;
+        
+        root.style.setProperty('--overlay-font-size', fontSize + 'px');
+        root.style.setProperty('--overlay-text-align', textAlign);
+        root.style.setProperty('--overlay-line-height', lineHeight);
+        root.style.setProperty('--overlay-text-shadow', 
+            `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000`
+        );
+        
+        console.log('🔧 모바일 설정 적용:', { fontSize, strokeWidth, textAlign, lineHeight });
+    }
+    
+    updateDisplay() {
+        const contentEl = document.getElementById('donor-content');
+        
+        // 🔥 카카오뱅크 계좌 정보 표시 - 항상 true로 강제 설정
+        const showKakaoBank = true;
+        const kakaoBankSize = this.settings.kakaoBankSize || 100;
+        
+        if (!this.donations || this.donations.length === 0) {
+            let content = '사랑해욘♡';
+            
+            if (showKakaoBank) {
+                const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
+                    <div>카카오뱅크</div>
+                    <div>3333-25-7378436</div>
+                </div>`;
+                contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + content + '</div>';
+            } else {
+                contentEl.textContent = content;
+            }
+            
+            contentEl.className = 'no-data';
+            return;
+        }
+        
+        // 후원자별 총액 계산 (최적화된 로직)
+        const donorAccountTotals = {};
+        const includeSuperchat = this.settings.includeSuperchat !== undefined ? 
+            this.settings.includeSuperchat : (localStorage.getItem('include-superchat') === 'true');
+            
+        this.donations.forEach(d => {
+            const amount = parseFloat(d.amount) || 0;
+            
+            // 🔥 투네이션 타입은 무조건 제외
+            if (d.type === '투네이션') {
+                console.log(`📱🚫 투네이션 제외: ${d.donor}님 ${amount}만원`);
+                return;
+            }
+            
+            const shouldInclude = d.type === '계좌' || (includeSuperchat && d.type === '슈퍼챗');
+            
+            if (shouldInclude && amount > 0) {
+                if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
+                    return; // 스트리머별 조정 제외
+                }
+                
+                let cleanDonorName = d.donor.replace(/\(조정[^)]*\)/g, '');
+                if (cleanDonorName === '계좌후원자님' || cleanDonorName === '계좌후원자') {
+                    cleanDonorName = '계좌후원자님';
+                }
+                
+                donorAccountTotals[cleanDonorName] = (donorAccountTotals[cleanDonorName] || 0) + amount;
+            }
+        });
+
+        const groupThreshold = this.settings.groupThreshold || parseInt(localStorage.getItem('group-threshold') || '2');
+        
+        // 금액별 그룹화 (최적화)
+        const amountGroups = {};
+        Object.entries(donorAccountTotals).forEach(([donor, amount]) => {
+            if (amount >= 0.1) { // 0.1만원 이상만
+                if (!amountGroups[amount]) amountGroups[amount] = [];
+                amountGroups[amount].push(donor);
+            }
+        });
+
+        const sortedGroups = Object.entries(amountGroups).sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
+        
+        if (sortedGroups.length === 0) {
+            contentEl.textContent = '사랑해욘♡';
+            contentEl.className = 'no-data';
+            return;
+        }
+        
+        // 텍스트 생성 (모바일 최적화)
+        const donorTotalText = sortedGroups.map(([amount, donors]) => {
+            const amountStr = `${parseFloat(amount).toFixed(1)}만`;
+            if (donors.length >= groupThreshold) {
+                return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
+            } else {
+                return donors.map(d => `${d}님 ${amountStr}`).join('\n');
+            }
+        }).join('\n');
+        
+        let finalText = donorTotalText ? `사랑해욘♡\n${donorTotalText}` : '사랑해욘♡';
+        
+        // 카카오뱅크 정보 추가
+        if (showKakaoBank) {
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
+                <div>카카오뱅크</div>
+                <div>3333-25-7378436</div>
+            </div>`;
+            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + finalText.replace(/\n/g, '<br>') + '</div>';
+        } else {
+            contentEl.innerHTML = '<div>' + finalText.replace(/\n/g, '<br>') + '</div>';
+        }
+        contentEl.className = 'donor-content';
+        
+        console.log('📱 모바일 화면 업데이트:', sortedGroups.length, '개 그룹');
+    }
+    
+    showError(message) {
+        const contentEl = document.getElementById('donor-content');
+        contentEl.textContent = message;
+        contentEl.className = 'no-data';
+        contentEl.style.color = '#ffcccb';
+    }
+    
+    setupKeyboardControls() {
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey) {
+                switch(e.key) {
+                    case '1':
+                        this.settings['overlay-text-align'] = 'left';
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('📱 정렬: 왼쪽');
+                        break;
+                    case '2':
+                        this.settings['overlay-text-align'] = 'center';
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('📱 정렬: 가운데');
+                        break;
+                    case '3':
+                        this.settings['overlay-text-align'] = 'right';
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('📱 정렬: 오른쪽');
+                        break;
+                    case '=':
+                        this.settings['overlay-font-size'] = Math.min(40, (this.settings['overlay-font-size'] || 16) + 2);
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('📱 폰트 크기:', this.settings['overlay-font-size']);
+                        break;
+                    case '-':
+                        this.settings['overlay-font-size'] = Math.max(8, (this.settings['overlay-font-size'] || 16) - 2);
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('📱 폰트 크기:', this.settings['overlay-font-size']);
+                        break;
+                }
+                e.preventDefault();
+            }
+        });
+    }
+    
+    // 🔥 카카오뱅크 강제 보호 - 절대 사라지지 않도록 감시  
+    forceKakaoBankProtection() {
+        const contentEl = document.getElementById('donor-content');
+        if (!contentEl) return;
+        
+        const currentHTML = contentEl.innerHTML;
+        
+        // 카카오뱅크 정보가 없으면 강제 추가
+        if (!currentHTML.includes('카카오뱅크') || !currentHTML.includes('3333-25-7378436')) {
+            console.log('📱🚨 모바일: 카카오뱅크 정보 없음 감지 - 강제 복구');
+            
+            // 기존 텍스트 보존하면서 카카오뱅크만 추가
+            const existingText = contentEl.textContent || '사랑해욘♡';
+            
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: 100%; font-weight: bold; color: #FFEB3B;">
+                <div>카카오뱅크</div>
+                <div style="font-size: 90%;">3333-25-7378436</div>
+            </div>`;
+            
+            const cleanText = existingText.replace('카카오뱅크', '').replace('3333-25-7378436', '').trim() || '사랑해욘♡';
+            
+            // 카카오뱅크 + 기존 텍스트 조합
+            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + cleanText + '</div>';
+        }
+    }
+}
+
+// 페이지 로드 시 시작
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📱 모바일 전용 후원자 오버레이 초기화');
+    const overlay = new MobileDonorOverlay();
+    
+    // 🔥 카카오뱅크 강제 보호 - 1초마다 감시
+    setInterval(() => {
+        overlay.forceKakaoBankProtection();
+    }, 1000);
+});
+</script>
+
+</body>
+</html>
