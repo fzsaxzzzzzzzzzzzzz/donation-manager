@@ -327,6 +327,11 @@ class RealtimeDonorOverlay {
             // 🔍 각 데이터 디버깅
             console.log(`🔍 [${index+1}] donor: "${d.donor}", type: "${d.type}", amount: ${amount}, shouldInclude: ${shouldInclude}`);
             
+            // 🏦 계좌후원자 특별 추적
+            if (d.donor && (d.donor.includes('계좌후원자') || d.donor.includes('계좌후원자님'))) {
+                console.log('🏦 계좌후원자 데이터 발견!', d);
+            }
+            
             if (shouldInclude) {
                 // 스트리머별 조정은 제외, 후원자별 조정은 포함
                 if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
@@ -343,6 +348,7 @@ class RealtimeDonorOverlay {
                 // 계좌후원자님은 그대로 표시 (특별 처리)
                 if (cleanDonorName === '계좌후원자님' || cleanDonorName === '계좌후원자') {
                     cleanDonorName = '계좌후원자님';
+                    console.log('🏦 계좌후원자님 감지:', cleanDonorName, amount, '만원');
                 }
                 
                 donorAccountTotals[cleanDonorName] = (donorAccountTotals[cleanDonorName] || 0) + amount;
