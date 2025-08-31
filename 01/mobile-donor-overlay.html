@@ -256,7 +256,7 @@ class MobileDonorOverlay {
         const kakaoBankSize = this.settings.kakaoBankSize || 100;
         
         if (!this.donations || this.donations.length === 0) {
-            let content = '사랑해요♡';
+            let content = '사랑해욘♡';
             
             if (showKakaoBank) {
                 const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
@@ -309,7 +309,7 @@ class MobileDonorOverlay {
         const sortedGroups = Object.entries(amountGroups).sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
         
         if (sortedGroups.length === 0) {
-            contentEl.textContent = '사랑해요♡';
+            contentEl.textContent = '사랑해욘♡';
             contentEl.className = 'no-data';
             return;
         }
@@ -324,7 +324,7 @@ class MobileDonorOverlay {
             }
         }).join('\n');
         
-        let finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡';
+        let finalText = donorTotalText ? `사랑해욘♡\n${donorTotalText}` : '사랑해욘♡';
         
         // 카카오뱅크 정보 추가
         if (showKakaoBank) {

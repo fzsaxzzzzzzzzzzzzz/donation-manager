@@ -261,7 +261,7 @@ class RealtimeDonorOverlay {
         const kakaoBankLineHeight = this.settings.kakaoBankLineHeight || 1.2;
         
         if (!this.donations || this.donations.length === 0) {
-            let content = '사랑해요♡';
+            let content = '사랑해욘♡';
             
             // 🔥 카카오뱅크 정보 추가 - DOM 직접 생성 - 무조건 항상 표시  
             if (true) {
@@ -370,7 +370,7 @@ class RealtimeDonorOverlay {
         console.log('🔍 [최종결과] 표시할 그룹 수:', sortedGroups.length);
         
         if (sortedGroups.length === 0) {
-            let content = '사랑해요♡';
+            let content = '사랑해욘♡';
             
             // 🔥 카카오뱅크 정보 추가 - 무조건 항상 표시
             if (true) {
@@ -422,8 +422,8 @@ class RealtimeDonorOverlay {
             }
         }).join('\n');
         
-        // "사랑해요♡" 인사말과 함께 표시 (정산요약과 동일)
-        let finalText = donorTotalText ? `사랑해요♡\n${donorTotalText}` : '사랑해요♡';
+        // "사랑해욘♡" 인사말과 함께 표시 (정산요약과 동일)
+        let finalText = donorTotalText ? `사랑해욘♡\n${donorTotalText}` : '사랑해욘♡';
         
         // 🔥 카카오뱅크 정보 추가 (후원자가 있을 때) - 무조건 항상 표시
         if (true) {
