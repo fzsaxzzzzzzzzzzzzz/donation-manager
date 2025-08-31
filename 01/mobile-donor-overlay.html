@@ -251,8 +251,8 @@ class MobileDonorOverlay {
     updateDisplay() {
         const contentEl = document.getElementById('donor-content');
         
-        const showKakaoBank = this.settings.showKakaoBank !== undefined ? 
-            this.settings.showKakaoBank : false;
+        // 🔥 카카오뱅크 계좌 정보 표시 - 항상 true로 강제 설정
+        const showKakaoBank = true;
         const kakaoBankSize = this.settings.kakaoBankSize || 100;
         
         if (!this.donations || this.donations.length === 0) {
