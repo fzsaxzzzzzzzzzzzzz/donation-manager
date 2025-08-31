@@ -4623,7 +4623,8 @@ function resetOverlaySettings() {
 // 카카오뱅크 관련 함수들
 function updateKakaoBankDisplay() {
     const isChecked = document.getElementById('showKakaoBank-checkbox').checked;
-    localStorage.setItem('showKakaoBank', isChecked);
+    // 🔥 카카오뱅크는 항상 true로 강제 저장
+    localStorage.setItem('showKakaoBank', 'true');
     // 🔥 카카오뱅크 설정은 항상 true로 강제 전송
     updateServerSettings({ 'showKakaoBank': true });
     
@@ -4709,12 +4710,12 @@ function loadOverlaySettings() {
     document.getElementById('overlay-stroke-width-value').textContent = '3px';
     setOverlayTextAlign('left');
     
-    // 카카오뱅크 설정 기본값
-    const showKakaoBank = localStorage.getItem('showKakaoBank') === 'true';
+    // 🔥 카카오뱅크 설정 기본값 - 항상 true로 강제 설정
+    const showKakaoBank = true;
     const kakaoBankSize = localStorage.getItem('kakaoBankSize') || '100';
     const kakaoBankLineHeight = localStorage.getItem('kakaoBankLineHeight') || '1.2';
     
-    document.getElementById('showKakaoBank-checkbox').checked = showKakaoBank;
+    document.getElementById('showKakaoBank-checkbox').checked = true; // 🔥 항상 체크 상태
     document.getElementById('kakaobank-size-range').value = kakaoBankSize;
     document.getElementById('kakaobank-lineheight-range').value = kakaoBankLineHeight;
     document.getElementById('kakaobank-size-value').textContent = kakaoBankSize + '%';
