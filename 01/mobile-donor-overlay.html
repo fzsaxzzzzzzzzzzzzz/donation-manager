@@ -279,6 +279,13 @@ class MobileDonorOverlay {
             
         this.donations.forEach(d => {
             const amount = parseFloat(d.amount) || 0;
+            
+            // 🔥 투네이션 타입은 무조건 제외
+            if (d.type === '투네이션') {
+                console.log(`📱🚫 투네이션 제외: ${d.donor}님 ${amount}만원`);
+                return;
+            }
+            
             const shouldInclude = d.type === '계좌' || (includeSuperchat && d.type === '슈퍼챗');
             
             if (shouldInclude && amount > 0) {

@@ -155,6 +155,13 @@ class RealtimeDonorOverlay {
         const donorAccountTotals = {};
         this.donations.forEach(d => {
             const amount = parseFloat(d.amount) || 0;
+            
+            // 🔥 투네이션 타입은 무조건 제외
+            if (d.type === '투네이션') {
+                console.log(`🏪🚫 카페24: 투네이션 제외: ${d.donor}님 ${amount}만원`);
+                return;
+            }
+            
             if (d.type === '계좌') {
                 // 스트리머별 조정은 제외, 후원자별 조정은 포함
                 if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
