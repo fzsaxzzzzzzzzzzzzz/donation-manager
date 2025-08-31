@@ -406,13 +406,18 @@ class MobileDonorOverlay {
         if (!currentHTML.includes('카카오뱅크') || !currentHTML.includes('3333-25-7378436')) {
             console.log('📱🚨 모바일: 카카오뱅크 정보 없음 감지 - 강제 복구');
             
+            // 기존 텍스트 보존하면서 카카오뱅크만 추가
+            const existingText = contentEl.textContent || '사랑해욘♡';
+            
             const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: 100%; font-weight: bold; color: #FFEB3B;">
                 <div>카카오뱅크</div>
                 <div style="font-size: 90%;">3333-25-7378436</div>
             </div>`;
             
-            // 기존 내용 앞에 카카오뱅크 정보 추가
-            contentEl.innerHTML = kakaoBankHtml + contentEl.innerHTML;
+            const cleanText = existingText.replace('카카오뱅크', '').replace('3333-25-7378436', '').trim() || '사랑해욘♡';
+            
+            // 카카오뱅크 + 기존 텍스트 조합
+            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + cleanText + '</div>';
         }
     }
 }

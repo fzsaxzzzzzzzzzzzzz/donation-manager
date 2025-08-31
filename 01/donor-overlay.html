@@ -558,6 +558,12 @@ class RealtimeDonorOverlay {
         if (!currentHTML.includes('카카오뱅크') || !currentHTML.includes('3333-25-7378436')) {
             console.log('🚨 카카오뱅크 정보 없음 감지 - 강제 복구');
             
+            // 기존 텍스트 보존하면서 카카오뱅크만 추가
+            const existingText = contentEl.textContent || '사랑해욘♡';
+            
+            contentEl.innerHTML = '';
+            
+            // 카카오뱅크 DOM 생성
             const bankDiv = document.createElement('div');
             bankDiv.className = 'kakao-bank-info';
             bankDiv.style.cssText = 'font-size: 100%; line-height: 1.2 !important; margin: 0 !important; padding: 0 !important; font-weight: bold; color: #FFEB3B;';
@@ -571,8 +577,14 @@ class RealtimeDonorOverlay {
             bankDiv.appendChild(bankName);
             bankDiv.appendChild(bankAccount);
             
-            // 기존 내용 앞에 카카오뱅크 정보 추가
-            contentEl.insertBefore(bankDiv, contentEl.firstChild);
+            // 텍스트 DOM 생성
+            const textDiv = document.createElement('div');
+            textDiv.className = 'donor-text';
+            textDiv.textContent = existingText.replace('카카오뱅크', '').replace('3333-25-7378436', '').trim() || '사랑해욘♡';
+            textDiv.style.cssText = 'line-height: 1.5 !important; margin: 0 !important; padding: 0 !important;';
+            
+            contentEl.appendChild(bankDiv);
+            contentEl.appendChild(textDiv);
         }
     }
 }
