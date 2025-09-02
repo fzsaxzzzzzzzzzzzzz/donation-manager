@@ -156,6 +156,10 @@ div, span, p, br {
 <script>
 class RealtimeDonorOverlay {
     constructor() {
+        // 모바일 감지
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        this.isSmallScreen = window.innerWidth <= 768;
+        
         this.socket = io();
         this.donations = [];
         this.settings = {
@@ -165,9 +169,64 @@ class RealtimeDonorOverlay {
             'includeSuperchat': localStorage.getItem('include-superchat') === 'true'
         };
         this.isConnected = false;
+        this.batterySaveMode = false;
         
+        // 발열 방지 초기화
+        this.enableBatterySaving();
         this.initializeSocket();
         this.setupKeyboardControls();
+    }
+    
+    enableBatterySaving() {
+        // 백그라운드/포그라운드 감지
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('📱 앱이 백그라운드로 이동 - 절전 모드');
+                this.batterySaveMode = true;
+                this.pauseAllTimers();
+            } else {
+                console.log('📱 앱이 포그라운드로 복귀');
+                this.batterySaveMode = false;
+                this.resumeAllTimers();
+                this.updateDisplay();
+            }
+        });
+        
+        // FPS 제한 (모바일에서만)
+        if (this.isMobile || this.isSmallScreen) {
+            this.maxFPS = 10;
+            this.frameInterval = 1000 / this.maxFPS;
+            this.lastFrameTime = 0;
+            this.updateThrottle = false;
+        }
+        
+        // 메모리 최적화
+        this.setupMemoryOptimization();
+    }
+    
+    pauseAllTimers() {
+        if (this.kakaoBankTimer) {
+            clearInterval(this.kakaoBankTimer);
+            this.kakaoBankTimer = null;
+        }
+    }
+    
+    resumeAllTimers() {
+        if (!this.kakaoBankTimer) {
+            this.kakaoBankTimer = setInterval(() => {
+                if (!this.batterySaveMode) {
+                    this.forceKakaoBankProtection();
+                }
+            }, 3000); // 3초로 연장
+        }
+    }
+    
+    setupMemoryOptimization() {
+        setInterval(() => {
+            if (window.gc && typeof window.gc === 'function') {
+                window.gc();
+            }
+        }, 60000);
     }
     
     initializeSocket() {
@@ -197,22 +256,25 @@ class RealtimeDonorOverlay {
         });
         
         this.socket.on('dataUpdate', (data) => {
+            // 배터리 절약: 백그라운드에서는 업데이트 스킵
+            if (this.batterySaveMode) {
+                console.log('📱 절전 모드: 업데이트 스킵');
+                return;
+            }
+            
             console.log('🔄 실시간 데이터 업데이트 수신:', data.donations?.length || 0, '건');
             this.donations = data.donations || [];
             
-            // 설정 데이터가 포함된 경우 설정도 업데이트 (카카오뱅크 설정 제외)
             if (data.settings) {
                 console.log('⚙️ 설정 업데이트 포함:', Object.keys(data.settings));
-                // 설정 업데이트 - 카카오뱅크는 기본값 true
                 this.settings = { ...this.settings, ...data.settings };
-                // showKakaoBank가 undefined면 기본값 true 설정  
                 if (this.settings.showKakaoBank === undefined) {
                     this.settings.showKakaoBank = true;
                 }
                 this.applySettings();
             }
             
-            this.updateDisplay();
+            this.throttledUpdate();
             this.flashUpdate();
         });
         
@@ -229,7 +291,34 @@ class RealtimeDonorOverlay {
         });
     }
     
-    // 연결 상태 표시 제거됨
+    // 발열 방지: 업데이트 쓰로틀링
+    throttledUpdate() {
+        // 모바일이 아니면 바로 업데이트
+        if (!this.isMobile && !this.isSmallScreen) {
+            this.updateDisplay();
+            return;
+        }
+        
+        if (this.updateThrottle) return;
+        
+        const now = performance.now();
+        if (now - this.lastFrameTime < this.frameInterval) {
+            return;
+        }
+        
+        this.updateThrottle = true;
+        this.lastFrameTime = now;
+        
+        if (this.batterySaveMode) {
+            this.updateThrottle = false;
+            return;
+        }
+        
+        requestAnimationFrame(() => {
+            this.updateDisplay();
+            this.updateThrottle = false;
+        });
+    }
     
     applySettings() {
         const root = document.documentElement;
@@ -595,10 +684,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🔧 카카오뱅크 간격 완전고정 - br태그 완전배제 DOM생성방식 적용');
     const overlay = new RealtimeDonorOverlay();
     
-    // 🔥 카카오뱅크 강제 보호 - 1초마다 감시
-    setInterval(() => {
-        overlay.forceKakaoBankProtection();
-    }, 1000);
+    // 🔥 카카오뱅크 강제 보호 - 3초마다 감시 (발열 방지)
+    overlay.kakaoBankTimer = setInterval(() => {
+        if (!overlay.batterySaveMode) {
+            overlay.forceKakaoBankProtection();
+        }
+    }, 3000);
 });
 </script>
 
