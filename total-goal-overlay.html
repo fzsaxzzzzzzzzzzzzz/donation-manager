@@ -169,8 +169,21 @@ class TotalGoalOverlay {
         
         console.log(`💰 총액: ${currentAmount}만원 / ${targetAmount}만원 (${progressPercent.toFixed(1)}%)`);
         
+        // 소수점 포맷팅 함수 (설정에 따라 표시)
+        const formatAmount = (amount) => {
+            // 서버 설정 확인 (기본값: smart)
+            const decimalMode = this.settings['total-goal-decimal-display'] || 'smart';
+            
+            if (decimalMode === 'always') {
+                return amount.toFixed(1);
+            } else {
+                // smart 모드: 정수일 때 소수점 생략
+                return amount % 1 === 0 ? amount.toString() : amount.toFixed(1);
+            }
+        };
+        
         // UI 업데이트 (진행도 바만)
-        document.getElementById('progress-text').textContent = `${currentAmount.toFixed(1)} / ${targetAmount}만원 (${Math.round(progressPercent)}%)`;
+        document.getElementById('progress-text').textContent = `${formatAmount(currentAmount)} / ${formatAmount(targetAmount)}만원 (${Math.round(progressPercent)}%)`;
         
         // 진행도 바 업데이트
         const progressBar = document.querySelector('.goal-progress-bar');
