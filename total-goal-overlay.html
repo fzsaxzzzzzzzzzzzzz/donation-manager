@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🎯 오늘의 총액 목표 그래프 오버레이</title>
 
-<!-- Socket.IO for Real-time -->
-<script src="/socket.io/socket.io.js"></script>
+<!-- 오프라인 모드: Socket.IO 제거 -->
 
 <style>
 body {
@@ -335,12 +334,15 @@ body {
 <script>
 class TotalGoalOverlay {
     constructor() {
-        console.log('📊 모바일 전용 그래프 오버레이 시작 (기존 디자인 + 배터리 최적화)');
+        console.log('📊 오프라인 그래프 오버레이 시작 (기존 디자인 + 배터리 최적화)');
         
-        this.socket = null;
-        this.donations = [];
+        this.donations = [
+            { amount: '25', type: '계좌', donor: '익명1' },
+            { amount: '15', type: '투네이션', donor: '익명2' },
+            { amount: '10', type: '계좌', donor: '익명3' }
+        ];
         this.settings = {};
-        this.dailyGoal = null;
+        this.dailyGoal = { target: 100, autoExtendEnabled: false };
         this.textSwitchInterval = null;
         this.isShowingAltText = false;
         this.autoExtendCheckInterval = null;
@@ -355,9 +357,9 @@ class TotalGoalOverlay {
         
         this.enableBatterySaving();
         this.enableCPUThrottling();
-        this.initializeSocket();
         this.applySettings();
-        this.startAutoExtendChecker();
+        this.updateDisplay();
+        this.setupTextSwitching();
     }
     
     enableBatterySaving() {
