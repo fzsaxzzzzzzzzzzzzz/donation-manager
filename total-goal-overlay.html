@@ -163,7 +163,25 @@ class TotalGoalOverlay {
     
     updateDisplay() {
         const currentAmount = this.getTodaysDonationTotal();
-        const targetAmount = parseFloat(this.dailyGoal.target) || 50;
+        let targetAmount = parseFloat(this.dailyGoal.target) || 50;
+        
+        // 자동 연장 기능 체크
+        if (this.dailyGoal.autoExtend && currentAmount >= targetAmount) {
+            // 현재 금액이 목표를 달성했을 때 자동으로 목표 증가
+            const extendAmount = parseFloat(this.dailyGoal.extendAmount) || 50;
+            const newTarget = Math.ceil(currentAmount / extendAmount) * extendAmount + extendAmount;
+            
+            // 목표가 실제로 변경되었을 때만 서버에 업데이트
+            if (newTarget !== targetAmount) {
+                targetAmount = newTarget;
+                this.dailyGoal.target = newTarget;
+                
+                // 서버에 새로운 목표 저장
+                this.updateTargetOnServer(newTarget);
+                console.log(`🎯 자동 연장: ${newTarget}만원으로 목표 증가`);
+            }
+        }
+        
         const progressPercent = targetAmount > 0 ? Math.min((currentAmount / targetAmount) * 100, 100) : 0;
         const remainingAmount = Math.max(targetAmount - currentAmount, 0);
         
@@ -188,6 +206,30 @@ class TotalGoalOverlay {
         // 진행도 바 업데이트
         const progressBar = document.querySelector('.goal-progress-bar');
         progressBar.style.width = `${Math.min(progressPercent, 100)}%`;
+    }
+    
+    async updateTargetOnServer(newTarget) {
+        try {
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    settings: {
+                        'dailyGoal': {
+                            target: newTarget,
+                            autoExtend: this.dailyGoal.autoExtend,
+                            extendAmount: this.dailyGoal.extendAmount
+                        }
+                    }
+                })
+            });
+            
+            if (response.ok) {
+                console.log('✅ 자동 연장된 목표가 서버에 저장됨:', newTarget);
+            }
+        } catch (error) {
+            console.error('❌ 목표 업데이트 실패:', error);
+        }
     }
 }
 
