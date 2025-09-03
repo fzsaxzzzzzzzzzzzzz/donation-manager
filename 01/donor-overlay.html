@@ -15,9 +15,10 @@ body {
     font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
     color: white;
     overflow: hidden;
-    /* 모바일 최적화: 하드웨어 가속 최소화 */
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
+    /* 극한 배터리 절약: 하드웨어 가속 완전 비활성화 */
+    transform: none;
+    -webkit-transform: none;
+    will-change: auto;
 }
 
 /* 모바일 배터리 절약 최적화 */
@@ -156,25 +157,105 @@ div, span, p, br {
 <script>
 class RealtimeDonorOverlay {
     constructor() {
-        // 모바일 감지
-        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        this.isSmallScreen = window.innerWidth <= 768;
+        console.log('📱 모바일 전용 후원자별 총액 오버레이 시작');
         
         this.socket = io();
         this.donations = [];
         this.settings = {
-            'overlay-font-size': 18,
-            'overlay-stroke-width': 3,
+            'overlay-font-size': 16,
+            'overlay-stroke-width': 2,
             'overlay-text-align': 'left',
             'includeSuperchat': localStorage.getItem('include-superchat') === 'true'
         };
         this.isConnected = false;
         this.batterySaveMode = false;
         
-        // 발열 방지 초기화
+        // 극한 배터리 절약 모드 활성화
         this.enableBatterySaving();
+        this.enableCPUThrottling();
         this.initializeSocket();
         this.setupKeyboardControls();
+    }
+    
+    enableCPUThrottling() {
+        // CPU 사용량 극한 최적화
+        if ('requestIdleCallback' in window) {
+            this.useIdleCallback = true;
+            console.log('📱 idle callback 활성화 - CPU 부하 최소화');
+        }
+        
+        // 배터리 API 사용 가능 시 배터리 상태 모니터링
+        if ('getBattery' in navigator) {
+            navigator.getBattery().then(battery => {
+                this.battery = battery;
+                console.log(`📱 배터리 수준: ${Math.round(battery.level * 100)}%`);
+                
+                // 모바일 전용: 20% 이하에서 극한 절약
+                const threshold = 0.20;
+                if (battery.level < threshold) {
+                    this.enableUltraPowerSaveMode();
+                }
+                
+                battery.addEventListener('levelchange', () => {
+                    const level = Math.round(battery.level * 100);
+                    console.log(`📱 배터리 변경: ${level}%`);
+                    
+                    if (battery.level < threshold && !this.ultraPowerSave) {
+                        this.enableUltraPowerSaveMode();
+                    } else if (battery.level > (threshold + 0.1) && this.ultraPowerSave) {
+                        this.disableUltraPowerSaveMode();
+                    }
+                });
+            });
+        }
+        
+        // 메모리 사용량 최소화
+        this.minimizeMemoryUsage();
+    }
+    
+    enableUltraPowerSaveMode() {
+        console.log('🔴 모바일 극한 절약 모드 활성화 - 2초에 1번 업데이트');
+        this.ultraPowerSave = true;
+        this.maxFPS = 0.5; // 2초에 1번
+        this.frameInterval = 2000;
+        
+        // 카카오뱅크 타이머 연장
+        if (this.kakaoBankTimer) {
+            clearInterval(this.kakaoBankTimer);
+            this.kakaoBankTimer = setInterval(() => {
+                if (!this.batterySaveMode) {
+                    this.forceKakaoBankProtection();
+                }
+            }, 30000);
+        }
+    }
+    
+    disableUltraPowerSaveMode() {
+        console.log('🟢 모바일 극한 절약 모드 해제 - 1fps 복구');
+        this.ultraPowerSave = false;
+        this.maxFPS = 1;
+        this.frameInterval = 1000;
+        
+        // 카카오뱅크 타이머 복구
+        if (this.kakaoBankTimer) {
+            clearInterval(this.kakaoBankTimer);
+            this.kakaoBankTimer = setInterval(() => {
+                if (!this.batterySaveMode) {
+                    this.forceKakaoBankProtection();
+                }
+            }, 15000); // 모바일 전용 15초 간격
+        }
+    }
+    
+    minimizeMemoryUsage() {
+        // 모바일 전용 메모리 정리 - 1분마다
+        setInterval(() => {
+            // 오래된 후원 데이터 정리 - 25개 초과 시
+            if (this.donations && this.donations.length > 25) {
+                this.donations = this.donations.slice(-15); // 최근 15개만 유지
+                console.log('📱 모바일 메모리 정리: 최근 15개만 유지');
+            }
+        }, 60000);
     }
     
     enableBatterySaving() {
@@ -192,16 +273,13 @@ class RealtimeDonorOverlay {
             }
         });
         
-        // FPS 제한 (모바일에서만)
-        if (this.isMobile || this.isSmallScreen) {
-            this.maxFPS = 10;
-            this.frameInterval = 1000 / this.maxFPS;
-            this.lastFrameTime = 0;
-            this.updateThrottle = false;
-        }
+        // 모바일 전용 극한 FPS 제한
+        this.maxFPS = 1;
+        this.frameInterval = 1000;
+        this.lastFrameTime = 0;
+        this.updateThrottle = false;
         
-        // 메모리 최적화
-        this.setupMemoryOptimization();
+        console.log('📱 모바일 전용 극한 최적화: 1fps');
     }
     
     pauseAllTimers() {
@@ -217,16 +295,18 @@ class RealtimeDonorOverlay {
                 if (!this.batterySaveMode) {
                     this.forceKakaoBankProtection();
                 }
-            }, 3000); // 3초로 연장
+            }, 15000); // 모바일 전용 15초 간격 // 디바이스별 차등 적용
         }
     }
     
     setupMemoryOptimization() {
+        // 모바일 전용 가비지 컬렉션 - 30초마다
+        const gcInterval = 30000;
         setInterval(() => {
             if (window.gc && typeof window.gc === 'function') {
                 window.gc();
             }
-        }, 60000);
+        }, gcInterval);
     }
     
     initializeSocket() {
@@ -314,10 +394,19 @@ class RealtimeDonorOverlay {
             return;
         }
         
-        requestAnimationFrame(() => {
-            this.updateDisplay();
-            this.updateThrottle = false;
-        });
+        // 모바일 전용 극한 배터리 절약: idle callback 우선 사용
+        if (this.useIdleCallback && !this.ultraPowerSave) {
+            requestIdleCallback(() => {
+                this.updateDisplay();
+                this.updateThrottle = false;
+            }, { timeout: 2000 });
+        } else {
+            // 극한 모드: setTimeout으로 CPU 부하 최소화
+            setTimeout(() => {
+                this.updateDisplay();
+                this.updateThrottle = false;
+            }, 100);
+        }
     }
     
     applySettings() {

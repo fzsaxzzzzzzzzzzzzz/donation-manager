@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 모바일 전용 총액 목표 그래프</title>
+
+<!-- Socket.IO for Real-time -->
+<script src="/socket.io/socket.io.js"></script>
+<style>
+body {
+    margin: 0;
+    padding: 15px;
+    background: transparent;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    color: white;
+    overflow: hidden;
+    /* 극한 배터리 절약: 하드웨어 가속 비활성화 */
+    transform: none;
+    -webkit-transform: none;
+    will-change: auto;
+}
+
+.graph-container {
+    background: transparent;
+    max-width: 100vw;
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    /* 모바일 최적화: 불필요한 효과 제거 */
+    box-shadow: none;
+    backdrop-filter: none;
+    border: none;
+}
+
+.goal-progress {
+    width: 100%;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 2px solid white;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 50%, #CDDC39 100%);
+    width: 0%;
+    border-radius: 18px;
+    /* 배터리 절약: 애니메이션 완전 제거 */
+    transition: none;
+    animation: none;
+}
+
+.progress-bar.completed {
+    background: linear-gradient(90deg, #FFD700 0%, #FFC107 50%, #FF9800 100%);
+}
+
+.goal-info {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.current-amount {
+    font-size: var(--graph-font-size, 24px);
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: var(--graph-text-shadow, 2px 2px 0 #000000, -2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000);
+    margin-bottom: 5px;
+}
+
+.goal-amount {
+    font-size: var(--graph-font-size-small, 18px);
+    color: white;
+    text-shadow: var(--graph-text-shadow, 2px 2px 0 #000000, -2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000);
+}
+
+.percentage {
+    font-size: var(--graph-font-size-large, 36px);
+    font-weight: bold;
+    color: #4CAF50;
+    text-shadow: var(--graph-text-shadow, 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000);
+    margin: 15px 0;
+}
+
+.percentage.completed {
+    color: #FFD700;
+}
+
+.no-data {
+    text-align: center;
+    font-size: var(--graph-font-size, 20px);
+    color: white;
+    text-shadow: var(--graph-text-shadow, 2px 2px 0 #000000, -2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000);
+    padding: 50px 20px;
+}
+
+.loading {
+    color: #87CEEB;
+    text-align: center;
+    font-size: 16px;
+    /* 배터리 절약: 펄스 애니메이션 제거 */
+    animation: none;
+}
+
+/* 극한 배터리 절약: 모든 애니메이션 비활성화 */
+* {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* 배터리 절약: GPU 가속 비활성화 */
+*,
+*::before,
+*::after {
+    will-change: auto;
+    transform: none;
+    -webkit-transform: none;
+}
+
+/* 모바일 최적화 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .current-amount {
+        font-size: 20px;
+    }
+    
+    .goal-amount {
+        font-size: 14px;
+    }
+    
+    .percentage {
+        font-size: 28px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="graph-container">
+    <div id="graph-content">
+        <div class="loading">📊 모바일 그래프 서버 연결 중...</div>
+    </div>
+</div>
+
+<script>
+class MobileGoalGraphOverlay {
+    constructor() {
+        console.log('📊 모바일 전용 총액 목표 그래프 시작');
+        
+        // 모바일 감지
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (!this.isMobile) {
+            console.warn('⚠️ 이 그래프는 모바일 전용입니다');
+        }
+        
+        this.socket = io();
+        this.donations = [];
+        this.settings = {
+            'graph-font-size': 24,
+            'graph-font-size-small': 18,
+            'graph-font-size-large': 36,
+            'goal-amount': 100,
+            'includeSuperchat': localStorage.getItem('include-superchat') === 'true'
+        };
+        this.isConnected = false;
+        
+        // 극한 배터리 절약 모드 활성화
+        this.enableBatterySaving();
+        this.enableCPUThrottling();
+        this.initializeSocket();
+        this.setupKeyboardControls();
+    }
+    
+    enableCPUThrottling() {
+        // CPU 사용량 극한 최적화
+        if ('requestIdleCallback' in window) {
+            this.useIdleCallback = true;
+            console.log('📊 idle callback 활성화 - CPU 부하 최소화');
+        }
+        
+        // 배터리 API 사용 가능 시 배터리 상태 모니터링
+        if ('getBattery' in navigator) {
+            navigator.getBattery().then(battery => {
+                this.battery = battery;
+                console.log(`📊 배터리 수준: ${Math.round(battery.level * 100)}%`);
+                
+                // 배터리 15% 이하시 극한 절약 모드 (그래프는 더 민감)
+                if (battery.level < 0.15) {
+                    this.enableUltraPowerSaveMode();
+                }
+                
+                battery.addEventListener('levelchange', () => {
+                    const level = Math.round(battery.level * 100);
+                    console.log(`📊 배터리 변경: ${level}%`);
+                    
+                    if (battery.level < 0.15 && !this.ultraPowerSave) {
+                        this.enableUltraPowerSaveMode();
+                    } else if (battery.level > 0.25 && this.ultraPowerSave) {
+                        this.disableUltraPowerSaveMode();
+                    }
+                });
+            });
+        }
+        
+        // 메모리 사용량 최소화
+        this.minimizeMemoryUsage();
+    }
+    
+    enableUltraPowerSaveMode() {
+        console.log('🔴 그래프 극한 절약 모드 활성화');
+        this.ultraPowerSave = true;
+        this.maxFPS = 0.5; // 2초에 1번만 업데이트
+        this.frameInterval = 2000;
+    }
+    
+    disableUltraPowerSaveMode() {
+        console.log('🟢 그래프 극한 절약 모드 해제');
+        this.ultraPowerSave = false;
+        this.maxFPS = 1; // 1초에 1번
+        this.frameInterval = 1000;
+    }
+    
+    minimizeMemoryUsage() {
+        // 주기적으로 불필요한 데이터 정리
+        setInterval(() => {
+            // 오래된 후원 데이터 정리 (50개 이상시)
+            if (this.donations && this.donations.length > 50) {
+                this.donations = this.donations.slice(-25); // 최근 25개만 유지
+                console.log('📊 메모리 정리: 오래된 후원 데이터 삭제');
+            }
+        }, 120000); // 2분마다
+    }
+    
+    enableBatterySaving() {
+        // 화면 새로고침 최소화
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('📊 그래프가 백그라운드로 이동 - 절전 모드');
+                this.batterySaveMode = true;
+            } else {
+                console.log('📊 그래프가 포그라운드로 복귀');
+                this.batterySaveMode = false;
+                this.updateDisplay(); // 즉시 업데이트
+            }
+        });
+        
+        // 불필요한 DOM 조작 최소화
+        this.updateThrottle = false;
+        
+        // 그래프 전용 극한 발열 방지: 업데이트 주기 대폭 늘리기 (60fps → 1fps)
+        this.maxFPS = 1;
+        this.frameInterval = 1000 / this.maxFPS;
+        this.lastFrameTime = 0;
+        
+        // 메모리 누수 방지
+        this.setupMemoryOptimization();
+    }
+    
+    setupMemoryOptimization() {
+        // 주기적 가비지 컬렉션 유도
+        setInterval(() => {
+            if (window.gc && typeof window.gc === 'function') {
+                window.gc();
+            }
+        }, 45000); // 45초마다
+    }
+    
+    initializeSocket() {
+        this.socket.on('connect', () => {
+            this.isConnected = true;
+            console.log('🔗 모바일 그래프 서버 연결됨');
+        });
+        
+        this.socket.on('disconnect', () => {
+            this.isConnected = false;
+            console.log('❌ 그래프 서버 연결 끊어짐');
+            this.showError('서버 연결 끊어짐');
+        });
+        
+        this.socket.on('initialData', (data) => {
+            console.log('📊 그래프 초기 데이터 수신:', data);
+            this.donations = data.donations || [];
+            this.settings = { ...this.settings, ...(data.settings || {}) };
+            this.applySettings();
+            this.updateDisplay();
+        });
+        
+        this.socket.on('dataUpdate', (data) => {
+            // 극한 배터리 절약: 백그라운드에서는 업데이트 완전 스킵
+            if (this.batterySaveMode) {
+                console.log('📊 절전 모드: 그래프 업데이트 스킵');
+                return;
+            }
+            
+            console.log('🔄 그래프 데이터 업데이트 수신:', data.donations?.length || 0, '건');
+            this.donations = data.donations || [];
+            
+            if (data.settings) {
+                this.settings = { ...this.settings, ...data.settings };
+                this.applySettings();
+            }
+            
+            this.throttledUpdate();
+        });
+        
+        this.socket.on('settingsUpdate', (settings) => {
+            console.log('⚙️ 그래프 설정 업데이트:', settings);
+            this.settings = { ...this.settings, ...settings };
+            this.applySettings();
+            this.updateDisplay();
+        });
+    }
+    
+    // 극한 배터리 절약: 업데이트 쓰로틀링 (그래프 전용 강화)
+    throttledUpdate() {
+        if (this.updateThrottle) return;
+        
+        const now = performance.now();
+        if (now - this.lastFrameTime < this.frameInterval) {
+            return; // FPS 제한
+        }
+        
+        this.updateThrottle = true;
+        this.lastFrameTime = now;
+        
+        // 백그라운드에서는 업데이트 완전 스킵
+        if (this.batterySaveMode) {
+            this.updateThrottle = false;
+            return;
+        }
+        
+        // 극한 배터리 절약: idle callback 우선 사용
+        if (this.useIdleCallback && !this.ultraPowerSave) {
+            requestIdleCallback(() => {
+                this.updateDisplay();
+                this.updateThrottle = false;
+            }, { timeout: 2000 });
+        } else {
+            // 극한 모드에서는 setTimeout으로 CPU 부하 최소화
+            setTimeout(() => {
+                this.updateDisplay();
+                this.updateThrottle = false;
+            }, 50);
+        }
+    }
+    
+    applySettings() {
+        const root = document.documentElement;
+        const fontSize = parseInt(this.settings['graph-font-size']) || 24;
+        const fontSizeSmall = parseInt(this.settings['graph-font-size-small']) || 18;
+        const fontSizeLarge = parseInt(this.settings['graph-font-size-large']) || 36;
+        const strokeWidth = 2; // 고정값으로 배터리 절약
+        
+        root.style.setProperty('--graph-font-size', fontSize + 'px');
+        root.style.setProperty('--graph-font-size-small', fontSizeSmall + 'px');
+        root.style.setProperty('--graph-font-size-large', fontSizeLarge + 'px');
+        root.style.setProperty('--graph-text-shadow', 
+            `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000`
+        );
+        
+        console.log('🔧 모바일 그래프 설정 적용:', { fontSize, fontSizeSmall, fontSizeLarge });
+    }
+    
+    updateDisplay() {
+        const contentEl = document.getElementById('graph-content');
+        const goalAmount = parseFloat(this.settings['goal-amount']) || 100;
+        
+        if (!this.donations || this.donations.length === 0) {
+            contentEl.innerHTML = `
+                <div class="no-data">
+                    <div class="goal-info">
+                        <div class="current-amount">0.0만원</div>
+                        <div class="goal-amount">목표: ${goalAmount.toFixed(1)}만원</div>
+                    </div>
+                    <div class="goal-progress">
+                        <div class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="percentage">0%</div>
+                </div>
+            `;
+            return;
+        }
+        
+        // 총액 계산 (최적화된 로직)
+        const includeSuperchat = this.settings.includeSuperchat !== undefined ? 
+            this.settings.includeSuperchat : (localStorage.getItem('include-superchat') === 'true');
+        
+        let totalAmount = 0;
+        this.donations.forEach(d => {
+            const amount = parseFloat(d.amount) || 0;
+            
+            // 투네이션 타입은 무조건 제외
+            if (d.type === '투네이션') {
+                return;
+            }
+            
+            const shouldInclude = d.type === '계좌' || (includeSuperchat && d.type === '슈퍼챗');
+            
+            if (shouldInclude && amount > 0) {
+                if (d.donor.includes('조정(') && d.streamer !== '후원자조정') {
+                    return; // 스트리머별 조정 제외
+                }
+                totalAmount += amount;
+            }
+        });
+        
+        const percentage = Math.min((totalAmount / goalAmount) * 100, 100);
+        const isCompleted = percentage >= 100;
+        
+        contentEl.innerHTML = `
+            <div class="goal-info">
+                <div class="current-amount">${totalAmount.toFixed(1)}만원</div>
+                <div class="goal-amount">목표: ${goalAmount.toFixed(1)}만원</div>
+            </div>
+            <div class="goal-progress">
+                <div class="progress-bar ${isCompleted ? 'completed' : ''}" 
+                     style="width: ${percentage}%"></div>
+            </div>
+            <div class="percentage ${isCompleted ? 'completed' : ''}">${percentage.toFixed(1)}%</div>
+        `;
+        
+        console.log('📊 모바일 그래프 업데이트:', `${totalAmount.toFixed(1)}/${goalAmount}만원 (${percentage.toFixed(1)}%)`);
+    }
+    
+    showError(message) {
+        const contentEl = document.getElementById('graph-content');
+        contentEl.innerHTML = `<div class="no-data" style="color: #ffcccb;">${message}</div>`;
+    }
+    
+    setupKeyboardControls() {
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey) {
+                switch(e.key) {
+                    case '=':
+                        this.settings['graph-font-size'] = Math.min(50, (this.settings['graph-font-size'] || 24) + 2);
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('📊 폰트 크기:', this.settings['graph-font-size']);
+                        break;
+                    case '-':
+                        this.settings['graph-font-size'] = Math.max(12, (this.settings['graph-font-size'] || 24) - 2);
+                        this.applySettings();
+                        this.updateDisplay();
+                        console.log('📊 폰트 크기:', this.settings['graph-font-size']);
+                        break;
+                }
+                e.preventDefault();
+            }
+        });
+    }
+}
+
+// 페이지 로드 시 시작
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📊 모바일 전용 총액 목표 그래프 초기화');
+    const graphOverlay = new MobileGoalGraphOverlay();
+});
+</script>
+
+</body>
+</html>
