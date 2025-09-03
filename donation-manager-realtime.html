@@ -422,6 +422,84 @@ body {
         </div>
     </div>
     
+    <!-- 오버레이 설정 패널 -->
+    <div class="panel">
+        <h2>📺 오버레이 설정</h2>
+        
+        <div class="form-group">
+            <label class="form-label">🎯 총액 목표 그래프 오버레이</label>
+            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                <div class="overlay-link-group">
+                    <label class="form-label" style="margin-bottom: 5px;">📋 오버레이 URL</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="overlayUrl" class="form-input" readonly 
+                               value="${window.location.origin}/total-goal-overlay.html" 
+                               style="flex: 1; background: #f8f9fa;">
+                        <button type="button" onclick="copyOverlayUrl()" class="btn btn-secondary">📋 복사</button>
+                        <button type="button" onclick="openOverlay()" class="btn btn-primary">🔗 열기</button>
+                    </div>
+                </div>
+                
+                <div class="form-row" style="margin-top: 15px;">
+                    <div>
+                        <label class="form-label">목표 금액 (만원)</label>
+                        <input type="number" id="goalAmount" class="form-input" 
+                               placeholder="50" step="1" min="1" 
+                               onchange="updateGoalAmount()" value="50">
+                    </div>
+                    <div>
+                        <label class="form-label">그래프 높이 (px)</label>
+                        <input type="number" id="graphHeight" class="form-input" 
+                               placeholder="30" step="1" min="20" max="100" 
+                               onchange="updateGraphHeight()" value="30">
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 15px;">
+                    <label class="form-label">✨ 그래프 색상 테마</label>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <label style="display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="graph-theme" value="orange" onchange="updateGraphTheme('orange')" checked>
+                            <span style="color: #ff6b35;">🧡 오렌지</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="graph-theme" value="green" onchange="updateGraphTheme('green')">
+                            <span style="color: #4CAF50;">💚 그린</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="graph-theme" value="blue" onchange="updateGraphTheme('blue')">
+                            <span style="color: #2196F3;">💙 블루</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="overlay-status" style="margin-top: 15px; padding: 10px; background: #e8f5e8; border-radius: 6px;">
+                    <span style="color: #2d5a2d;">✅ OBS Studio에서 "브라우저 소스"로 추가하세요</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">💰 후원자 오버레이</label>
+            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px;">
+                <div class="overlay-link-group">
+                    <label class="form-label" style="margin-bottom: 5px;">📋 오버레이 URL</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="donorOverlayUrl" class="form-input" readonly 
+                               value="${window.location.origin}/donor-overlay.html" 
+                               style="flex: 1; background: #f8f9fa;">
+                        <button type="button" onclick="copyDonorOverlayUrl()" class="btn btn-secondary">📋 복사</button>
+                        <button type="button" onclick="openDonorOverlay()" class="btn btn-primary">🔗 열기</button>
+                    </div>
+                </div>
+                
+                <div class="overlay-status" style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 6px;">
+                    <span style="color: #2d5a2d;">✅ 실시간 후원자 표시 오버레이</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- YouTube 챗봇 패널 -->
     <div class="panel">
         <h2>🤖 YouTube 실시간 챗봇</h2>
@@ -1542,6 +1620,141 @@ class YouTubeChatBot {
         console.log('💾 챗봇 설정 저장됨');
     }
 }
+
+// 오버레이 관련 함수들
+function initializeOverlaySettings() {
+    // URL 초기화
+    const baseUrl = window.location.origin;
+    document.getElementById('overlayUrl').value = `${baseUrl}/total-goal-overlay.html`;
+    document.getElementById('donorOverlayUrl').value = `${baseUrl}/donor-overlay.html`;
+    
+    console.log('🎮 오버레이 설정 초기화 완료');
+}
+
+function copyOverlayUrl() {
+    const urlInput = document.getElementById('overlayUrl');
+    urlInput.select();
+    urlInput.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(urlInput.value);
+    
+    showNotification('📋 총액 그래프 오버레이 URL이 복사되었습니다!', 'success');
+}
+
+function copyDonorOverlayUrl() {
+    const urlInput = document.getElementById('donorOverlayUrl');
+    urlInput.select();
+    urlInput.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(urlInput.value);
+    
+    showNotification('📋 후원자 오버레이 URL이 복사되었습니다!', 'success');
+}
+
+function openOverlay() {
+    const url = document.getElementById('overlayUrl').value;
+    window.open(url, '_blank');
+    showNotification('🔗 총액 그래프 오버레이를 새 탭에서 열었습니다!', 'info');
+}
+
+function openDonorOverlay() {
+    const url = document.getElementById('donorOverlayUrl').value;
+    window.open(url, '_blank');
+    showNotification('🔗 후원자 오버레이를 새 탭에서 열었습니다!', 'info');
+}
+
+function updateGoalAmount() {
+    const goalAmount = document.getElementById('goalAmount').value;
+    if (goalAmount && goalAmount > 0) {
+        // 서버에 목표 금액 저장
+        fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                settings: {
+                    dailyGoal: { target: parseFloat(goalAmount) }
+                }
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(`🎯 목표 금액이 ${goalAmount}만원으로 설정되었습니다!`, 'success');
+            }
+        })
+        .catch(error => {
+            console.error('목표 설정 실패:', error);
+            showNotification('❌ 목표 설정에 실패했습니다.', 'error');
+        });
+    }
+}
+
+function updateGraphHeight() {
+    const height = document.getElementById('graphHeight').value;
+    if (height && height >= 20 && height <= 100) {
+        showNotification(`📏 그래프 높이가 ${height}px로 설정되었습니다!`, 'success');
+    }
+}
+
+function updateGraphTheme(theme) {
+    let themeColors = {};
+    
+    switch(theme) {
+        case 'orange':
+            themeColors = {
+                'progress-start-color': '#ff6b35',
+                'progress-mid-color': '#ff8a50', 
+                'progress-end-color': '#ffa726'
+            };
+            break;
+        case 'green':
+            themeColors = {
+                'progress-start-color': '#4CAF50',
+                'progress-mid-color': '#66bb6a',
+                'progress-end-color': '#81c784'
+            };
+            break;
+        case 'blue':
+            themeColors = {
+                'progress-start-color': '#2196F3',
+                'progress-mid-color': '#42A5F5',
+                'progress-end-color': '#64B5F6'
+            };
+            break;
+    }
+    
+    showNotification(`🎨 그래프 테마가 ${theme}로 변경되었습니다!`, 'success');
+}
+
+function showNotification(message, type = 'info') {
+    // 간단한 알림 표시
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1'};
+        color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460'};
+        border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb'};
+        border-radius: 8px;
+        z-index: 10000;
+        font-size: 14px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        max-width: 300px;
+    `;
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// 페이지 로드 시 오버레이 설정 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initializeOverlaySettings, 100);
+});
+
 </script>
 
 </body>
