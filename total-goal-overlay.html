@@ -158,24 +158,93 @@ body {
 </head>
 
 <body>
+<script>
+class TotalGoalOverlay {
+    constructor() {
+        console.log('📊 총액 목표 그래프 시작');
+        
+        this.donations = [];
+        this.settings = {};
+        this.dailyGoal = { target: 50 }; // 기본 50만원
+        
+        this.loadDataFromServer();
+        
+        // 10초마다 데이터 업데이트
+        setInterval(() => {
+            this.loadDataFromServer();
+        }, 10000);
+    }
+    
+    async loadDataFromServer() {
+        try {
+            const response = await fetch('/api/data');
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📊 서버 데이터 수신:', data);
+                
+                this.donations = data.donations || [];
+                this.settings = data.settings || {};
+                this.dailyGoal = data.settings?.dailyGoal || { target: 50 };
+                
+                this.updateDisplay();
+            } else {
+                console.log('❌ API 응답 실패, 더미 데이터 사용');
+            }
+        } catch (error) {
+            console.log('❌ 서버 연결 실패, 더미 데이터 사용:', error);
+        }
+    }
+    
+    getTodaysDonationTotal() {
+        return this.donations
+            .filter(d => !d.excludeFromTotal && !d.isMissionAdjustment)
+            .reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+    }
+    
+    updateDisplay() {
+        const currentAmount = this.getTodaysDonationTotal();
+        const targetAmount = parseFloat(this.dailyGoal.target) || 50;
+        const progressPercent = targetAmount > 0 ? Math.min((currentAmount / targetAmount) * 100, 100) : 0;
+        const remainingAmount = Math.max(targetAmount - currentAmount, 0);
+        
+        console.log(`💰 총액: ${currentAmount}만원 / ${targetAmount}만원 (${progressPercent.toFixed(1)}%)`);
+        
+        // UI 업데이트
+        document.getElementById('current-amount').textContent = `${currentAmount.toFixed(1)}만원`;
+        document.getElementById('progress-percentage').textContent = `${Math.round(progressPercent)}%`;
+        document.getElementById('target-amount').textContent = `${targetAmount}만원`;
+        document.getElementById('progress-text').textContent = `${currentAmount.toFixed(1)} / ${targetAmount}만원 (${Math.round(progressPercent)}%)`;
+        document.getElementById('remaining-amount').textContent = `${remainingAmount.toFixed(1)}`;
+        
+        // 진행도 바 업데이트
+        const progressBar = document.querySelector('.goal-progress-bar');
+        progressBar.style.width = `${Math.min(progressPercent, 100)}%`;
+    }
+}
+
+// 페이지 로드 시 시작
+document.addEventListener('DOMContentLoaded', () => {
+    new TotalGoalOverlay();
+});
+</script>
 <div class="overlay-container">
     <div class="total-goal-container">
         <div class="goal-content">
             <div class="goal-title">🎯 오늘의 목표</div>
             
             <div class="goal-stats">
-                <span class="current-amount">0만원</span>
-                <span class="progress-percentage">0%</span>
-                <span class="target-amount">50만원</span>
+                <span class="current-amount" id="current-amount">0만원</span>
+                <span class="progress-percentage" id="progress-percentage">0%</span>
+                <span class="target-amount" id="target-amount">50만원</span>
             </div>
             
             <div class="goal-progress-container">
-                <div class="progress-text">0 / 50만원 (0%)</div>
+                <div class="progress-text" id="progress-text">0 / 50만원 (0%)</div>
                 <div class="goal-progress-bar"></div>
             </div>
             
             <div class="goal-details">
-                목표까지 <span>50</span>만원 남음
+                목표까지 <span id="remaining-amount">50</span>만원 남음
             </div>
         </div>
     </div>
