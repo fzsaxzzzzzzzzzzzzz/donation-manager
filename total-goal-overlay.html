@@ -31,39 +31,6 @@ body {
     backdrop-filter: none;
 }
 
-.goal-title {
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-    color: #ffffff;
-    margin-bottom: 15px;
-    text-shadow: 1px 1px 0 #000000, -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 2px 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-.goal-stats {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.current-amount {
-    color: #4caf50;
-    text-shadow: 1px 1px 0 #000000, -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 3px rgba(0, 0, 0, 0.8);
-}
-
-.target-amount {
-    color: #ff9800;
-    text-shadow: 1px 1px 0 #000000, -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 3px rgba(0, 0, 0, 0.8);
-}
-
-.progress-percentage {
-    color: #2196f3;
-    font-size: 28px;
-    text-shadow: 1px 1px 0 #000000, -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 3px rgba(0, 0, 0, 0.8);
-}
 
 .goal-progress-container {
     width: 100%;
@@ -131,13 +98,6 @@ body {
     -webkit-transform: none !important;
 }
 
-.goal-details {
-    font-size: 16px;
-    color: #e0e0e0;
-    text-align: center;
-    line-height: 1.4;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-}
 
 /* 반응형 */
 @media (max-width: 600px) {
@@ -209,12 +169,8 @@ class TotalGoalOverlay {
         
         console.log(`💰 총액: ${currentAmount}만원 / ${targetAmount}만원 (${progressPercent.toFixed(1)}%)`);
         
-        // UI 업데이트
-        document.getElementById('current-amount').textContent = `${currentAmount.toFixed(1)}만원`;
-        document.getElementById('progress-percentage').textContent = `${Math.round(progressPercent)}%`;
-        document.getElementById('target-amount').textContent = `${targetAmount}만원`;
+        // UI 업데이트 (진행도 바만)
         document.getElementById('progress-text').textContent = `${currentAmount.toFixed(1)} / ${targetAmount}만원 (${Math.round(progressPercent)}%)`;
-        document.getElementById('remaining-amount').textContent = `${remainingAmount.toFixed(1)}`;
         
         // 진행도 바 업데이트
         const progressBar = document.querySelector('.goal-progress-bar');
@@ -230,21 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="overlay-container">
     <div class="total-goal-container">
         <div class="goal-content">
-            <div class="goal-title">🎯 오늘의 목표</div>
-            
-            <div class="goal-stats">
-                <span class="current-amount" id="current-amount">0만원</span>
-                <span class="progress-percentage" id="progress-percentage">0%</span>
-                <span class="target-amount" id="target-amount">50만원</span>
-            </div>
-            
             <div class="goal-progress-container">
                 <div class="progress-text" id="progress-text">0 / 50만원 (0%)</div>
                 <div class="goal-progress-bar"></div>
-            </div>
-            
-            <div class="goal-details">
-                목표까지 <span id="remaining-amount">50</span>만원 남음
             </div>
         </div>
     </div>
