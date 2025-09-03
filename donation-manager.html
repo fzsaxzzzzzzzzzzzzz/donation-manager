@@ -4775,6 +4775,10 @@ function loadOverlaySettings() {
     document.getElementById('table-number-size-value').textContent = '16px';
     document.getElementById('table-font-size-value').textContent = '14px';
     
+    // 총액 목표 그래프 소수점 표시 기본값 설정
+    const decimalMode = localStorage.getItem('total-goal-decimal-display') || 'smart';
+    document.querySelector(`input[name="total-goal-decimal-display"][value="${decimalMode}"]`).checked = true;
+    
     // 그룹화 임계값은 loadTableSettings에서 처리
     
     // 스트리머 총액 설정 로드
@@ -6256,6 +6260,9 @@ async function deleteMission(missionId) {
 
 // 총액 목표 그래프 소수점 표시 모드 업데이트 함수
 function updateTotalGoalDecimalDisplay(mode) {
+    // 로컬 스토리지에도 저장
+    localStorage.setItem('total-goal-decimal-display', mode);
+    
     // 서버에 소수점 표시 모드 저장
     fetch('/api/settings', {
         method: 'POST',
