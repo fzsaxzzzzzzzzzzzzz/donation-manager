@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🎯 오늘의 총액 목표 그래프 오버레이</title>
 
-<!-- 오프라인 모드: Socket.IO 제거 -->
+<!-- Socket.IO for Real-time -->
+<script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
 
 <style>
 body {
@@ -334,19 +335,17 @@ body {
 <script>
 class TotalGoalOverlay {
     constructor() {
-        console.log('📊 오프라인 그래프 오버레이 시작 (기존 디자인 + 배터리 최적화)');
+        console.log('📊 서버 연동 그래프 오버레이 시작 (기존 디자인 + 배터리 최적화)');
         
-        this.donations = [
-            { amount: '25', type: '계좌', donor: '익명1' },
-            { amount: '15', type: '투네이션', donor: '익명2' },
-            { amount: '10', type: '계좌', donor: '익명3' }
-        ];
+        this.socket = null;
+        this.donations = [];
         this.settings = {};
-        this.dailyGoal = { target: 100, autoExtendEnabled: false };
+        this.dailyGoal = null;
         this.textSwitchInterval = null;
         this.isShowingAltText = false;
         this.autoExtendCheckInterval = null;
         this.apiPollInterval = null;
+        this.isConnected = false;
         
         // 모바일 전용 배터리 최적화 설정
         this.batterySaveMode = false;
@@ -355,11 +354,21 @@ class TotalGoalOverlay {
         this.frameInterval = 1000;
         this.lastFrameTime = 0;
         
+        // 빠른 로딩을 위한 더미 데이터 즉시 표시
+        this.showDemoData();
+        
+        // 5초 후 실제 서버 연결 시도
+        setTimeout(() => {
+            if (!this.isConnected) {
+                console.log('⚡ 실제 서버 연결 시도');
+                this.initializeSocket();
+            }
+        }, 5000);
+        
         this.enableBatterySaving();
         this.enableCPUThrottling();
         this.applySettings();
-        this.updateDisplay();
-        this.setupTextSwitching();
+        this.startAutoExtendChecker();
     }
     
     enableBatterySaving() {
@@ -468,6 +477,111 @@ class TotalGoalOverlay {
     resumeAllTimers() {
         this.startTextSwitch();
         this.startAutoExtendChecker();
+    }
+    
+    showDemoData() {
+        console.log('📊 더미 데이터로 즉시 표시 (서버 연결 대기 중)');
+        
+        // 0원에서 시작하는 데모 데이터
+        this.donations = [];
+        this.settings = {};
+        this.dailyGoal = { target: 50, autoExtendEnabled: false };
+        
+        this.applySettings();
+        this.updateDisplay();
+        this.setupTextSwitching();
+        
+        console.log('✅ 0원/50만원 목표로 즉시 표시 완료');
+    }
+    
+    initializeSocket() {
+        try {
+            console.log('🔗 Socket.IO 서버 연결 시도...');
+            this.socket = io({
+                transports: ['websocket', 'polling'],
+                timeout: 10000,
+                forceNew: true
+            });
+            
+            this.socket.on('connect', () => {
+                console.log('🔗 [총액그래프] 서버 연결 성공 - 실제 데이터로 전환');
+                this.isConnected = true;
+                this.socket.emit('requestData');
+                
+                // 실제 데이터 요청
+                setTimeout(() => {
+                    if (!this.dailyGoal || this.dailyGoal.target === 50) {
+                        console.log('⏰ 실제 서버 데이터 요청');
+                        this.socket.emit('requestData');
+                    }
+                }, 1000);
+            });
+            
+            this.socket.on('initialData', (data) => {
+                console.log('📊 [총액그래프] 실제 서버 데이터 수신:', data);
+                console.log('📊 [총액그래프] 후원 개수:', data.donations?.length || 0);
+                
+                // 더미 데이터에서 실제 데이터로 전환
+                this.donations = data.donations || [];
+                this.settings = data.settings || {};
+                this.dailyGoal = data.settings?.dailyGoal || null;
+                
+                const totalAmount = this.getTodaysDonationTotal();
+                console.log('💰 [총액그래프] 실제 총액:', totalAmount, '만원');
+                console.log('🎯 [총액그래프] 실제 목표:', this.dailyGoal);
+                
+                this.applySettings();
+                this.throttledUpdate();
+                this.checkAutoExtend();
+            });
+            
+            this.socket.on('disconnect', () => {
+                console.log('❌ [총액그래프] 서버 연결 끊김 - 더미 데이터로 복귀');
+                this.isConnected = false;
+                this.fallbackToAPI();
+            });
+            
+            this.socket.on('connect_error', (error) => {
+                console.error('❌ [총액그래프] Socket.io 연결 실패:', error);
+                console.log('🔄 [총액그래프] API 폴백 모드로 전환');
+                this.fallbackToAPI();
+            });
+            
+            this.socket.on('dataUpdate', (data) => {
+                if (!this.isConnected) return;
+                
+                console.log('📊 [총액그래프] 실시간 데이터 업데이트:', data);
+                console.log('📊 [총액그래프] 후원 개수:', data.donations?.length || 0);
+                
+                const beforeTotal = this.getTodaysDonationTotal();
+                
+                this.donations = data.donations || [];
+                this.settings = data.settings || {};
+                this.dailyGoal = data.settings?.dailyGoal || null;
+                
+                const afterTotal = this.getTodaysDonationTotal();
+                console.log('💰 [총액그래프] 총액 변화:', beforeTotal, '→', afterTotal, '만원');
+                
+                this.applySettings();
+                this.throttledUpdate();
+                this.checkAutoExtend();
+            });
+            
+            this.socket.on('settingsUpdate', (settings) => {
+                if (!this.isConnected) return;
+                
+                console.log('⚙️ 설정 업데이트 수신:', settings);
+                this.settings = { ...this.settings, ...settings };
+                this.dailyGoal = settings.dailyGoal || this.dailyGoal;
+                this.applySettings();
+                this.throttledUpdate();
+                this.checkAutoExtend();
+            });
+            
+        } catch (error) {
+            console.error('❌ [총액그래프] Socket.IO 초기화 실패:', error);
+            this.fallbackToAPI();
+        }
     }
     
     throttledUpdate() {
