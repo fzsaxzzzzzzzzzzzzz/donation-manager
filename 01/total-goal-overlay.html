@@ -136,7 +136,7 @@ class MobileGoalGraphOverlay {
     constructor() {
         console.log('📊 모바일 전용 총액 목표 그래프 시작');
         
-        this.socket = io();
+        this.socket = io({ timeout: 5000 });
         this.donations = [];
         this.settings = {
             'graph-font-size': 20,
@@ -146,6 +146,14 @@ class MobileGoalGraphOverlay {
             'includeSuperchat': localStorage.getItem('include-superchat') === 'true'
         };
         this.isConnected = false;
+        
+        // 빠른 로딩을 위해 즉시 API 폴백 시도
+        setTimeout(() => {
+            if (!this.isConnected) {
+                console.log('⚡ Socket.IO 연결 지연 - API 모드로 전환');
+                this.loadDataFromAPI();
+            }
+        }, 3000);
         
         // 모바일 전용 극한 배터리 절약 모드
         this.enableBatterySaving();
@@ -404,6 +412,47 @@ class MobileGoalGraphOverlay {
     showError(message) {
         const contentEl = document.getElementById('graph-content');
         contentEl.innerHTML = `<div class="no-data" style="color: #ffcccb;">${message}</div>`;
+    }
+    
+    loadDataFromAPI() {
+        console.log('📡 API 모드로 데이터 로드 시도');
+        
+        // API로 데이터 가져오기
+        fetch('/api/data')
+            .then(response => response.json())
+            .then(data => {
+                console.log('📊 API에서 데이터 수신:', data);
+                this.donations = data.donations || [];
+                this.settings = { ...this.settings, ...(data.settings || {}) };
+                this.applySettings();
+                this.updateDisplay();
+                
+                // 성공 시 주기적 업데이트 시작
+                this.startAPIPolling();
+            })
+            .catch(error => {
+                console.error('❌ API 데이터 로드 실패:', error);
+                this.showError('데이터 로드 실패 - 잠시 후 다시 시도하세요');
+                
+                // 재시도 로직
+                setTimeout(() => {
+                    this.loadDataFromAPI();
+                }, 10000);
+            });
+    }
+    
+    startAPIPolling() {
+        // Socket.IO 연결이 없을 때만 polling 시작
+        if (this.isConnected) return;
+        
+        console.log('🔄 API 폴링 모드 시작 (30초 간격)');
+        this.apiPollingInterval = setInterval(() => {
+            if (!this.isConnected) {
+                this.loadDataFromAPI();
+            } else {
+                clearInterval(this.apiPollingInterval);
+            }
+        }, 30000);
     }
     
     setupKeyboardControls() {
