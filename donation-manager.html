@@ -508,6 +508,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
+<!-- 설정 버튼들 -->
+<div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+<button onclick="applyTotalGoalSettings()" class="btn btn-success">✅ 적용</button>
+<button onclick="resetTotalGoalSettings()" class="btn btn-secondary">🔄 초기화</button>
+<button onclick="hideTotalGoalSettings()" class="btn btn-secondary">❌ 닫기</button>
+</div>
+
 <!-- OBS 연동 가이드 -->
 <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #42b72a; border-radius: 8px; background: #e8f5e8;">
 <h6 style="margin: 0 0 10px 0; color: #2e7d32;">📺 OBS Studio 연동 방법</h6>
@@ -520,11 +527,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
-<div style="display: flex; gap: 10px;">
-<button onclick="saveTotalGoalSettings()" class="btn btn-success">💾 설정 저장</button>
-<button onclick="resetTotalGoalSettings()" class="btn btn-secondary">기본값 복원</button>
-<button onclick="hideTotalGoalSettings()" class="btn btn-danger">닫기</button>
-</div>
 </div>
 </div>
 
@@ -6286,6 +6288,93 @@ function updateTotalGoalDecimalDisplay(mode) {
         console.error('설정 저장 오류:', error);
         alert('❌ 설정 저장 중 오류가 발생했습니다');
     });
+}
+
+// 총액 목표 그래프 설정 관련 함수들
+function bindTotalGoalSliderUpdates() {
+    const sliders = [
+        { id: 'total-goal-bg-opacity', suffix: '%' },
+        { id: 'total-goal-text-outline-width', suffix: 'px' }
+    ];
+    
+    sliders.forEach(slider => {
+        const input = document.getElementById(slider.id);
+        const valueSpan = document.getElementById(`${slider.id.replace('-', '-')}-value`);
+        
+        if (input && valueSpan) {
+            input.addEventListener('input', () => {
+                valueSpan.textContent = input.value + slider.suffix;
+            });
+        }
+    });
+    
+    // 자동 연장 체크박스 이벤트
+    const autoExtendCheckbox = document.getElementById('auto-extend-enabled');
+    const extendAmountInput = document.getElementById('extend-amount');
+    
+    if (autoExtendCheckbox && extendAmountInput) {
+        autoExtendCheckbox.addEventListener('change', () => {
+            extendAmountInput.disabled = !autoExtendCheckbox.checked;
+        });
+    }
+}
+
+function applyTotalGoalSettings() {
+    const settings = {
+        'dailyGoal': {
+            target: parseFloat(document.getElementById('daily-goal-target').value) || 50,
+            autoExtend: document.getElementById('auto-extend-enabled').checked,
+            extendAmount: parseFloat(document.getElementById('extend-amount').value) || 50
+        },
+        'total-goal-bg-opacity': document.getElementById('total-goal-bg-opacity').value,
+        'total-goal-bg-color': document.getElementById('total-goal-bg-color').value,
+        'total-goal-text-outline-width': document.getElementById('total-goal-text-outline-width').value,
+        'total-goal-text-outline-color': document.getElementById('total-goal-text-outline-color').value,
+        'total-goal-show-top-stats': document.getElementById('total-goal-show-top-stats').checked,
+        'total-goal-text-switch-enabled': document.getElementById('total-goal-text-switch-enabled') ? document.getElementById('total-goal-text-switch-enabled').checked : false
+    };
+    
+    // 서버에 설정 저장
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('🎯 총액 목표 그래프 설정이 저장되었습니다!');
+            // 설정 패널 닫기
+            hideTotalGoalSettings();
+        } else {
+            alert('❌ 설정 저장에 실패했습니다');
+        }
+    })
+    .catch(error => {
+        console.error('설정 저장 오류:', error);
+        alert('❌ 설정 저장 중 오류가 발생했습니다');
+    });
+}
+
+function resetTotalGoalSettings() {
+    if (confirm('총액 목표 그래프 설정을 초기화하시겠습니까?')) {
+        // 기본값으로 리셋
+        document.getElementById('daily-goal-target').value = '50';
+        document.getElementById('auto-extend-enabled').checked = false;
+        document.getElementById('extend-amount').value = '50';
+        document.getElementById('extend-amount').disabled = true;
+        document.getElementById('total-goal-bg-opacity').value = '0';
+        document.getElementById('total-goal-bg-color').value = '#000000';
+        document.getElementById('total-goal-text-outline-width').value = '1';
+        document.getElementById('total-goal-text-outline-color').value = '#000000';
+        document.getElementById('total-goal-show-top-stats').checked = true;
+        
+        // 값 표시 업데이트
+        document.getElementById('bg-opacity-value').textContent = '0%';
+        document.getElementById('text-outline-width-value').textContent = '1px';
+        
+        alert('🔄 설정이 초기화되었습니다');
+    }
 }
 
 </script>
