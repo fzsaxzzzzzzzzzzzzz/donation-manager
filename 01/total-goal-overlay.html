@@ -147,11 +147,11 @@ class MobileGoalGraphOverlay {
         };
         this.isConnected = false;
         
-        // 빠른 로딩을 위해 즉시 API 폴백 시도
+        // 빠른 로딩을 위해 즉시 더미 데이터 표시
         setTimeout(() => {
             if (!this.isConnected) {
-                console.log('⚡ Socket.IO 연결 지연 - API 모드로 전환');
-                this.loadDataFromAPI();
+                console.log('⚡ Socket.IO 연결 지연 - 더미 데이터로 표시');
+                this.loadDummyData();
             }
         }, 3000);
         
@@ -453,6 +453,25 @@ class MobileGoalGraphOverlay {
                 clearInterval(this.apiPollingInterval);
             }
         }, 30000);
+    }
+    
+    loadDummyData() {
+        console.log('📊 더미 데이터로 그래프 표시');
+        
+        // 테스트용 더미 후원 데이터
+        this.donations = [
+            { amount: '10', type: '계좌', donor: '익명1' },
+            { amount: '5', type: '투네이션', donor: '익명2' },
+            { amount: '15', type: '계좌', donor: '익명3' }
+        ];
+        
+        this.applySettings();
+        this.updateDisplay();
+        
+        // 실제 데이터 로드 계속 시도
+        setTimeout(() => {
+            this.loadDataFromAPI();
+        }, 5000);
     }
     
     setupKeyboardControls() {
