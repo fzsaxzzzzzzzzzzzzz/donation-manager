@@ -387,7 +387,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 
 <!-- 총액 목표 설정 패널 -->
 <div id="total-goal-settings" style="display: none; margin-top: 15px; padding: 15px; background: #e8f5e8; border: 1px solid #4caf50; border-radius: 8px;">
-<h5 style="margin-bottom: 15px; color: #2e7d32;">💰 총액 목표 설정</h5>
+<h5 style="margin-bottom: 15px; color: #2e7d32;">🎯 총액 목표 그래프 설정</h5>
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
 <!-- 목표 금액 -->
@@ -474,8 +474,39 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
+<!-- 색상 테마 설정 -->
+<div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
+<h6 style="margin: 0 0 15px 0; color: #333;">🎨 그래프 색상 테마</h6>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 2px solid #e9ebee; border-radius: 8px;">
+<input type="radio" name="total-goal-theme" value="orange" checked onchange="updateTotalGoalTheme('orange')">
+<span style="color: #ff6b35; font-weight: 600;">🧡 오렌지</span>
+</label>
+<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 2px solid #e9ebee; border-radius: 8px;">
+<input type="radio" name="total-goal-theme" value="green" onchange="updateTotalGoalTheme('green')">
+<span style="color: #4CAF50; font-weight: 600;">💚 그린</span>
+</label>
+<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 2px solid #e9ebee; border-radius: 8px;">
+<input type="radio" name="total-goal-theme" value="blue" onchange="updateTotalGoalTheme('blue')">
+<span style="color: #2196F3; font-weight: 600;">💙 블루</span>
+</label>
+</div>
+</div>
+
+<!-- OBS 연동 가이드 -->
+<div style="margin-bottom: 20px; padding: 15px; border: 1px solid #42b72a; border-radius: 8px; background: #e8f5e8;">
+<h6 style="margin: 0 0 10px 0; color: #2e7d32;">📺 OBS Studio 연동 방법</h6>
+<div style="font-size: 13px; color: #2e7d32; line-height: 1.5;">
+1. OBS Studio에서 "소스" → "브라우저" 추가<br>
+2. URL에 위 오버레이 URL 복사<br>
+3. 크기: 가로 800px, 세로 200px<br>
+4. CSS: "body { margin: 0; background: transparent; }"<br>
+5. "확인" 클릭하여 추가
+</div>
+</div>
+
 <div style="display: flex; gap: 10px;">
-<button onclick="saveTotalGoalSettings()" class="btn btn-success">적용</button>
+<button onclick="saveTotalGoalSettings()" class="btn btn-success">💾 설정 저장</button>
 <button onclick="resetTotalGoalSettings()" class="btn btn-secondary">기본값 복원</button>
 <button onclick="hideTotalGoalSettings()" class="btn btn-danger">닫기</button>
 </div>
@@ -5955,6 +5986,49 @@ function resetTotalGoalSettings() {
         
         showStatus('🔄 총액 목표 설정이 초기화되었습니다', 'success');
     }
+}
+
+function updateTotalGoalTheme(theme) {
+    let themeColors = {};
+    
+    switch(theme) {
+        case 'orange':
+            themeColors = {
+                'progress-start-color': '#ff6b35',
+                'progress-mid-color': '#ff8a50', 
+                'progress-end-color': '#ffa726',
+                'complete-start-color': '#ff8f00',
+                'complete-mid-color': '#ffb300',
+                'complete-end-color': '#ffc107'
+            };
+            break;
+        case 'green':
+            themeColors = {
+                'progress-start-color': '#4CAF50',
+                'progress-mid-color': '#66bb6a',
+                'progress-end-color': '#81c784',
+                'complete-start-color': '#2e7d32',
+                'complete-mid-color': '#388e3c',
+                'complete-end-color': '#4caf50'
+            };
+            break;
+        case 'blue':
+            themeColors = {
+                'progress-start-color': '#2196F3',
+                'progress-mid-color': '#42A5F5',
+                'progress-end-color': '#64B5F6',
+                'complete-start-color': '#1565c0',
+                'complete-mid-color': '#1976d2',
+                'complete-end-color': '#2196f3'
+            };
+            break;
+    }
+    
+    // 테마 설정을 저장소에 저장
+    localStorage.setItem('total-goal-theme', theme);
+    
+    showStatus(`🎨 그래프 테마가 ${theme}로 변경되었습니다!`, 'saved');
+    console.log('🎨 총액 목표 그래프 테마 변경:', theme, themeColors);
 }
 
 function hideMissionGraphSettings() {
