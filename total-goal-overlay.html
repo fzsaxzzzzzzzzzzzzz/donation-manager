@@ -200,7 +200,19 @@ class TotalGoalOverlay {
             }
         };
         
-        // UI 업데이트 (진행도 바만)
+        // 제목 업데이트
+        const titleElement = document.getElementById('goal-title');
+        const customTitle = this.settings['total-goal-custom-title'] || '';
+        const showTitle = this.settings['total-goal-show-title'] !== false; // 기본값: true
+        
+        if (showTitle && customTitle) {
+            titleElement.style.display = 'block';
+            titleElement.textContent = customTitle;
+        } else {
+            titleElement.style.display = 'none';
+        }
+        
+        // UI 업데이트 (진행도 바)
         document.getElementById('progress-text').textContent = `${formatAmount(currentAmount)} / ${formatAmount(targetAmount)}만원 (${Math.round(progressPercent)}%)`;
         
         // 진행도 바 업데이트
@@ -241,6 +253,10 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="overlay-container">
     <div class="total-goal-container">
         <div class="goal-content">
+            <!-- 사용자 정의 제목 -->
+            <div class="goal-title" id="goal-title" style="display: none; text-align: center; margin-bottom: 10px; font-size: 18px; font-weight: bold; color: white; text-shadow: 1px 1px 0 #000000, -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 2px 2px 4px rgba(0, 0, 0, 0.8);">
+                오늘의 목표
+            </div>
             <div class="goal-progress-container">
                 <div class="progress-text" id="progress-text">0 / 50만원 (0%)</div>
                 <div class="goal-progress-bar"></div>
