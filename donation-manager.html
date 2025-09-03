@@ -474,6 +474,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
+<!-- 숫자 표시 설정 -->
+<div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
+<h6 style="margin: 0 0 15px 0; color: #333;">🔢 숫자 표시 설정</h6>
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 2px solid #e9ebee; border-radius: 8px;">
+<input type="radio" name="total-goal-decimal-display" value="always" onchange="updateTotalGoalDecimalDisplay('always')">
+<span>항상 소수점 표시 (30.0만원)</span>
+</label>
+<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 2px solid #e9ebee; border-radius: 8px;">
+<input type="radio" name="total-goal-decimal-display" value="smart" onchange="updateTotalGoalDecimalDisplay('smart')" checked>
+<span>정수일 때 소수점 생략 (30만원)</span>
+</label>
+</div>
+</div>
+
 <!-- 색상 테마 설정 -->
 <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
 <h6 style="margin: 0 0 15px 0; color: #333;">🎨 그래프 색상 테마</h6>
@@ -6237,6 +6252,33 @@ async function deleteMission(missionId) {
         console.error('미션 삭제 실패:', error);
         showStatus('❌ 서버 오류로 미션 삭제에 실패했습니다', 'error');
     }
+}
+
+// 총액 목표 그래프 소수점 표시 모드 업데이트 함수
+function updateTotalGoalDecimalDisplay(mode) {
+    // 서버에 소수점 표시 모드 저장
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            settings: {
+                'total-goal-decimal-display': mode
+            }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const displayText = mode === 'always' ? '항상 소수점 표시' : '정수일 때 소수점 생략';
+            alert(`🔢 숫자 표시가 "${displayText}"로 설정되었습니다!`);
+        } else {
+            alert('❌ 설정 저장에 실패했습니다');
+        }
+    })
+    .catch(error => {
+        console.error('설정 저장 오류:', error);
+        alert('❌ 설정 저장 중 오류가 발생했습니다');
+    });
 }
 
 </script>
