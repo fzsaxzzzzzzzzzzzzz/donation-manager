@@ -449,9 +449,10 @@ class TotalOnlyOverlay {
                 // 원 단위로 표시
                 amountDisplay = `${streamer.total.toLocaleString('ko-KR')}원`;
             } else {
-                // 만원 단위로 표시
+                // 만원 단위로 표시 (소수점 0 제거)
                 const manwonAmount = streamer.total / 10000;
-                amountDisplay = `${manwonAmount.toLocaleString('ko-KR')}만원`;
+                const formattedAmount = manwonAmount % 1 === 0 ? Math.floor(manwonAmount).toLocaleString('ko-KR') : manwonAmount.toLocaleString('ko-KR');
+                amountDisplay = `${formattedAmount}만원`;
             }
             
             html += `<tr class="${rankClass}">`;

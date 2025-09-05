@@ -262,7 +262,7 @@ class TotalGoalOverlay {
                 return amount.toFixed(1);
             } else {
                 // smart 모드: 정수일 때 소수점 생략
-                return amount % 1 === 0 ? amount.toString() : amount.toFixed(1);
+                return amount % 1 === 0 ? Math.floor(amount).toString() : amount.toFixed(1);
             }
         };
         
