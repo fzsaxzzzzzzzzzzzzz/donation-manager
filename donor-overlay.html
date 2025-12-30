@@ -439,7 +439,7 @@ class RealtimeDonorOverlay {
         const kakaoBankLineHeight = this.settings.kakaoBankLineHeight || 1.2;
         
         if (!this.donations || this.donations.length === 0) {
-            let content = '사랑해욘♡';
+            let content = '계좌후원분들♡';
             
             // 🔥 카카오뱅크 정보 추가 - DOM 직접 생성 - 무조건 항상 표시  
             if (true) {
@@ -554,7 +554,7 @@ class RealtimeDonorOverlay {
         console.log('🔍 [최종결과] 표시할 그룹 수:', sortedGroups.length);
         
         if (sortedGroups.length === 0) {
-            let content = '사랑해욘♡';
+            let content = '계좌후원분들♡';
             
             // 🔥 카카오뱅크 정보 추가 - 무조건 항상 표시
             if (true) {
@@ -607,8 +607,8 @@ class RealtimeDonorOverlay {
             }
         }).join('\n');
         
-        // "사랑해욘♡" 인사말과 함께 표시 (정산요약과 동일)
-        let finalText = donorTotalText ? `사랑해욘♡\n${donorTotalText}` : '사랑해욘♡';
+        // "계좌후원분들♡" 인사말과 함께 표시 (정산요약과 동일)
+        let finalText = donorTotalText ? `계좌후원분들♡\n${donorTotalText}` : '계좌후원분들♡';
         
         // 🔥 카카오뱅크 정보 추가 (후원자가 있을 때) - 무조건 항상 표시
         if (true) {
@@ -738,7 +738,7 @@ class RealtimeDonorOverlay {
             console.log('🚨 카카오뱅크 정보 없음 감지 - 강제 복구');
             
             // 기존 텍스트 보존하면서 카카오뱅크만 추가
-            const existingText = contentEl.textContent || '사랑해욘♡';
+            const existingText = contentEl.textContent || '계좌후원분들♡';
             
             contentEl.innerHTML = '';
             
@@ -759,7 +759,7 @@ class RealtimeDonorOverlay {
             // 텍스트 DOM 생성
             const textDiv = document.createElement('div');
             textDiv.className = 'donor-text';
-            textDiv.textContent = existingText.replace('카카오뱅크', '').replace('3333-25-7378436', '').trim() || '사랑해욘♡';
+            textDiv.textContent = existingText.replace('카카오뱅크', '').replace('3333-25-7378436', '').trim() || '계좌후원분들♡';
             textDiv.style.cssText = 'line-height: 1.5 !important; margin: 0 !important; padding: 0 !important;';
             
             contentEl.appendChild(bankDiv);
