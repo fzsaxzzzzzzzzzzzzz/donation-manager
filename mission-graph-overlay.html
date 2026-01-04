@@ -403,7 +403,7 @@ class MissionGraphOverlay {
         document.getElementById('mission-content').style.display = 'block';
         
         // 제목 업데이트
-        document.getElementById('mission-title').textContent = '🎯 퇴근미션 현황';
+        document.getElementById('mission-title').textContent = '🎯 펀딩';
         
         // 개별 미션들을 한 줄씩 표시
         const missionBars = missions.map(mission => {
@@ -473,7 +473,7 @@ class MissionGraphOverlay {
         
         // 기존 UI 요소들을 새로운 개별 미션 바로 교체
         document.getElementById('mission-content').innerHTML = `
-            <div class="mission-title" id="mission-title">🎯 퇴근미션 현황</div>
+            <div class="mission-title" id="mission-title">🎯 펀딩</div>
             <div style="padding: 10px 0;">
                 ${missionBars}
             </div>
