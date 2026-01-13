@@ -65,36 +65,17 @@ body {
 }
 
 /* 카카오뱅크 전용 스타일 - 모바일 최적화 */
-.kakao-bank-info,
-.kakao-bank-info *,
-* .kakao-bank-info,
-* .kakao-bank-info *,
-div .kakao-bank-info,
-div .kakao-bank-info * {
-    line-height: 1.0 !important;
+.kakao-bank-info {
     margin: 0 !important;
     padding: 0 !important;
-    font-size: inherit !important;
-    vertical-align: baseline !important;
-}
-
-.kakao-bank-info {
-    margin-bottom: 2px !important;
     display: block !important;
 }
 
-.kakao-bank-info > div:first-child {
+.kakao-bank-info div {
+    margin: 0 !important;
+    padding: 0 !important;
     font-weight: bold !important;
     color: #FFEB3B !important;
-    margin-bottom: 1px !important;
-    line-height: 1.0 !important;
-}
-
-.kakao-bank-info > div:last-child {
-    font-size: 90% !important;
-    color: white !important;
-    line-height: 1.0 !important;
-    margin: 0 !important;
 }
 
 /* 모바일 최적화: 모든 애니메이션 비활성화 */
@@ -253,15 +234,14 @@ class MobileDonorOverlay {
         
         // 🔥 카카오뱅크 계좌 정보 표시 - 항상 true로 강제 설정
         const showKakaoBank = true;
-        const kakaoBankSize = this.settings.kakaoBankSize || 100;
+        const kakaoBankSize = this.settings.kakaoBankSize || 18;
         
         if (!this.donations || this.donations.length === 0) {
-            let content = '사랑해욘♡';
+            let content = '';
             
             if (showKakaoBank) {
-                const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
-                    <div>카카오뱅크</div>
-                    <div>3333-25-7378436</div>
+                const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}px;">
+                    <div>카카오뱅크 3333-25-7378436 엄삼O</div>
                 </div>`;
                 contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + content + '</div>';
             } else {
@@ -316,34 +296,33 @@ class MobileDonorOverlay {
         const sortedGroups = Object.entries(amountGroups).sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
         
         if (sortedGroups.length === 0) {
-            contentEl.textContent = '사랑해욘♡';
+            contentEl.textContent = '';
             contentEl.className = 'no-data';
             return;
         }
         
-        // 텍스트 생성 (모바일 최적화)
+        // 텍스트 생성 (모바일 최적화) - 한 줄로 표시
         const donorTotalText = sortedGroups.map(([amount, donors]) => {
             // 정수는 소수점 제거, 소수점 있는 건 그대로
             const num = parseFloat(amount);
-            const amountStr = `${num % 1 === 0 ? Math.floor(num).toString() : num.toFixed(1)}만`;
+            const amountStr = `${num % 1 === 0 ? Math.floor(num).toString() : num.toFixed(1)}`;
             if (donors.length >= groupThreshold) {
                 return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
             } else {
-                return donors.map(d => `${d}님 ${amountStr}`).join('\n');
+                return donors.map(d => `${d}님 ${amountStr}`).join(' ');
             }
-        }).join('\n');
+        }).join(' ');
         
-        let finalText = donorTotalText ? `사랑해욘♡\n${donorTotalText}` : '사랑해욘♡';
+        let finalText = donorTotalText || '';
         
         // 카카오뱅크 정보 추가
         if (showKakaoBank) {
-            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}%;">
-                <div>카카오뱅크</div>
-                <div>3333-25-7378436</div>
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}px;">
+                <div>카카오뱅크 3333-25-7378436 엄삼O</div>
             </div>`;
-            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + finalText.replace(/\n/g, '<br>') + '</div>';
+            contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + finalText + '</div>';
         } else {
-            contentEl.innerHTML = '<div>' + finalText.replace(/\n/g, '<br>') + '</div>';
+            contentEl.innerHTML = '<div>' + finalText + '</div>';
         }
         contentEl.className = 'donor-content';
         
@@ -405,18 +384,17 @@ class MobileDonorOverlay {
         const currentHTML = contentEl.innerHTML;
         
         // 카카오뱅크 정보가 없으면 강제 추가
-        if (!currentHTML.includes('카카오뱅크') || !currentHTML.includes('3333-25-7378436')) {
+        if (!currentHTML.includes('카카오뱅크 3333-25-7378436 엄삼O')) {
             console.log('📱🚨 모바일: 카카오뱅크 정보 없음 감지 - 강제 복구');
-            
+
             // 기존 텍스트 보존하면서 카카오뱅크만 추가
-            const existingText = contentEl.textContent || '사랑해욘♡';
-            
-            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: 100%; font-weight: bold; color: #FFEB3B;">
-                <div>카카오뱅크</div>
-                <div style="font-size: 90%;">3333-25-7378436</div>
+            const existingText = contentEl.textContent || '';
+
+            const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: 18px; font-weight: bold; color: #FFEB3B;">
+                <div>카카오뱅크 3333-25-7378436 엄삼O</div>
             </div>`;
-            
-            const cleanText = existingText.replace('카카오뱅크', '').replace('3333-25-7378436', '').trim() || '사랑해욘♡';
+
+            const cleanText = existingText.replace('카카오뱅크 3333-25-7378436 엄삼O', '').trim() || '';
             
             // 카카오뱅크 + 기존 텍스트 조합
             contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + cleanText + '</div>';

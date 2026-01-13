@@ -1,6 +1,13 @@
 {
   "donations": [
     {
+      "donor": "A",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 1,
+      "time": "2026-01-13T18:51:30.645Z"
+    },
+    {
       "donor": "V",
       "streamer": "엄삼용",
       "type": "계좌",
@@ -31,7 +38,7 @@
   "missionAdjustments": [],
   "settings": {
     "overlay-font-size": "24",
-    "overlay-stroke-width": "3",
+    "overlay-stroke-width": "1.8",
     "overlay-text-align": "left",
     "overlay-line-height": "1.5",
     "table-opacity": "85",
@@ -45,9 +52,9 @@
     "show-total-row": "true",
     "show-update-time": "false",
     "table-title": "🏆 스트리머별 후원 현황 🏆",
-    "showKakaoBank": false,
-    "kakaoBankSize": 100,
-    "kakaoBankLineHeight": 1.2,
+    "showKakaoBank": true,
+    "kakaoBankSize": 34,
+    "kakaoBankLineHeight": 1,
     "table-color-preset": "blue",
     "dailyGoal": {
       "target": 100,
@@ -56,5 +63,5 @@
       "achievedGoals": []
     }
   },
-  "lastUpdated": "2025-09-03T18:02:19.448Z"
+  "lastUpdated": "2026-01-13T18:51:30.645Z"
 }

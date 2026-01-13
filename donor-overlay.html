@@ -66,42 +66,18 @@ body {
     font-size: 16px;
 }
 
-/* 카카오뱅크 전용 스타일 - 상속 차단 및 완전 격리 */
-.kakao-bank-info,
-.kakao-bank-info *,
-* .kakao-bank-info,
-* .kakao-bank-info *,
-div .kakao-bank-info,
-div .kakao-bank-info *,
-.kakao-bank-info div,
-.kakao-bank-info div * {
-    line-height: 1.0 !important;
+/* 카카오뱅크 전용 스타일 - 독립적인 크기 설정 */
+.kakao-bank-info {
     margin: 0 !important;
     padding: 0 !important;
-    font-size: inherit !important;
-    vertical-align: baseline !important;
-    border: 0 !important;
-    outline: 0 !important;
-    background: transparent !important;
-}
-
-.kakao-bank-info {
-    margin-bottom: 0px !important;
     display: block !important;
 }
 
-.kakao-bank-info > div:first-child {
+.kakao-bank-info div {
+    margin: 0 !important;
+    padding: 0 !important;
     font-weight: bold !important;
     color: #FFEB3B !important;
-    margin-bottom: 0px !important;
-    line-height: 1.0 !important;
-}
-
-.kakao-bank-info > div:last-child {
-    font-size: 90% !important;
-    color: white !important;
-    line-height: 1.0 !important;
-    margin: 0 !important;
 }
 
 /* 후원자 텍스트와 카카오뱅크 간격 최적화 */
@@ -324,13 +300,9 @@ class RealtimeDonorOverlay {
         this.socket.on('initialData', (data) => {
             console.log('📊 초기 데이터 수신:', data);
             this.donations = data.donations || [];
-            // 초기 설정 적용 - 카카오뱅크는 기본값 true
+            // 초기 설정 적용
             const initialSettings = data.settings || {};
             this.settings = { ...this.settings, ...initialSettings };
-            // showKakaoBank가 undefined면 기본값 true 설정
-            if (this.settings.showKakaoBank === undefined) {
-                this.settings.showKakaoBank = true;
-            }
             this.applySettings();
             this.updateDisplay();
         });
@@ -348,9 +320,6 @@ class RealtimeDonorOverlay {
             if (data.settings) {
                 console.log('⚙️ 설정 업데이트 포함:', Object.keys(data.settings));
                 this.settings = { ...this.settings, ...data.settings };
-                if (this.settings.showKakaoBank === undefined) {
-                    this.settings.showKakaoBank = true;
-                }
                 this.applySettings();
             }
             
@@ -360,12 +329,7 @@ class RealtimeDonorOverlay {
         
         this.socket.on('settingsUpdate', (settings) => {
             console.log('⚙️ 설정 업데이트 수신:', settings);
-            // 설정 업데이트 - 카카오뱅크는 기본값 true  
             this.settings = { ...this.settings, ...settings };
-            // showKakaoBank가 undefined면 기본값 true 설정
-            if (this.settings.showKakaoBank === undefined) {
-                this.settings.showKakaoBank = true;
-            }
             this.applySettings();
             this.updateDisplay();
         });
@@ -428,42 +392,38 @@ class RealtimeDonorOverlay {
     
     updateDisplay() {
         const contentEl = document.getElementById('donor-content');
+
+        // 카카오뱅크 계좌 정보 표시 설정
+        const showKakaoBank = this.settings.showKakaoBank !== false;
+        console.log('🏦 [디버깅] showKakaoBank 설정값:', this.settings.showKakaoBank, '→ 최종값:', showKakaoBank);
         
-        // 🔥 카카오뱅크 계좌 정보 표시 - 항상 true로 강제 설정
-        const showKakaoBank = true;
-        
-        // 카카오뱅크 크기 설정
-        const kakaoBankSize = this.settings.kakaoBankSize || 100;
+        // 카카오뱅크 크기 설정 (절대값 px)
+        const kakaoBankSize = this.settings.kakaoBankSize || 18;
         
         // 카카오뱅크 줄간격 설정
         const kakaoBankLineHeight = this.settings.kakaoBankLineHeight || 1.2;
         
         if (!this.donations || this.donations.length === 0) {
-            let content = '계좌후원분들♡';
-            
-            // 🔥 카카오뱅크 정보 추가 - DOM 직접 생성 - 무조건 항상 표시  
-            if (true) {
+            let content = '';
+
+            // 카카오뱅크 정보 추가 - DOM 직접 생성
+            if (showKakaoBank) {
                 contentEl.innerHTML = '';
-                
+
                 // 카카오뱅크 줄간격 설정값 적용
                 const bankLineHeight = this.settings.kakaoBankLineHeight || 1.0;
                 const textLineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
-                
+
                 // 카카오뱅크 DOM 생성
                 const bankDiv = document.createElement('div');
                 bankDiv.className = 'kakao-bank-info';
-                bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
-                
-                const bankName = document.createElement('div');
-                bankName.textContent = '카카오뱅크';
-                bankName.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
-                
-                const bankAccount = document.createElement('div');
-                bankAccount.textContent = '3333-25-7378436';
-                bankAccount.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-size: 90%; color: white;`;
-                
-                bankDiv.appendChild(bankName);
-                bankDiv.appendChild(bankAccount);
+                bankDiv.style.cssText = `font-size: ${kakaoBankSize}px; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
+
+                const bankInfo = document.createElement('div');
+                bankInfo.textContent = '카카오뱅크 3333-25-7378436 엄삼O';
+                bankInfo.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
+
+                bankDiv.appendChild(bankInfo);
                 
                 // 텍스트 DOM 생성 - 줄간격 설정값 적용
                 const textDiv = document.createElement('div');
@@ -554,31 +514,26 @@ class RealtimeDonorOverlay {
         console.log('🔍 [최종결과] 표시할 그룹 수:', sortedGroups.length);
         
         if (sortedGroups.length === 0) {
-            let content = '계좌후원분들♡';
-            
-            // 🔥 카카오뱅크 정보 추가 - 무조건 항상 표시
-            if (true) {
+            let content = '';
+
+            // 카카오뱅크 정보 추가
+            if (showKakaoBank) {
                 contentEl.innerHTML = '';
-                
+
                 // 카카오뱅크 줄간격 설정값 적용
                 const bankLineHeight = this.settings.kakaoBankLineHeight || 1.0;
                 const textLineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
-                
+
                 // 카카오뱅크 DOM 생성
                 const bankDiv = document.createElement('div');
                 bankDiv.className = 'kakao-bank-info';
-                bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
-                
-                const bankName = document.createElement('div');
-                bankName.textContent = '카카오뱅크';
-                bankName.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
-                
-                const bankAccount = document.createElement('div');
-                bankAccount.textContent = '3333-25-7378436';
-                bankAccount.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-size: 90%; color: white;`;
-                
-                bankDiv.appendChild(bankName);
-                bankDiv.appendChild(bankAccount);
+                bankDiv.style.cssText = `font-size: ${kakaoBankSize}px; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
+
+                const bankInfo = document.createElement('div');
+                bankInfo.textContent = '카카오뱅크 3333-25-7378436 엄삼O';
+                bankInfo.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
+
+                bankDiv.appendChild(bankInfo);
                 
                 // 텍스트 DOM 생성 - 줄간격 설정값 적용
                 const textDiv = document.createElement('div');
@@ -596,64 +551,52 @@ class RealtimeDonorOverlay {
             return;
         }
         
-        // 정산요약과 동일한 형식으로 텍스트 생성
+        // 한 줄로 표시
         const donorTotalText = sortedGroups.map(([amount, donors]) => {
             const numAmount = parseFloat(amount);
-            const amountStr = `${numAmount % 1 === 0 ? Math.floor(numAmount) : numAmount.toFixed(1)}만`;
+            const amountStr = `${numAmount % 1 === 0 ? Math.floor(numAmount) : numAmount.toFixed(1)}`;
             if (donors.length >= groupThreshold) {
                 return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
             } else {
-                return donors.map(d => `${d}님 ${amountStr}`).join('\n');
+                return donors.map(d => `${d}님 ${amountStr}`).join(' ');
             }
-        }).join('\n');
+        }).join(' ');
         
-        // "계좌후원분들♡" 인사말과 함께 표시 (정산요약과 동일)
-        let finalText = donorTotalText ? `계좌후원분들♡\n${donorTotalText}` : '계좌후원분들♡';
-        
-        // 🔥 카카오뱅크 정보 추가 (후원자가 있을 때) - 무조건 항상 표시
-        if (true) {
+        // 후원자 목록만 표시
+        let finalText = donorTotalText || '';
+
+        // 카카오뱅크 정보 추가 (후원자가 있을 때)
+        if (showKakaoBank) {
             // DOM 요소 직접 생성으로 완전한 제어
             contentEl.innerHTML = '';
-            
+
             // 카카오뱅크 줄간격 설정값 적용
             const bankLineHeight = this.settings.kakaoBankLineHeight || 1.0;
-            
+
             // 카카오뱅크 정보 DOM 생성
             const bankDiv = document.createElement('div');
-            bankDiv.style.cssText = `font-size: ${kakaoBankSize}%; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
+            bankDiv.style.cssText = `font-size: ${kakaoBankSize}px; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
             bankDiv.className = 'kakao-bank-info';
-            
-            const bankName = document.createElement('div');
-            bankName.textContent = '카카오뱅크';
-            bankName.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
-            
-            const bankAccount = document.createElement('div');
-            bankAccount.textContent = '3333-25-7378436';
-            bankAccount.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-size: 90%; color: white;`;
-            
-            bankDiv.appendChild(bankName);
-            bankDiv.appendChild(bankAccount);
+
+            const bankInfo = document.createElement('div');
+            bankInfo.textContent = '카카오뱅크 3333-25-7378436 엄삼O';
+            bankInfo.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
+
+            bankDiv.appendChild(bankInfo);
             contentEl.appendChild(bankDiv);
             
             // 후원자 텍스트 줄간격 설정값 적용 
             const textLineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
             
-            // 후원자 텍스트를 각 줄별로 DOM 생성 (br 태그 완전 배제)
+            // 후원자 텍스트 한 줄로 표시
             const textDiv = document.createElement('div');
             textDiv.className = 'donor-text';
+            textDiv.textContent = finalText;
             textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
-            
-            const lines = finalText.split('\n');
-            lines.forEach((line, index) => {
-                const lineSpan = document.createElement('span');
-                lineSpan.textContent = line;
-                lineSpan.style.cssText = `display: block !important; line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
-                textDiv.appendChild(lineSpan);
-            });
-            
+
             contentEl.appendChild(textDiv);
         } else {
-            contentEl.innerHTML = '<div style="line-height: 1.2;">' + finalText.replace(/\n/g, '<br>') + '</div>';
+            contentEl.innerHTML = '<div style="line-height: 1.2;">' + finalText + '</div>';
         }
         contentEl.className = 'donor-content';
         
@@ -726,40 +669,42 @@ class RealtimeDonorOverlay {
         });
     }
     
-    // 🔥 카카오뱅크 강제 보호 - 절대 사라지지 않도록 감시
+    // 카카오뱅크 보호 - 설정에 따라 동작
     forceKakaoBankProtection() {
+        // showKakaoBank 설정이 false면 아무것도 하지 않음
+        if (this.settings.showKakaoBank === false) {
+            return;
+        }
+
         const contentEl = document.getElementById('donor-content');
         if (!contentEl) return;
-        
+
         const currentHTML = contentEl.innerHTML;
-        
+
         // 카카오뱅크 정보가 없으면 강제 추가
-        if (!currentHTML.includes('카카오뱅크') || !currentHTML.includes('3333-25-7378436')) {
+        if (!currentHTML.includes('카카오뱅크 3333-25-7378436 엄삼O')) {
             console.log('🚨 카카오뱅크 정보 없음 감지 - 강제 복구');
-            
+
             // 기존 텍스트 보존하면서 카카오뱅크만 추가
-            const existingText = contentEl.textContent || '계좌후원분들♡';
+            const existingText = contentEl.textContent || '';
             
             contentEl.innerHTML = '';
             
             // 카카오뱅크 DOM 생성
             const bankDiv = document.createElement('div');
             bankDiv.className = 'kakao-bank-info';
-            bankDiv.style.cssText = 'font-size: 100%; line-height: 1.2 !important; margin: 0 !important; padding: 0 !important; font-weight: bold; color: #FFEB3B;';
-            
-            const bankName = document.createElement('div');
-            bankName.textContent = '카카오뱅크';
-            const bankAccount = document.createElement('div');
-            bankAccount.textContent = '3333-25-7378436';
-            bankAccount.style.fontSize = '90%';
-            
-            bankDiv.appendChild(bankName);
-            bankDiv.appendChild(bankAccount);
+            bankDiv.style.cssText = 'font-size: 18px; line-height: 1.2 !important; margin: 0 !important; padding: 0 !important;';
+
+            const bankInfo = document.createElement('div');
+            bankInfo.textContent = '카카오뱅크 3333-25-7378436 엄삼O';
+            bankInfo.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.2 !important; font-weight: bold; color: #FFEB3B;';
+
+            bankDiv.appendChild(bankInfo);
             
             // 텍스트 DOM 생성
             const textDiv = document.createElement('div');
             textDiv.className = 'donor-text';
-            textDiv.textContent = existingText.replace('카카오뱅크', '').replace('3333-25-7378436', '').trim() || '계좌후원분들♡';
+            textDiv.textContent = existingText.replace('카카오뱅크 3333-25-7378436 엄삼O', '').trim() || '';
             textDiv.style.cssText = 'line-height: 1.5 !important; margin: 0 !important; padding: 0 !important;';
             
             contentEl.appendChild(bankDiv);

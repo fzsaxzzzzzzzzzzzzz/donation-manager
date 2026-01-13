@@ -41,6 +41,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .table th { background-color: #f5f6f7; font-weight: 600; }
 #data-table-body td[data-field] { cursor: pointer; transition: background-color 0.2s; }
 #data-table-body td[data-field]:hover { background-color: #e7f3ff; }
+.table.no-wrap td, .table.no-wrap th { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .copy-box { background-color: #f5f6f7; border-radius: 6px; padding: 10px; margin: 10px 0; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; word-break: break-all; min-height: 60px; white-space: pre-wrap; font-size: 12px; max-height: 200px; overflow-y: auto; border: 1px solid #e9ebee; }
 .status { padding: 10px; border-radius: 6px; margin: 10px 0; font-weight: 500; }
 .status-success { background-color: #e9f6ec; color: #348a47; border: 1px solid #cce8d2; }
@@ -236,68 +237,189 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 <div class="tab-content" id="overlay-tab">
-<div style="margin-bottom: 20px;">
-<h4 style="margin-bottom: 10px;">📺 방송용 오버레이</h4>
 
-<!-- 후원자 오버레이 섹션 -->
-<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-<strong>💝 후원자별 총액 오버레이</strong>
-<div style="display: flex; gap: 8px;">
-<button onclick="openOverlay('donor')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
-<button onclick="copyOverlayURL('donor')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
-<button onclick="showQRCode('donor')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
+<!-- 오버레이 헤더 -->
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white; text-align: center; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+<h3 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700;">📺 방송용 오버레이 관리</h3>
+<p style="margin: 0; font-size: 14px; opacity: 0.95;">실시간 후원 정보를 OBS에 표시하세요</p>
+</div>
+
+<!-- 빠른 실행 버튼 -->
+<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+<button onclick="openAllOverlays()" class="btn btn-warning" style="flex: 1; font-size: 14px; padding: 10px;">
+🔗 모든 오버레이 한번에 열기
+</button>
+<button onclick="togglePreview()" class="btn btn-info" id="preview-toggle" style="flex: 1; font-size: 14px; padding: 10px;">
+👁️ 실시간 미리보기 켜기
+</button>
+</div>
+
+<!-- 오버레이 3단 그리드 -->
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+
+<!-- 카드 1: 후원자별 총액 -->
+<div style="background: white; border: 2px solid #e3f2fd; border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'">
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+<div style="width: 42px; height: 42px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+💝
+</div>
+<div style="flex: 1;">
+<h4 style="margin: 0 0 2px 0; font-size: 15px; color: #333; font-weight: 600;">후원자별 총액</h4>
+<p style="margin: 0; font-size: 11px; color: #666;">개인별 후원 금액</p>
 </div>
 </div>
-<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+
+<div style="display: flex; gap: 6px; margin-bottom: 10px;">
+<button onclick="openOverlay('donor')" class="btn btn-primary" style="flex: 1; font-size: 11px; padding: 6px 8px;">🔗 열기</button>
+<button onclick="copyOverlayURL('donor')" class="btn btn-success" style="flex: 1; font-size: 11px; padding: 6px 8px;">📋 복사</button>
+<button onclick="showQRCode('donor')" class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;">📱</button>
+</div>
+
+<div style="background: #f8f9fa; padding: 6px; border-radius: 4px; font-size: 9px; color: #666; word-break: break-all; line-height: 1.3;">
 <span id="donor-overlay-url">https://donation-manager-ufm1.onrender.com/donor-overlay.html</span>
 </div>
 </div>
 
-<!-- 스트리머 테이블 섹션 -->
-<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-<strong>🏆 스트리머 테이블 오버레이</strong>
-<div style="display: flex; gap: 8px;">
-<button onclick="openOverlay('table')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
-<button onclick="copyOverlayURL('table')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
-<button onclick="showQRCode('table')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
+<!-- 카드 2: 스트리머 테이블 -->
+<div style="background: white; border: 2px solid #fff3e0; border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'">
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+<div style="width: 42px; height: 42px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+🏆
+</div>
+<div style="flex: 1;">
+<h4 style="margin: 0 0 2px 0; font-size: 15px; color: #333; font-weight: 600;">스트리머 테이블</h4>
+<p style="margin: 0; font-size: 11px; color: #666;">스트리머별 순위표</p>
 </div>
 </div>
 
-<!-- 총액만 표시 설정 -->
-<div style="margin-bottom: 10px; padding: 10px; background: #e7f3ff; border-radius: 6px; border: 1px solid #b3d9ff;">
-<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1877f2; cursor: pointer;">
-<input type="checkbox" id="overlay-total-only-mode" style="width: 16px; height: 16px; cursor: pointer;"> 총액만 표시 (계좌/투네 열 숨기기)
+<div style="display: flex; gap: 6px; margin-bottom: 10px;">
+<button onclick="openOverlay('table')" class="btn btn-primary" style="flex: 1; font-size: 11px; padding: 6px 8px;">🔗 열기</button>
+<button onclick="copyOverlayURL('table')" class="btn btn-success" style="flex: 1; font-size: 11px; padding: 6px 8px;">📋 복사</button>
+<button onclick="showQRCode('table')" class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;">📱</button>
+</div>
+
+<!-- 총액만 표시 토글 -->
+<div style="margin-bottom: 8px; padding: 6px 8px; background: #e3f2fd; border-radius: 4px; border: 1px solid #90caf9;">
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1976d2; cursor: pointer;">
+<input type="checkbox" id="overlay-total-only-mode" style="width: 14px; height: 14px; cursor: pointer;"> 총액만 표시
 </label>
-<p style="font-size: 12px; color: #666; margin: 5px 0 0 24px;">체크하면 오버레이에서 계좌후원/투네후원 열이 숨겨지고 총합만 표시됩니다.</p>
 </div>
 
-<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+<div style="background: #f8f9fa; padding: 6px; border-radius: 4px; font-size: 9px; color: #666; word-break: break-all; line-height: 1.3;">
 <span id="table-overlay-url">https://donation-manager-ufm1.onrender.com/streamer-table-overlay.html</span>
 </div>
 </div>
 
-<!-- 총액만 전용 오버레이 섹션 -->
-<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f0f8ff;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-<strong>💰 총액만 전용 오버레이 <span style="color: #42b72a; font-size: 12px; font-weight: normal;">[NEW]</span></strong>
-<div style="display: flex; gap: 8px;">
-<button onclick="openOverlay('total-only')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
-<button onclick="copyOverlayURL('total-only')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
-<button onclick="showQRCode('total-only')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
-<button onclick="showTotalOnlySettings()" class="btn btn-warning" style="font-size: 12px; padding: 5px 10px;">🎨 설정</button>
+<!-- 카드 3: 총액만 전용 -->
+<div style="background: white; border: 2px solid #e8f5e9; border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'">
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+<div style="width: 42px; height: 42px; background: linear-gradient(135deg, #4caf50 0%, #81c784 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+💰
+</div>
+<div style="flex: 1;">
+<h4 style="margin: 0 0 2px 0; font-size: 15px; color: #333; font-weight: 600;">총액만 전용 <span style="background: #4caf50; color: white; font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: 600;">추천</span></h4>
+<p style="margin: 0; font-size: 11px; color: #666;">간단한 총액 표시</p>
 </div>
 </div>
 
-<div style="background: #e8f5e8; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 12px; color: #2d5a2d;">
-<strong>✨ 추천!</strong> 복잡한 설정 없이 바로 사용할 수 있는 총액만 표시 전용 오버레이입니다.
+<div style="display: flex; gap: 6px; margin-bottom: 8px;">
+<button onclick="openOverlay('total-only')" class="btn btn-success" style="flex: 1; font-size: 11px; padding: 6px 8px;">🔗 열기</button>
+<button onclick="copyOverlayURL('total-only')" class="btn btn-success" style="flex: 1; font-size: 11px; padding: 6px 8px;">📋 복사</button>
+<button onclick="showQRCode('total-only')" class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;">📱</button>
 </div>
 
-<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+<button onclick="showTotalOnlySettings()" class="btn btn-warning" style="width: 100%; font-size: 11px; margin-bottom: 8px; padding: 6px;">
+🎨 상세 설정
+</button>
+
+<div style="background: #f8f9fa; padding: 6px; border-radius: 4px; font-size: 9px; color: #666; word-break: break-all; line-height: 1.3;">
 <span id="total-only-overlay-url">https://donation-manager-ufm1.onrender.com/total-only-overlay.html</span>
 </div>
+</div>
 
+<!-- 카드 4: 퇴근미션 그래프 -->
+<div style="background: white; border: 2px solid #fce4ec; border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'">
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+<div style="width: 42px; height: 42px; background: linear-gradient(135deg, #ec407a 0%, #f48fb1 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+🎯
+</div>
+<div style="flex: 1;">
+<h4 style="margin: 0 0 2px 0; font-size: 15px; color: #333; font-weight: 600;">퇴근미션 그래프</h4>
+<p style="margin: 0; font-size: 11px; color: #666;">미션 진행률 표시</p>
+</div>
+</div>
+
+<div style="display: flex; gap: 6px; margin-bottom: 8px;">
+<button onclick="openOverlay('graph')" class="btn btn-primary" style="flex: 1; font-size: 11px; padding: 6px 8px;">🔗 열기</button>
+<button onclick="copyOverlayURL('graph')" class="btn btn-success" style="flex: 1; font-size: 11px; padding: 6px 8px;">📋 복사</button>
+<button onclick="showQRCode('graph')" class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;">📱</button>
+</div>
+
+<button onclick="showMissionGraphSettings()" class="btn btn-warning" style="width: 100%; font-size: 11px; margin-bottom: 8px; padding: 6px;">
+🎨 상세 설정
+</button>
+
+<div style="background: #f8f9fa; padding: 6px; border-radius: 4px; font-size: 9px; color: #666; word-break: break-all; line-height: 1.3;">
+<span id="graph-overlay-url">https://donation-manager-ufm1.onrender.com/mission-graph-overlay.html</span>
+</div>
+</div>
+
+<!-- 카드 5: 총액 목표 그래프 -->
+<div style="background: white; border: 2px solid #fff9c4; border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'">
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+<div style="width: 42px; height: 42px; background: linear-gradient(135deg, #fbc02d 0%, #fff176 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+📊
+</div>
+<div style="flex: 1;">
+<h4 style="margin: 0 0 2px 0; font-size: 15px; color: #333; font-weight: 600;">총액 목표 그래프</h4>
+<p style="margin: 0; font-size: 11px; color: #666;">일일 목표 진행률</p>
+</div>
+</div>
+
+<div style="display: flex; gap: 6px; margin-bottom: 8px;">
+<button onclick="openOverlay('total-goal')" class="btn btn-primary" style="flex: 1; font-size: 11px; padding: 6px 8px;">🔗 열기</button>
+<button onclick="copyOverlayURL('total-goal')" class="btn btn-success" style="flex: 1; font-size: 11px; padding: 6px 8px;">📋 복사</button>
+<button onclick="showQRCode('total-goal')" class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;">📱</button>
+</div>
+
+<button onclick="showTotalGoalSettings()" class="btn btn-warning" style="width: 100%; font-size: 11px; margin-bottom: 8px; padding: 6px;">
+🎨 상세 설정
+</button>
+
+<div style="background: #f8f9fa; padding: 6px; border-radius: 4px; font-size: 9px; color: #666; word-break: break-all; line-height: 1.3;">
+<span id="total-goal-overlay-url">https://donation-manager-ufm1.onrender.com/total-goal-overlay.html</span>
+</div>
+</div>
+
+</div>
+
+<!-- 사용 안내 -->
+<div style="background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border-left: 4px solid #00bcd4; padding: 14px; border-radius: 8px; margin-bottom: 20px;">
+<h4 style="margin: 0 0 10px 0; color: #006064; font-size: 15px;">💡 사용 방법</h4>
+<div style="font-size: 12px; color: #00838f; line-height: 1.7;">
+<strong>OBS Studio:</strong> 소스 → 브라우저 추가 → URL 붙여넣기<br>
+<strong>모바일:</strong> QR 코드 스캔으로 즉시 접속<br>
+<strong>다른 PC:</strong> URL 복사 후 브라우저에서 열기<br>
+<strong>✨ 모든 설정은 실시간으로 모든 기기에 반영됩니다</strong>
+</div>
+</div>
+
+<!-- 미리보기 영역 -->
+<div id="preview-area" style="display: none; border: 2px solid #667eea; border-radius: 10px; padding: 18px; background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%); margin-bottom: 20px;">
+<h4 style="margin: 0 0 15px 0; color: #667eea; font-size: 16px;">🔴 실시간 미리보기</h4>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+<div style="background: black; border-radius: 8px; min-height: 120px; padding: 10px; position: relative;">
+<iframe id="donor-preview" src="" style="width: 100%; height: 120px; border: none; transform: scale(0.6); transform-origin: top left; width: 167%; height: 200px;"></iframe>
+<div style="position: absolute; bottom: 8px; left: 8px; color: white; font-size: 11px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-weight: 600;">후원자 오버레이</div>
+</div>
+<div style="background: black; border-radius: 8px; min-height: 120px; padding: 10px; position: relative;">
+<iframe id="table-preview" src="" style="width: 100%; height: 120px; border: none; transform: scale(0.6); transform-origin: top left; width: 167%; height: 200px;"></iframe>
+<div style="position: absolute; bottom: 8px; left: 8px; color: white; font-size: 11px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-weight: 600;">테이블 오버레이</div>
+</div>
+</div>
+</div>
+
+<!-- 설정 섹션들 (display: none 상태로 접혀있음) -->
 <!-- 총액만 오버레이 설정 패널 -->
 <div id="total-only-settings" style="display: none; margin-top: 15px; padding: 15px; background: #e8f4ff; border: 1px solid #1877f2; border-radius: 8px;">
 <h5 style="margin-bottom: 15px; color: #1565c0;">📊 총액 오버레이 설정</h5>
@@ -352,37 +474,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div style="background: #fff3cd; padding: 10px; border-radius: 4px; border: 1px solid #ffc107; font-size: 12px; color: #856404;">
 <strong>💡 안내:</strong> 이 설정들은 총액만 오버레이에 실시간으로 적용됩니다.
 </div>
-</div>
-</div>
-
-<!-- 퇴근미션 그래프 섹션 -->
-<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-<strong>🎯 퇴근미션 그래프 오버레이</strong>
-<div style="display: flex; gap: 8px;">
-<button onclick="openOverlay('graph')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
-<button onclick="copyOverlayURL('graph')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
-<button onclick="showQRCode('graph')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
-<button onclick="showMissionGraphSettings()" class="btn btn-warning" style="font-size: 12px; padding: 5px 10px;">🎨 설정</button>
-</div>
-</div>
-<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
-<span id="graph-overlay-url">https://donation-manager-ufm1.onrender.com/mission-graph-overlay.html</span>
-</div>
-
-<!-- 총액 목표 그래프 오버레이 섹션 -->
-<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f0f8ff;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-<strong>🎯 총액 목표 그래프 오버레이</strong>
-<div style="display: flex; gap: 8px;">
-<button onclick="openOverlay('total-goal')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">🔗 열기</button>
-<button onclick="copyOverlayURL('total-goal')" class="btn btn-success" style="font-size: 12px; padding: 5px 10px;">📋 URL 복사</button>
-<button onclick="showQRCode('total-goal')" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">📱 QR코드</button>
-<button onclick="showTotalGoalSettings()" class="btn btn-warning" style="font-size: 12px; padding: 5px 10px;">🎨 설정</button>
-</div>
-</div>
-<div style="font-size: 11px; color: #666; word-break: break-all; background: white; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
-<span id="total-goal-overlay-url">https://donation-manager-ufm1.onrender.com/total-goal-overlay.html</span>
 </div>
 
 <!-- 총액 목표 설정 패널 -->
@@ -528,23 +619,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="resetTotalGoalSettings()" class="btn btn-secondary">🔄 초기화</button>
 <button onclick="hideTotalGoalSettings()" class="btn btn-secondary">❌ 닫기</button>
 </div>
-
-<!-- OBS 연동 가이드 -->
-<div style="margin-bottom: 20px; padding: 15px; border: 1px solid #42b72a; border-radius: 8px; background: #e8f5e8;">
-<h6 style="margin: 0 0 10px 0; color: #2e7d32;">📺 OBS Studio 연동 방법</h6>
-<div style="font-size: 13px; color: #2e7d32; line-height: 1.5;">
-1. OBS Studio에서 "소스" → "브라우저" 추가<br>
-2. URL에 위 오버레이 URL 복사<br>
-3. 크기: 가로 800px, 세로 200px<br>
-4. CSS: "body { margin: 0; background: transparent; }"<br>
-5. "확인" 클릭하여 추가
-</div>
 </div>
 
-</div>
-</div>
-
-<!-- 미션 그래프 설정 패널 (숨김) -->
+<!-- 미션 그래프 설정 패널 -->
 <div id="mission-graph-settings" style="display: none; margin-top: 15px; padding: 15px; background: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 8px;">
 <h5 style="margin-bottom: 15px; color: #1565c0;">🎨 미션 그래프 오버레이 설정</h5>
 
@@ -627,52 +704,20 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="hideMissionGraphSettings()" class="btn btn-secondary">❌ 닫기</button>
 </div>
 </div>
-</div>
 
-<!-- 실시간 미리보기 토글 -->
-<div style="margin-bottom: 15px; text-align: center;">
-<button onclick="togglePreview()" class="btn btn-info" id="preview-toggle">👁️ 실시간 미리보기 켜기</button>
-<button onclick="openAllOverlays()" class="btn btn-warning" style="margin-left: 10px;">🔗 모든 오버레이 한번에 열기</button>
-</div>
-
-<!-- 미리보기 영역 -->
-<div id="preview-area" style="display: none; border: 2px solid #667eea; border-radius: 8px; padding: 15px; background: #f8f9ff; margin-bottom: 15px;">
-<h5 style="margin: 0 0 10px 0; color: #667eea;">🔴 실시간 미리보기 (설정 변경 시 즉시 반영)</h5>
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-<div style="background: black; border-radius: 4px; min-height: 100px; padding: 10px; position: relative;">
-<iframe id="donor-preview" src="" style="width: 100%; height: 100px; border: none; transform: scale(0.5); transform-origin: top left; width: 200%; height: 200px;"></iframe>
-<div style="position: absolute; bottom: 5px; left: 5px; color: white; font-size: 10px; background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 3px;">후원자 오버레이</div>
-</div>
-<div style="background: black; border-radius: 4px; min-height: 100px; padding: 10px; position: relative;">
-<iframe id="table-preview" src="" style="width: 100%; height: 100px; border: none; transform: scale(0.5); transform-origin: top left; width: 200%; height: 200px;"></iframe>
-<div style="position: absolute; bottom: 5px; left: 5px; color: white; font-size: 10px; background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 3px;">테이블 오버레이</div>
-</div>
-</div>
-</div>
-
-<div style="background: #e8f4f8; border: 1px solid #bee5eb; border-radius: 4px; padding: 10px; margin-bottom: 15px;">
-<p style="font-size: 13px; margin: 0; color: #0c5460;">
-💡 <strong>사용 방법:</strong><br>
-• <strong>OBS:</strong> 브라우저 소스 추가 → URL 붙여넣기 → 너비: 1920, 높이: 1080<br>
-• <strong>모바일:</strong> QR코드로 스캔하여 바로 접속<br>
-• <strong>다른 PC:</strong> URL을 복사해서 브라우저에서 열기<br>
-• 설정 변경 시 모든 기기에 실시간 반영됩니다
-</p>
-</div>
-</div>
-
-<div style="border-top: 1px solid #ddd; padding-top: 20px;">
-<h4 style="margin-bottom: 15px;">🎨 후원자별 총액 오버레이 설정</h4>
+<!-- 후원자별 총액 오버레이 설정 섹션 -->
+<div style="border-top: 2px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+<h4 style="margin-bottom: 15px; color: #667eea;">🎨 후원자별 총액 오버레이 설정</h4>
 
 <div style="margin-bottom: 15px;">
 <label class="form-label">글자 크기: <span id="overlay-font-size-value">16px</span></label>
-<input type="range" id="overlay-font-size-range" min="12" max="150" value="16" 
+<input type="range" id="overlay-font-size-range" min="12" max="150" value="16"
        onInput="updateOverlayFontSize(this.value)" class="form-input" style="width: 100%;">
 </div>
 
 <div style="margin-bottom: 15px;">
 <label class="form-label">외각선 두께: <span id="overlay-stroke-width-value">2px</span></label>
-<input type="range" id="overlay-stroke-width-range" min="0" max="10" step="0.2" value="2" 
+<input type="range" id="overlay-stroke-width-range" min="0" max="10" step="0.2" value="2"
        onInput="updateOverlayStrokeWidth(this.value)" class="form-input" style="width: 100%;">
 </div>
 
@@ -697,14 +742,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 
 <div style="margin-bottom: 15px;">
-<label class="form-label">크기 조절: <span id="kakaobank-size-value">100%</span></label>
-<input type="range" id="kakaobank-size-range" min="50" max="200" value="100" 
+<label class="form-label">글자 크기: <span id="kakaobank-size-value">18px</span></label>
+<input type="range" id="kakaobank-size-range" min="10" max="36" value="18"
        onInput="updateKakaoBankSize(this.value)" class="form-input" style="width: 100%;">
+<small style="color: #666; font-size: 11px;">카카오뱅크 계좌 정보만 독립적으로 크기 조절</small>
 </div>
 
 <div style="margin-bottom: 15px;">
 <label class="form-label">줄간격 조절: <span id="kakaobank-lineheight-value">1.2</span></label>
-<input type="range" id="kakaobank-lineheight-range" min="0.8" max="2.0" step="0.1" value="1.2" 
+<input type="range" id="kakaobank-lineheight-range" min="0.8" max="2.0" step="0.1" value="1.2"
        onInput="updateKakaoBankLineHeight(this.value)" class="form-input" style="width: 100%;">
 </div>
 </div>
@@ -715,24 +761,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
-<div style="border-top: 1px solid #ddd; padding-top: 20px;">
-<h4 style="margin-bottom: 15px;">🏆 스트리머 테이블 오버레이 설정</h4>
+<!-- 스트리머 테이블 오버레이 설정 섹션 -->
+<div style="border-top: 2px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+<h4 style="margin-bottom: 15px; color: #f093fb;">🏆 스트리머 테이블 오버레이 설정</h4>
 
 <div style="margin-bottom: 15px;">
 <label class="form-label">배경 투명도: <span id="table-opacity-value">85%</span></label>
-<input type="range" id="table-opacity-range" min="0" max="100" value="85" 
+<input type="range" id="table-opacity-range" min="0" max="100" value="85"
        onInput="updateTableOpacity(this.value)" class="form-input" style="width: 100%;">
 </div>
 
 <div style="margin-bottom: 15px;">
 <label class="form-label">숫자 크기: <span id="table-number-size-value">16px</span></label>
-<input type="range" id="table-number-size-range" min="12" max="60" value="16" 
+<input type="range" id="table-number-size-range" min="12" max="60" value="16"
        onInput="updateTableNumberSize(this.value)" class="form-input" style="width: 100%;">
 </div>
 
 <div style="margin-bottom: 15px;">
 <label class="form-label">전체 글자 크기: <span id="table-font-size-value">14px</span></label>
-<input type="range" id="table-font-size-range" min="10" max="30" value="14" 
+<input type="range" id="table-font-size-range" min="10" max="30" value="14"
        onInput="updateTableFontSize(this.value)" class="form-input" style="width: 100%;">
 </div>
 
@@ -748,10 +795,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 </div>
 
-
 <div style="margin-bottom: 15px;">
 <label class="form-label">배경 색상 프리셋:</label>
-<div style="display: flex; gap: 10px; margin-top: 5px;">
+<div style="display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap;">
 <button onclick="setTableColorPreset('dark')" class="btn btn-secondary" style="background: linear-gradient(135deg, #000, #1e1e1e); color: white;">다크</button>
 <button onclick="setTableColorPreset('blue')" class="btn btn-secondary" style="background: linear-gradient(135deg, #191970, #4169e1); color: white;">블루</button>
 <button onclick="setTableColorPreset('purple')" class="btn btn-secondary" style="background: linear-gradient(135deg, #8b008b, #4b0082); color: white;">퍼플</button>
@@ -765,6 +811,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="resetTableSettings()" class="btn btn-secondary">기본값 복원</button>
 </div>
 </div>
+
 </div>
 <div class="tab-content" id="password-tab">
 <div style="margin-bottom: 20px; padding: 15px; border: 2px solid #dc3545; border-radius: 8px; background: #f8d7da;">
@@ -1204,6 +1251,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="deleteSelected()" class="btn btn-danger" id="delete-btn">🗑️ 선택삭제</button>
 <label><input type="checkbox" id="auto-save-toggle" checked> 자동저장</label>
 <label><input type="checkbox" id="auto-chat-notify" checked> 🤖 후원시 챗봇알림</label>
+<label><input type="checkbox" id="no-wrap-toggle" onchange="toggleTableWrap(this.checked)"> 📋 줄바꿈 안 함</label>
 <span id="chatbot-permission-status" style="font-size: 12px; color: #666; margin-left: 10px;"></span>
 </div>
 <div id="quick-add-form" style="display: flex; gap: 5px; margin-bottom: 15px; align-items: center;">
@@ -1425,6 +1473,16 @@ async function initializeApp() {
         try { loadOverlaySettings(); } catch (e) { console.error('오버레이 설정 로드 실패:', e); }
         try { initializeOverlayControls(); } catch (e) { console.error('오버레이 컨트롤 초기화 실패:', e); }
         try { await loadTableSettings(); } catch (e) { console.error('테이블 설정 로드 실패:', e); }
+
+        // 테이블 줄바꿈 설정 로드
+        try {
+            const noWrap = localStorage.getItem('table-no-wrap') === 'true';
+            const noWrapCheckbox = document.getElementById('no-wrap-toggle');
+            if (noWrapCheckbox) {
+                noWrapCheckbox.checked = noWrap;
+                toggleTableWrap(noWrap);
+            }
+        } catch (e) { console.error('줄바꿈 설정 로드 실패:', e); }
         
         try { 
             await updateUserInfo(); 
@@ -2620,6 +2678,21 @@ function updateMissionProgressGraph(missions) {
 
 // --- 유틸리티 및 이벤트 핸들러 ---
 function formatAmount(num) { const number = parseFloat(num); if (isNaN(number)) return '0'; return number.toFixed(1); }
+
+function toggleTableWrap(noWrap) {
+    const table = document.getElementById('data-table');
+    if (!table) return;
+
+    if (noWrap) {
+        table.classList.add('no-wrap');
+        localStorage.setItem('table-no-wrap', 'true');
+        console.log('📋 테이블 줄바꿈 비활성화');
+    } else {
+        table.classList.remove('no-wrap');
+        localStorage.setItem('table-no-wrap', 'false');
+        console.log('📋 테이블 줄바꿈 활성화');
+    }
+}
 
 function initEventListeners() {
     document.getElementById('auto-save-toggle').addEventListener('change', e => autoSaveEnabled = e.target.checked);
@@ -4441,7 +4514,27 @@ function applyServerSettingsToUI(settings) {
             document.getElementById('group-threshold').value = groupThreshold;
             localStorage.setItem('group-threshold', groupThreshold);
         }
-        
+
+        // 카카오뱅크 설정
+        if (settings.showKakaoBank !== undefined) {
+            document.getElementById('showKakaoBank-checkbox').checked = settings.showKakaoBank;
+            localStorage.setItem('showKakaoBank', settings.showKakaoBank);
+        }
+
+        if (settings.kakaoBankSize !== undefined) {
+            const kakaoBankSize = String(settings.kakaoBankSize);
+            document.getElementById('kakaobank-size-range').value = kakaoBankSize;
+            document.getElementById('kakaobank-size-value').textContent = kakaoBankSize + 'px';
+            localStorage.setItem('kakaoBankSize', kakaoBankSize);
+        }
+
+        if (settings.kakaoBankLineHeight !== undefined) {
+            const kakaoBankLineHeight = String(settings.kakaoBankLineHeight);
+            document.getElementById('kakaobank-lineheight-range').value = kakaoBankLineHeight;
+            document.getElementById('kakaobank-lineheight-value').textContent = kakaoBankLineHeight;
+            localStorage.setItem('kakaoBankLineHeight', kakaoBankLineHeight);
+        }
+
         console.log('✅ [관리자] 서버 설정이 UI에 적용되었습니다:', settings);
         
     } catch (error) {
@@ -4663,19 +4756,19 @@ function resetOverlaySettings() {
     
     // 카카오뱅크 기본값
     document.getElementById('showKakaoBank-checkbox').checked = true;
-    document.getElementById('kakaobank-size-range').value = '100';
+    document.getElementById('kakaobank-size-range').value = '18';
     document.getElementById('kakaobank-lineheight-range').value = '1.2';
-    updateKakaoBankSize('100');
+    updateKakaoBankSize('18');
     updateKakaoBankLineHeight('1.2');
     updateKakaoBankDisplay();
     
     // 기본값으로 서버 설정 업데이트
-    updateServerSettings({ 
+    updateServerSettings({
         'overlay-font-size': '16',
         'overlay-stroke-width': '2',
         'overlay-text-align': 'left',
         'showKakaoBank': true,
-        'kakaoBankSize': 100,
+        'kakaoBankSize': 18,
         'kakaoBankLineHeight': 1.2
     });
     
@@ -4685,32 +4778,31 @@ function resetOverlaySettings() {
 // 카카오뱅크 관련 함수들
 function updateKakaoBankDisplay() {
     const isChecked = document.getElementById('showKakaoBank-checkbox').checked;
-    // 🔥 카카오뱅크는 항상 true로 강제 저장
-    localStorage.setItem('showKakaoBank', 'true');
-    // 🔥 카카오뱅크 설정은 항상 true로 강제 전송
-    updateServerSettings({ 'showKakaoBank': true });
-    
+    localStorage.setItem('showKakaoBank', isChecked);
+    updateServerSettings({ 'showKakaoBank': isChecked });
+
     // Socket.IO로 실시간 전송
     if (socket) {
         socket.emit('updateKakaoBankSettings', {
-            showKakaoBank: true, // 🔥 항상 true로 강제 전송
+            showKakaoBank: isChecked,
             kakaoBankSize: parseInt(document.getElementById('kakaobank-size-range').value),
             kakaoBankLineHeight: parseFloat(document.getElementById('kakaobank-lineheight-range').value)
         });
     }
-    
+
     showStatus(isChecked ? '카카오뱅크 계좌 정보가 표시됩니다' : '카카오뱅크 계좌 정보가 숨겨집니다', 'success');
 }
 
 function updateKakaoBankSize(value) {
-    document.getElementById('kakaobank-size-value').textContent = value + '%';
+    document.getElementById('kakaobank-size-value').textContent = value + 'px';
     localStorage.setItem('kakaoBankSize', value);
     updateServerSettings({ 'kakaoBankSize': parseInt(value) });
-    
+
     // Socket.IO로 실시간 전송
     if (socket) {
+        const isChecked = document.getElementById('showKakaoBank-checkbox').checked;
         socket.emit('updateKakaoBankSettings', {
-            showKakaoBank: true, // 🔥 항상 true로 강제 전송
+            showKakaoBank: isChecked,
             kakaoBankSize: parseInt(value),
             kakaoBankLineHeight: parseFloat(document.getElementById('kakaobank-lineheight-range').value)
         });
@@ -4721,11 +4813,12 @@ function updateKakaoBankLineHeight(value) {
     document.getElementById('kakaobank-lineheight-value').textContent = value;
     localStorage.setItem('kakaoBankLineHeight', value);
     updateServerSettings({ 'kakaoBankLineHeight': parseFloat(value) });
-    
+
     // Socket.IO로 실시간 전송
     if (socket) {
+        const isChecked = document.getElementById('showKakaoBank-checkbox').checked;
         socket.emit('updateKakaoBankSettings', {
-            showKakaoBank: true, // 🔥 항상 true로 강제 전송
+            showKakaoBank: isChecked,
             kakaoBankSize: parseInt(document.getElementById('kakaobank-size-range').value),
             kakaoBankLineHeight: parseFloat(value)
         });
@@ -4772,15 +4865,15 @@ function loadOverlaySettings() {
     document.getElementById('overlay-stroke-width-value').textContent = '3px';
     setOverlayTextAlign('left');
     
-    // 🔥 카카오뱅크 설정 기본값 - 항상 true로 강제 설정
-    const showKakaoBank = true;
-    const kakaoBankSize = localStorage.getItem('kakaoBankSize') || '100';
+    // 카카오뱅크 설정 로드
+    const showKakaoBank = localStorage.getItem('showKakaoBank') === 'true';
+    const kakaoBankSize = localStorage.getItem('kakaoBankSize') || '18';
     const kakaoBankLineHeight = localStorage.getItem('kakaoBankLineHeight') || '1.2';
-    
-    document.getElementById('showKakaoBank-checkbox').checked = true; // 🔥 항상 체크 상태
+
+    document.getElementById('showKakaoBank-checkbox').checked = showKakaoBank;
     document.getElementById('kakaobank-size-range').value = kakaoBankSize;
     document.getElementById('kakaobank-lineheight-range').value = kakaoBankLineHeight;
-    document.getElementById('kakaobank-size-value').textContent = kakaoBankSize + '%';
+    document.getElementById('kakaobank-size-value').textContent = kakaoBankSize + 'px';
     document.getElementById('kakaobank-lineheight-value').textContent = kakaoBankLineHeight;
     
     // 스트리머 테이블 오버레이 기본값
