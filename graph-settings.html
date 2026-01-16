@@ -429,6 +429,19 @@ body {
                 </div>
             </div>
 
+            <!-- 제목 설정 -->
+            <div class="section" style="background: #fff3e0; border-color: #ff9800;">
+                <h4 style="color: #e65100; margin-bottom: 15px;">📝 제목 설정</h4>
+                <div class="checkbox-group">
+                    <input type="checkbox" class="checkbox" id="total-show-title">
+                    <label>제목 표시</label>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label class="form-label">사용자 정의 제목</label>
+                    <input type="text" class="form-input" id="total-custom-title" placeholder="예: 오늘의 목표 💰">
+                </div>
+            </div>
+
             <!-- 표시 옵션 -->
             <div class="section" style="background: #e8f4fd; border-color: #007bff;">
                 <h4 style="color: #007bff; margin-bottom: 15px;">📋 표시 옵션</h4>
@@ -474,7 +487,7 @@ body {
                     <label class="form-label">진행바 높이</label>
                     <div class="slider-group">
                         <span class="slider-label">낮게</span>
-                        <input type="range" class="slider" id="total-progress-height" min="20" max="50" value="30">
+                        <input type="range" class="slider" id="total-progress-height" min="10" max="100" value="30">
                         <span class="slider-value" id="total-progress-height-value">30px</span>
                     </div>
                 </div>
@@ -602,6 +615,8 @@ function saveLocalSettings() {
         'total-bg-color': document.getElementById('total-bg-color').value,
         'total-text-outline-width': document.getElementById('total-text-outline-width').value,
         'total-text-outline-color': document.getElementById('total-text-outline-color').value,
+        'total-show-title': document.getElementById('total-show-title').checked,
+        'total-custom-title': document.getElementById('total-custom-title').value,
         'total-show-top-stats': document.getElementById('total-show-top-stats').checked,
         'total-text-switch-enabled': document.getElementById('total-text-switch-enabled').checked,
         'total-text-switch-interval': document.getElementById('total-text-switch-interval').value,
@@ -642,6 +657,8 @@ function loadLocalSettings() {
             if (localSettings['total-bg-color']) document.getElementById('total-bg-color').value = localSettings['total-bg-color'];
             if (localSettings['total-text-outline-width']) document.getElementById('total-text-outline-width').value = localSettings['total-text-outline-width'];
             if (localSettings['total-text-outline-color']) document.getElementById('total-text-outline-color').value = localSettings['total-text-outline-color'];
+            if (localSettings['total-show-title'] !== undefined) document.getElementById('total-show-title').checked = localSettings['total-show-title'];
+            if (localSettings['total-custom-title']) document.getElementById('total-custom-title').value = localSettings['total-custom-title'];
             if (localSettings['total-show-top-stats'] !== undefined) document.getElementById('total-show-top-stats').checked = localSettings['total-show-top-stats'];
             if (localSettings['total-text-switch-enabled'] !== undefined) document.getElementById('total-text-switch-enabled').checked = localSettings['total-text-switch-enabled'];
             if (localSettings['total-text-switch-interval']) document.getElementById('total-text-switch-interval').value = localSettings['total-text-switch-interval'];
@@ -692,6 +709,8 @@ async function loadCurrentSettings() {
             document.getElementById('total-bg-color').value = settings['total-goal-bg-color'] || '#000000';
             document.getElementById('total-text-outline-width').value = settings['total-goal-text-outline-width'] || 1;
             document.getElementById('total-text-outline-color').value = settings['total-goal-text-outline-color'] || '#000000';
+            document.getElementById('total-show-title').checked = settings['total-goal-show-title'] || false;
+            document.getElementById('total-custom-title').value = settings['total-goal-custom-title'] || '';
             document.getElementById('total-show-top-stats').checked = settings['total-goal-show-top-stats'] !== false;
             document.getElementById('total-text-switch-enabled').checked = settings['total-goal-text-switch-enabled'] || false;
             document.getElementById('total-text-switch-interval').value = settings['total-goal-text-switch-interval'] || 5;
@@ -769,6 +788,8 @@ async function saveTotalSettings() {
             'total-goal-bg-color': document.getElementById('total-bg-color').value,
             'total-goal-text-outline-width': document.getElementById('total-text-outline-width').value,
             'total-goal-text-outline-color': document.getElementById('total-text-outline-color').value,
+            'total-goal-show-title': document.getElementById('total-show-title').checked,
+            'total-goal-custom-title': document.getElementById('total-custom-title').value,
             'total-goal-show-top-stats': document.getElementById('total-show-top-stats').checked,
             'total-goal-text-switch-enabled': document.getElementById('total-text-switch-enabled').checked,
             'total-goal-text-switch-interval': document.getElementById('total-text-switch-interval').value,
@@ -826,6 +847,8 @@ function resetTotalSettings() {
         document.getElementById('total-bg-color').value = '#000000';
         document.getElementById('total-text-outline-width').value = 1;
         document.getElementById('total-text-outline-color').value = '#000000';
+        document.getElementById('total-show-title').checked = false;
+        document.getElementById('total-custom-title').value = '';
         document.getElementById('total-show-top-stats').checked = true;
         document.getElementById('total-text-switch-enabled').checked = false;
         document.getElementById('total-text-switch-interval').value = 5;
