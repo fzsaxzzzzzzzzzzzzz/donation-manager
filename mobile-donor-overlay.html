@@ -78,6 +78,13 @@ body {
     color: #FFEB3B !important;
 }
 
+/* 후원자 항목 - 리스트 단위 줄바꿈 */
+.donor-item {
+    display: inline-block;
+    white-space: nowrap;
+    margin-right: 0.5em;
+}
+
 /* 모바일 최적화: 모든 애니메이션 비활성화 */
 * {
     animation: none !important;
@@ -212,20 +219,39 @@ class MobileDonorOverlay {
         });
     }
     
+    // 두꺼운 외곽선에서도 깨지지 않는 text-shadow 생성 함수
+    generateTextShadow(maxWidth, color = '#000000') {
+        const shadows = [];
+        const width = Math.ceil(maxWidth);
+
+        // 1px부터 maxWidth까지 모든 레이어에 촘촘하게 shadow 생성
+        for (let i = 1; i <= width; i++) {
+            // 8방향 shadow
+            shadows.push(`${i}px 0 0 ${color}`);
+            shadows.push(`-${i}px 0 0 ${color}`);
+            shadows.push(`0 ${i}px 0 ${color}`);
+            shadows.push(`0 -${i}px 0 ${color}`);
+            shadows.push(`${i}px ${i}px 0 ${color}`);
+            shadows.push(`-${i}px -${i}px 0 ${color}`);
+            shadows.push(`${i}px -${i}px 0 ${color}`);
+            shadows.push(`-${i}px ${i}px 0 ${color}`);
+        }
+
+        return shadows.join(', ');
+    }
+
     applySettings() {
         const root = document.documentElement;
         const fontSize = parseInt(this.settings['overlay-font-size']) || 16;
         const strokeWidth = parseFloat(this.settings['overlay-stroke-width']) || 2;
         const textAlign = this.settings['overlay-text-align'] || 'left';
         const lineHeight = parseFloat(this.settings['overlay-line-height']) || 1.4;
-        
+
         root.style.setProperty('--overlay-font-size', fontSize + 'px');
         root.style.setProperty('--overlay-text-align', textAlign);
         root.style.setProperty('--overlay-line-height', lineHeight);
-        root.style.setProperty('--overlay-text-shadow', 
-            `${strokeWidth}px ${strokeWidth}px 0 #000000, -${strokeWidth}px -${strokeWidth}px 0 #000000, ${strokeWidth}px -${strokeWidth}px 0 #000000, -${strokeWidth}px ${strokeWidth}px 0 #000000`
-        );
-        
+        root.style.setProperty('--overlay-text-shadow', this.generateTextShadow(strokeWidth));
+
         console.log('🔧 모바일 설정 적용:', { fontSize, strokeWidth, textAlign, lineHeight });
     }
     
@@ -301,17 +327,22 @@ class MobileDonorOverlay {
             return;
         }
         
-        // 텍스트 생성 (모바일 최적화) - 한 줄로 표시
-        const donorTotalText = sortedGroups.map(([amount, donors]) => {
-            // 정수는 소수점 제거, 소수점 있는 건 그대로
+        // 리스트 단위 줄바꿈을 위해 각 항목을 span으로 감싸기
+        const donorItems = [];
+        sortedGroups.forEach(([amount, donors]) => {
             const num = parseFloat(amount);
             const amountStr = `${num % 1 === 0 ? Math.floor(num).toString() : num.toFixed(1)}`;
             if (donors.length >= groupThreshold) {
-                return `${donors.map(d => d + '님').join(', ')} ${amountStr}`;
+                // 그룹화된 후원자들은 하나의 항목으로
+                donorItems.push(`<span class="donor-item">${donors.map(d => d + '님').join(', ')} ${amountStr}</span>`);
             } else {
-                return donors.map(d => `${d}님 ${amountStr}`).join(' ');
+                // 개별 후원자는 각각 항목으로
+                donors.forEach(d => {
+                    donorItems.push(`<span class="donor-item">${d}님 ${amountStr}</span>`);
+                });
             }
-        }).join(' ');
+        });
+        const donorTotalText = donorItems.join(' ');
         
         let finalText = donorTotalText || '';
         
