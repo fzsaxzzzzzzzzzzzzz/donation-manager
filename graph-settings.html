@@ -275,20 +275,21 @@ body {
     <!-- 헤더 -->
     <div class="header">
         <h1>📊 그래프 조정모드</h1>
-        <p>퇴근미션 그래프 & 총액목표 그래프 설정 전용</p>
+        <p>펀딩 그래프 & 총액목표 그래프 설정 전용</p>
     </div>
 
     <!-- 탭 메뉴 -->
     <div class="tabs">
-        <button class="tab-button active" onclick="switchTab('mission')">🎯 퇴근미션 그래프</button>
+        <button class="tab-button active" onclick="switchTab('mission')">🎯 펀딩 그래프</button>
         <button class="tab-button" onclick="switchTab('total')">💰 총액목표 그래프</button>
     </div>
 
-    <!-- 퇴근미션 그래프 설정 -->
+    <!-- 펀딩 그래프 설정 -->
     <div class="tab-content active" id="mission-tab">
         <div class="section">
-            <h3>🎯 퇴근미션 그래프 오버레이 설정</h3>
-            
+            <h3>🎯 펀딩 그래프 오버레이 설정</h3>
+            <p style="color: #666; font-size: 12px; margin-bottom: 15px;">💡 시작 금액은 펀딩 생성 시 개별 설정</p>
+
             <!-- 배경 설정 -->
             <div class="grid grid-2">
                 <div class="form-group">
@@ -386,10 +387,15 @@ body {
             <h3>💰 총액목표 그래프 오버레이 설정</h3>
             
             <!-- 목표 설정 -->
-            <div class="grid grid-2">
+            <div class="grid grid-3">
                 <div class="form-group">
-                    <label class="form-label">일일 목표액 (만원)</label>
+                    <label class="form-label">목표액 (만원)</label>
                     <input type="number" class="form-input" id="daily-goal-target" placeholder="예: 100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">시작 금액 (만원)</label>
+                    <input type="number" class="form-input" id="initial-amount" placeholder="이전 누적액" value="0">
+                    <small style="color: #666; font-size: 11px;">후원 데이터에 포함 안됨</small>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" class="checkbox" id="auto-extend-enabled">
@@ -595,7 +601,7 @@ function updateSliderValue(slider) {
 // 로컬 설정 저장
 function saveLocalSettings() {
     const localSettings = {
-        // 퇴근미션 그래프 설정
+        // 펀딩 그래프 설정
         'mission-bg-opacity': document.getElementById('mission-bg-opacity').value,
         'mission-bg-color': document.getElementById('mission-bg-color').value,
         'mission-text-outline-width': document.getElementById('mission-text-outline-width').value,
@@ -637,7 +643,7 @@ function loadLocalSettings() {
             const localSettings = JSON.parse(saved);
             console.log('📂 로컬 설정 로드됨:', localSettings);
             
-            // 퇴근미션 그래프 설정
+            // 펀딩 그래프 설정
             if (localSettings['mission-bg-opacity']) document.getElementById('mission-bg-opacity').value = localSettings['mission-bg-opacity'];
             if (localSettings['mission-bg-color']) document.getElementById('mission-bg-color').value = localSettings['mission-bg-color'];
             if (localSettings['mission-text-outline-width']) document.getElementById('mission-text-outline-width').value = localSettings['mission-text-outline-width'];
@@ -686,7 +692,7 @@ async function loadCurrentSettings() {
         
         // 로컬 설정이 없는 경우에만 서버 설정 사용
         if (!hasLocalSettings) {
-            // 퇴근미션 그래프 설정
+            // 펀딩 그래프 설정
             document.getElementById('mission-bg-opacity').value = settings['mission-graph-opacity'] || 85;
             document.getElementById('mission-bg-color').value = settings['mission-graph-bg-color'] || '#000000';
             document.getElementById('mission-text-outline-width').value = settings['mission-text-outline-width'] || 1;
@@ -701,6 +707,7 @@ async function loadCurrentSettings() {
             // 총액목표 그래프 설정
             if (settings.dailyGoal) {
                 document.getElementById('daily-goal-target').value = settings.dailyGoal.target || '';
+                document.getElementById('initial-amount').value = settings.dailyGoal.initialAmount || 0;
                 document.getElementById('auto-extend-enabled').checked = settings.dailyGoal.autoExtendEnabled || settings.dailyGoal.autoExtend || false;
                 document.getElementById('extend-amount').value = settings.dailyGoal.extendAmount || 50;
             }
@@ -733,7 +740,7 @@ async function loadCurrentSettings() {
     }
 }
 
-// 퇴근미션 그래프 설정 저장
+// 펀딩 그래프 설정 저장
 async function saveMissionSettings() {
     try {
         const settings = {
@@ -758,7 +765,7 @@ async function saveMissionSettings() {
         const result = await response.json();
         if (result.success) {
             saveLocalSettings(); // 로컬에도 저장
-            showStatus('✅ 퇴근미션 그래프 설정이 적용되었습니다!', 'success');
+            showStatus('✅ 펀딩 그래프 설정이 적용되었습니다!', 'success');
         } else {
             showStatus('❌ 설정 저장 실패: ' + result.error, 'error');
         }
@@ -777,9 +784,12 @@ async function saveTotalSettings() {
             return;
         }
         
+        const initialAmount = parseFloat(document.getElementById('initial-amount').value) || 0;
+
         const settings = {
             dailyGoal: {
                 target: target,
+                initialAmount: initialAmount,
                 autoExtendEnabled: document.getElementById('auto-extend-enabled').checked,
                 extendAmount: parseFloat(document.getElementById('extend-amount').value) || 50,
                 createdDate: new Date().toISOString().split('T')[0]
@@ -819,7 +829,7 @@ async function saveTotalSettings() {
 
 // 기본값 초기화
 function resetMissionSettings() {
-    if (confirm('🔄 퇴근미션 그래프 설정을 기본값으로 초기화하시겠습니까?')) {
+    if (confirm('🔄 펀딩 그래프 설정을 기본값으로 초기화하시겠습니까?')) {
         document.getElementById('mission-bg-opacity').value = 85;
         document.getElementById('mission-bg-color').value = '#000000';
         document.getElementById('mission-text-outline-width').value = 1;
@@ -833,7 +843,7 @@ function resetMissionSettings() {
         
         document.querySelectorAll('.slider').forEach(slider => updateSliderValue(slider));
         saveLocalSettings(); // 초기화된 설정을 로컬에도 저장
-        showStatus('🔄 퇴근미션 설정이 초기화되었습니다', 'success');
+        showStatus('🔄 펀딩 설정이 초기화되었습니다', 'success');
     }
 }
 

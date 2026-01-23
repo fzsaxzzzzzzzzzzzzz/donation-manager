@@ -3,508 +3,267 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎯 퇴근미션 목표 그래프 오버레이</title>
-
-<!-- Socket.IO for Real-time -->
+<title>🎯 펀딩 오버레이</title>
 <script src="/socket.io/socket.io.js"></script>
-
 <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
-    margin: 0;
-    padding: 20px;
     background: transparent;
     font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
-    color: white;
+    padding: 15px;
     overflow: hidden;
 }
 
-.overlay-container {
+.container {
+    max-width: 450px;
+}
+
+.funding-card {
     background: transparent;
-    max-width: 400px;
-    width: 100%;
-    margin: 0 auto;
-}
-
-/* 미션 그래프 컨테이너 */
-.mission-graph-container {
-    background: rgba(var(--graph-bg-color-rgb, 0, 0, 0), var(--graph-opacity, 0.85));
     border-radius: 12px;
-    padding: 15px;
-    border: var(--graph-border-width, 2px) solid var(--graph-border-color, #42b72a);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(5px);
+    padding: 15px 20px;
+    margin-bottom: 12px;
+    border: none;
 }
 
-.mission-title {
-    text-align: center;
-    font-size: var(--title-font-size, 18px);
-    font-weight: bold;
-    color: var(--title-color, #ffffff);
-    margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-.mission-stats {
+.funding-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
-    font-size: var(--stats-font-size, 14px);
-    font-weight: bold;
-}
-
-.progress-percentage {
-    color: var(--progress-color, #42b72a);
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-}
-
-.amount-text {
-    color: var(--amount-color, #ffffff);
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-}
-
-/* 진행도 바 */
-.mission-progress-container {
-    width: 100%;
-    height: var(--progress-height, 20px);
-    background: linear-gradient(90deg, #2c2c2c 0%, #404040 100%);
-    border-radius: 10px;
-    overflow: hidden;
-    border: 2px solid #555;
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
     margin-bottom: 10px;
-    position: relative;
 }
 
-.mission-progress-bar {
+.funding-name {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow:
+        -2px -2px 0 #000, 2px -2px 0 #000,
+        -2px 2px 0 #000, 2px 2px 0 #000,
+        -2px 0 0 #000, 2px 0 0 #000,
+        0 -2px 0 #000, 0 2px 0 #000;
+}
+
+.funding-stat {
+    font-size: 20px;
+    font-weight: bold;
+    color: #4ade80;
+    text-shadow:
+        -2px -2px 0 #000, 2px -2px 0 #000,
+        -2px 2px 0 #000, 2px 2px 0 #000,
+        -1px 0 0 #000, 1px 0 0 #000,
+        0 -1px 0 #000, 0 1px 0 #000;
+}
+
+.funding-stat.completed {
+    color: #fbbf24;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 28px;
+    background: #333;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid #555;
+}
+
+.progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--progress-start-color, #42b72a) 0%, var(--progress-mid-color, #56c946) 50%, var(--progress-end-color, #6bd464) 100%);
-    width: 0%;
-    transition: width 1s ease-in-out;
-    border-radius: 8px;
-    position: relative;
-    box-shadow: 0 2px 10px rgba(66, 183, 42, 0.5);
+    background: linear-gradient(90deg, #22c55e, #4ade80, #86efac);
+    border-radius: 12px;
+    transition: width 0.5s ease;
 }
 
-.mission-progress-bar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
-    border-radius: 8px;
+.progress-fill.completed {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24, #fde047);
 }
 
-/* 모든 애니메이션 완전 비활성화 */
-*,
-*::before,
-*::after {
-    animation: none !important;
-    transition: none !important;
-    transform: none !important;
-    will-change: auto !important;
-}
-
-.mission-progress-bar.completed {
-    background: linear-gradient(90deg, var(--complete-start-color, #ffd700) 0%, var(--complete-mid-color, #ffed4e) 50%, var(--complete-end-color, #fff176) 100%);
-    box-shadow: 0 2px 10px rgba(255, 215, 0, 0.7);
-}
-
-@keyframes shine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
-@keyframes pulse-gold {
-    0%, 100% { 
-        opacity: 1;
-        box-shadow: 0 2px 10px rgba(255, 215, 0, 0.7);
-    }
-    50% { 
-        opacity: 0.8;
-        box-shadow: 0 4px 20px rgba(255, 215, 0, 1);
-    }
-}
-
-/* 진행바 내부 텍스트 */
-.mission-progress-text {
+.progress-text {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: var(--progress-text-color, white);
-    font-size: var(--progress-text-size, 12px);
+    font-size: 15px;
     font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-    z-index: 10;
-    pointer-events: none;
+    color: #fff;
+    text-shadow:
+        -2px -2px 0 #000, 2px -2px 0 #000,
+        -2px 2px 0 #000, 2px 2px 0 #000,
+        -1px 0 0 #000, 1px 0 0 #000,
+        0 -1px 0 #000, 0 1px 0 #000;
     white-space: nowrap;
+    z-index: 10;
+}
+
+.progress-text.completed {
+    color: #fff;
+}
+
+.funding-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 16px;
+    color: #ccc;
+    text-shadow:
+        -1px -1px 0 #000, 1px -1px 0 #000,
+        -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+.funding-current {
+    color: #4ade80;
+    font-weight: bold;
+}
+
+.funding-target {
+    color: #fff;
+}
+
+.no-funding {
     text-align: center;
-    width: 100%;
+    padding: 40px 20px;
+    color: #888;
+    font-size: 18px;
+    text-shadow:
+        -1px -1px 0 #000, 1px -1px 0 #000,
+        -1px 1px 0 #000, 1px 1px 0 #000;
 }
 
-.mission-progress-text.alt {
-    display: none;
-}
-
-/* 미션 상세 정보 */
-.mission-details {
-    font-size: var(--details-font-size, 12px);
-    color: var(--details-color, #cccccc);
+.title {
     text-align: center;
-    line-height: 1.3;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-}
-
-.no-mission {
-    text-align: center;
-    font-size: var(--no-mission-font-size, 18px);
-    color: var(--no-mission-color, #888888);
-    padding: 30px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-}
-
-/* 반응형 */
-@media (max-width: 600px) {
-    .overlay-container {
-        max-width: 90vw;
-    }
-    .mission-graph-container {
-        padding: 15px;
-    }
-    .mission-title {
-        font-size: 20px;
-    }
-    .mission-stats {
-        font-size: 16px;
-    }
-}
-
-/* 설정 가능한 CSS 변수들 */
-:root {
-    --graph-opacity: 0.85;
-    --graph-bg-color: #000000;
-    --graph-border-color: #42b72a;
-    --graph-border-width: 2px;
-    --title-font-size: 20px;
-    --title-color: #ffffff;
-    --stats-font-size: 16px;
-    --progress-color: #42b72a;
-    --amount-color: #ffffff;
-    --progress-height: 20px;
-    --progress-bg-color: #2c2c2c;
-    --progress-start-color: #42b72a;
-    --progress-mid-color: #56c946;
-    --progress-end-color: #6bd464;
-    --complete-start-color: #ffd700;
-    --complete-mid-color: #ffed4e;
-    --complete-end-color: #fff176;
-    --details-font-size: 14px;
-    --details-color: #cccccc;
-    --no-mission-font-size: 16px;
-    --no-mission-color: #888888;
-    --progress-text-color: white;
-    --progress-text-size: 12px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 15px;
+    text-shadow:
+        -2px -2px 0 #000, 2px -2px 0 #000,
+        -2px 2px 0 #000, 2px 2px 0 #000,
+        -2px 0 0 #000, 2px 0 0 #000,
+        0 -2px 0 #000, 0 2px 0 #000;
 }
 </style>
 </head>
-
 <body>
-<div class="overlay-container">
-    <div class="mission-graph-container" id="mission-graph-container">
-        <div class="no-mission" id="no-mission-message">
-            <div id="loading-message">📡 애플리케이션을 불러오는 중...</div>
-            <div id="no-missions-message" style="display: none;">🎯 진행 중인 퇴근미션이 없습니다</div>
-            <div id="error-message" style="display: none;">❌ 서버 연결 실패</div>
-        </div>
-        
-        <div class="mission-content" id="mission-content" style="display: none;">
-            <div class="mission-title" id="mission-title">🎄 퇴근미션 🎄</div>
-            
-            <div class="mission-stats">
-                <span class="progress-percentage" id="progress-percentage">진행률: 0%</span>
-                <span class="amount-text" id="amount-text">0 / 0 만원</span>
-            </div>
-            
-            <div class="mission-progress-container">
-                <div class="mission-progress-bar" id="mission-progress-bar"></div>
-                <div class="mission-progress-text" id="mission-progress-text">0% - 0/0만원</div>
-                <div class="mission-progress-text alt" id="mission-progress-text-alt">목표까지 0만원 남음</div>
-            </div>
-            
-            <div class="mission-details" id="mission-details"></div>
-        </div>
-    </div>
+
+<div class="container" id="container">
+    <div class="title">🎯 펀딩 현황</div>
+    <div class="no-funding" id="no-funding">진행 중인 펀딩이 없습니다</div>
+    <div id="funding-list"></div>
 </div>
 
 <script>
-class MissionGraphOverlay {
+class FundingOverlay {
     constructor() {
-        this.socket = null;
+        this.socket = io();
         this.missions = [];
         this.donations = [];
-        this.settings = {};
         this.emojis = {};
-        this.data = null; // 전체 데이터 저장용
-        
-        this.initializeSocket();
-        this.applySettings();
+        this.missionAdjustments = [];
+        this.displayMode = 0; // 0: 금액+퍼센트, 1: 남은금액
+
+        this.init();
+        this.startTextSwitch();
     }
-    
-    initializeSocket() {
-        try {
-            this.socket = io({
-                transports: ['websocket', 'polling'],
-                timeout: 20000,
-                forceNew: true
-            });
-            
-            this.socket.on('connect', () => {
-                console.log('🔗 미션 그래프 오버레이 서버 연결 성공');
-                this.socket.emit('requestData');
-                
-                // 연결 후 1초 뒤에도 데이터가 없으면 no-missions 표시
-                setTimeout(() => {
-                    if (this.missions.length === 0) {
-                        console.log('⏰ 1초 후 미션 데이터 없음 - no-missions 표시');
-                        this.updateDisplay();
-                    }
-                }, 1000);
-            });
-            
-            this.socket.on('disconnect', () => {
-                console.log('❌ 서버 연결 끊김');
-                this.showError();
-            });
-            
-            this.socket.on('connect_error', (error) => {
-                console.error('❌ 연결 실패:', error);
-                this.showError();
-            });
-            
-            this.socket.on('dataUpdate', (data) => {
-                console.log('📊 데이터 업데이트 수신:', data);
-                
-                // 서버에서 missions가 없을 수 있음 - 기본값 설정
-                this.missions = data.missions || data.runningMissions || [];
-                this.donations = data.donations || [];
-                this.emojis = data.emojis || {};
-                this.data = data; // 전체 데이터 저장 (missionAdjustments 포함)
-                
-                console.log('🎯 미션 데이터:', this.missions.length, '개');
-                console.log('💾 후원 데이터:', this.donations.length, '건');
-                console.log('🔧 조정 데이터:', (data.missionAdjustments || []).length, '건');
-                
-                // 연결되었지만 데이터가 없는 경우 즉시 처리
-                setTimeout(() => {
-                    this.updateDisplay();
-                }, 100);
-            });
-            
-            this.socket.on('settingsUpdate', (settings) => {
-                console.log('⚙️ 설정 업데이트 수신:', settings);
-                this.settings = { ...this.settings, ...settings };
-                this.applySettings();
-                this.updateDisplay();
-            });
-            
-        } catch (error) {
-            console.error('❌ Socket.IO 초기화 실패:', error);
-        }
+
+    startTextSwitch() {
+        setInterval(() => {
+            this.displayMode = (this.displayMode + 1) % 2;
+            this.render();
+        }, 3000); // 3초마다 전환
     }
-    
-    applySettings() {
-        console.log('🎨 설정 적용 중:', this.settings);
-        
-        // 미션 그래프 오버레이 설정들을 CSS 변수로 적용
-        if (this.settings['mission-graph-opacity']) {
-            document.documentElement.style.setProperty('--graph-opacity', this.settings['mission-graph-opacity'] / 100);
-        }
-        if (this.settings['mission-graph-bg-color']) {
-            document.documentElement.style.setProperty('--graph-bg-color', this.settings['mission-graph-bg-color']);
-        }
-        if (this.settings['mission-graph-border-color']) {
-            document.documentElement.style.setProperty('--graph-border-color', this.settings['mission-graph-border-color']);
-        }
-        if (this.settings['mission-graph-border-width']) {
-            document.documentElement.style.setProperty('--graph-border-width', this.settings['mission-graph-border-width'] + 'px');
-        }
-        if (this.settings['mission-title-font-size']) {
-            document.documentElement.style.setProperty('--title-font-size', this.settings['mission-title-font-size'] + 'px');
-        }
-        if (this.settings['mission-stats-font-size']) {
-            document.documentElement.style.setProperty('--stats-font-size', this.settings['mission-stats-font-size'] + 'px');
-        }
-        if (this.settings['mission-progress-height']) {
-            document.documentElement.style.setProperty('--progress-height', this.settings['mission-progress-height'] + 'px');
-        }
-        if (this.settings['mission-progress-bg-color']) {
-            document.documentElement.style.setProperty('--progress-bg-color', this.settings['mission-progress-bg-color']);
-        }
-        if (this.settings['mission-progress-start-color']) {
-            document.documentElement.style.setProperty('--progress-start-color', this.settings['mission-progress-start-color']);
-        }
-        if (this.settings['mission-progress-mid-color']) {
-            document.documentElement.style.setProperty('--progress-mid-color', this.settings['mission-progress-mid-color']);
-        }
-        if (this.settings['mission-progress-end-color']) {
-            document.documentElement.style.setProperty('--progress-end-color', this.settings['mission-progress-end-color']);
-        }
-        if (this.settings['mission-complete-start-color']) {
-            document.documentElement.style.setProperty('--complete-start-color', this.settings['mission-complete-start-color']);
-        }
-        if (this.settings['mission-complete-mid-color']) {
-            document.documentElement.style.setProperty('--complete-mid-color', this.settings['mission-complete-mid-color']);
-        }
-        if (this.settings['mission-complete-end-color']) {
-            document.documentElement.style.setProperty('--complete-end-color', this.settings['mission-complete-end-color']);
-        }
-        if (this.settings['mission-details-font-size']) {
-            document.documentElement.style.setProperty('--details-font-size', this.settings['mission-details-font-size'] + 'px');
-        }
-        if (this.settings['mission-progress-text-size']) {
-            document.documentElement.style.setProperty('--progress-text-size', this.settings['mission-progress-text-size'] + 'px');
-        }
-        if (this.settings['mission-progress-text-color']) {
-            document.documentElement.style.setProperty('--progress-text-color', this.settings['mission-progress-text-color']);
-        }
+
+    init() {
+        this.socket.on('connect', () => {
+            console.log('✅ 서버 연결됨');
+        });
+
+        this.socket.on('initialData', (data) => {
+            this.updateData(data);
+        });
+
+        this.socket.on('dataUpdate', (data) => {
+            this.updateData(data);
+        });
     }
-    
-    updateDisplay() {
-        console.log('🔄 디스플레이 업데이트 시작');
-        console.log('📝 전체 미션:', this.missions);
-        
-        // 미션 데이터가 없거나 배열이 아닌 경우 처리
-        if (!Array.isArray(this.missions)) {
-            console.log('⚠️ 미션 데이터가 배열이 아님:', typeof this.missions);
-            this.missions = [];
-        }
-        
-        const runningMissions = this.missions.filter(mission => 
-            mission && (mission.status === 'running' || mission.status === 'success' || mission.status === 'completed')
+
+    updateData(data) {
+        this.missions = data.missions || data.runningMissions || [];
+        this.donations = data.donations || [];
+        this.emojis = data.emojis || {};
+        this.missionAdjustments = data.missionAdjustments || [];
+
+        this.render();
+    }
+
+    render() {
+        const runningMissions = this.missions.filter(m =>
+            m && (m.status === 'running' || m.status === 'completed')
         );
-        
-        console.log('🏃‍♂️ 진행중인 미션:', runningMissions.length, '개');
-        
+
+        const noFunding = document.getElementById('no-funding');
+        const fundingList = document.getElementById('funding-list');
+
         if (runningMissions.length === 0) {
-            console.log('💭 미션 없음 - 기본 메시지 표시');
-            this.showNoMissions();
+            noFunding.style.display = 'block';
+            fundingList.innerHTML = '';
             return;
         }
-        
-        console.log('✅ 미션 있음 - 개별 진행도 표시');
-        this.showIndividualMissions(runningMissions);
-    }
-    
-    showIndividualMissions(missions) {
-        document.getElementById('no-mission-message').style.display = 'none';
-        document.getElementById('mission-content').style.display = 'block';
-        
-        // 제목 업데이트
-        document.getElementById('mission-title').textContent = '🎯 펀딩';
-        
-        // 개별 미션들을 한 줄씩 표시
-        const missionBars = missions.map(mission => {
+
+        noFunding.style.display = 'none';
+
+        const html = runningMissions.map(mission => {
             const target = parseFloat(mission.target) || 0;
-            const missionDonations = this.donations.filter(d => 
-                d.streamer === mission.streamer && 
-                new Date(d.time) >= new Date(mission.startTime)
-            );
-            
-            // 퇴근미션 조정 금액도 포함 (미션 시작 시간 이후의 조정만)
-            const allAdjustments = this.data?.missionAdjustments || [];
-            const missionAdjustments = allAdjustments.filter(adj => 
-                adj.streamer === mission.streamer && new Date(adj.time) >= new Date(mission.startTime)
-            );
-            const adjustmentAmount = missionAdjustments.reduce((sum, adj) => sum + (parseFloat(adj.amount) || 0), 0);
-            
-            console.log(`🔧 [${mission.streamer}] 전체 조정:`, allAdjustments.length, '개');
-            console.log(`🔧 [${mission.streamer}] 해당 미션 조정:`, missionAdjustments.length, '개, 총액:', adjustmentAmount, '만원');
-            if (missionAdjustments.length > 0) {
-                console.log(`🔧 [${mission.streamer}] 조정 세부:`, missionAdjustments);
-            }
-            
-            const donationAmount = missionDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
-            const currentAmount = donationAmount + adjustmentAmount;
-            const progressPercent = target > 0 ? Math.min((currentAmount / target) * 100, 100) : 0;
-            const isCompleted = progressPercent >= 100 || mission.status === 'completed';
-            const isManuallyCompleted = mission.status === 'completed';
+            const initialAmount = parseFloat(mission.initialAmount) || 0;
+
+            // 미션 시작 후 후원 합계
+            const donationAmount = this.donations
+                .filter(d => d.streamer === mission.streamer && new Date(d.time) >= new Date(mission.startTime))
+                .reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+
+            // 조정 금액 합계
+            const adjustmentAmount = this.missionAdjustments
+                .filter(adj => adj.streamer === mission.streamer && new Date(adj.time) >= new Date(mission.startTime))
+                .reduce((sum, adj) => sum + (parseFloat(adj.amount) || 0), 0);
+
+            const current = initialAmount + donationAmount + adjustmentAmount;
+            const percent = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+            const isCompleted = percent >= 100 || mission.status === 'completed';
+            const remaining = Math.max(target - current, 0);
             const emoji = this.emojis[mission.streamer] || '';
-            
+
+            // 소수점 처리
+            const formatNum = (n) => n % 1 === 0 ? Math.floor(n) : n.toFixed(1);
+
+            // 전환 모드에 따른 텍스트 (0: 금액+퍼센트, 1: 남은금액)
+            let statsText = '';
+            if (this.displayMode === 0) {
+                statsText = `${formatNum(current)} / ${formatNum(target)}만원 (${Math.round(percent)}%)`;
+            } else {
+                statsText = isCompleted ? '🎉 목표 달성!' : `${formatNum(remaining)}만원 남음`;
+            }
+
             return `
-                <div style="margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                        <span style="font-size: var(--stats-font-size, 16px); font-weight: bold; color: var(--title-color, #ffffff);">
-                            ${emoji}${mission.streamer}${isManuallyCompleted ? ' ✅' : isCompleted ? ' 🎉' : ''}
-                        </span>
-                        <span style="font-size: var(--details-font-size, 14px); color: var(--amount-color, #ffffff); font-weight: bold;">${Math.round(progressPercent)}% (${currentAmount}/${target}만)</span>
+                <div class="funding-card">
+                    <div class="funding-header">
+                        <span class="funding-name">${emoji} ${mission.streamer} ${isCompleted ? '🎉' : ''}</span>
                     </div>
-                    <div style="background: var(--progress-bg-color, #2c2c2c); border-radius: 8px; height: var(--progress-height, 20px); overflow: hidden; border: 1px solid #444; position: relative;">
-                        <div style="
-                            height: 100%; 
-                            width: ${progressPercent}%; 
-                            background: ${isCompleted ? 
-                                'linear-gradient(90deg, var(--complete-start-color, #ffd700), var(--complete-mid-color, #ffed4e), var(--complete-end-color, #fff176))' : 
-                                'linear-gradient(90deg, var(--progress-start-color, #42b72a), var(--progress-mid-color, #56c946), var(--progress-end-color, #6bd464))'
-                            };
-                            transition: width 0.8s ease;
-                            border-radius: 7px;
-                            box-shadow: ${isCompleted ? '0 0 10px rgba(255, 215, 0, 0.5)' : '0 0 8px rgba(66, 183, 42, 0.3)'};
-                        "></div>
-                        ${this.settings['mission-show-progress-text'] !== false ? `<div style="
-                            position: absolute;
-                            top: 50%;
-                            left: 50%;
-                            transform: translate(-50%, -50%);
-                            color: var(--progress-text-color, white);
-                            font-size: var(--progress-text-size, 12px);
-                            font-weight: bold;
-                            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-                            z-index: 10;
-                            pointer-events: none;
-                            white-space: nowrap;
-                        ">${Math.round(progressPercent)}% - ${currentAmount}/${target}만원</div>` : ''}
+                    <div class="progress-bar">
+                        <div class="progress-fill ${isCompleted ? 'completed' : ''}" style="width: ${percent}%"></div>
+                        <span class="progress-text ${isCompleted ? 'completed' : ''}">${statsText}</span>
                     </div>
                 </div>
             `;
         }).join('');
-        
-        // 기존 UI 요소들을 새로운 개별 미션 바로 교체
-        document.getElementById('mission-content').innerHTML = `
-            <div class="mission-title" id="mission-title">🎯 펀딩</div>
-            <div style="padding: 10px 0;">
-                ${missionBars}
-            </div>
-        `;
-    }
-    
-    showError() {
-        document.getElementById('loading-message').style.display = 'none';
-        document.getElementById('no-missions-message').style.display = 'none';
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('no-mission-message').style.display = 'block';
-        document.getElementById('mission-content').style.display = 'none';
-    }
-    
-    showNoMissions() {
-        document.getElementById('loading-message').style.display = 'none';
-        document.getElementById('no-missions-message').style.display = 'block';
-        document.getElementById('error-message').style.display = 'none';
-        document.getElementById('no-mission-message').style.display = 'block';
-        document.getElementById('mission-content').style.display = 'none';
-    }
-    
-    showMissions() {
-        document.getElementById('no-mission-message').style.display = 'none';
-        document.getElementById('mission-content').style.display = 'block';
+
+        fundingList.innerHTML = html;
     }
 }
 
-// 페이지 로드 시 초기화
-window.addEventListener('DOMContentLoaded', () => {
-    new MissionGraphOverlay();
+document.addEventListener('DOMContentLoaded', () => {
+    new FundingOverlay();
 });
 </script>
 </body>

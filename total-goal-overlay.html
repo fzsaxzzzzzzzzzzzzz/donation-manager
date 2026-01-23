@@ -286,9 +286,11 @@ class TotalGoalOverlay {
     }
     
     updateDisplay() {
-        const currentAmount = this.getTodaysDonationTotal();
+        const donationTotal = this.getTodaysDonationTotal();
+        const initialAmount = parseFloat(this.dailyGoal.initialAmount) || 0;
+        const currentAmount = donationTotal + initialAmount;
         let targetAmount = parseFloat(this.dailyGoal.target) || 50;
-        
+
         // 자동 연장 기능 체크
         if (this.dailyGoal.autoExtend && currentAmount >= targetAmount) {
             // 현재 금액이 목표를 달성했을 때 자동으로 목표 증가

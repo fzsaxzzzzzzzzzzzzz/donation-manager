@@ -137,7 +137,7 @@ let currentData = {
   },
   missions: [],
   runningMissions: [],
-  missionAdjustments: [], // 퇴근 미션 조정 기록 (총액에 반영되지 않음)
+  missionAdjustments: [], // 펀딩 조정 기록 (총액에 반영되지 않음)
   settings: {
     "overlay-font-size": "24",
     "overlay-stroke-width": "3", 
@@ -351,6 +351,57 @@ app.get('/ping', (req, res) => {
     time: new Date().toISOString(),
     users: io.sockets.sockets.size
   });
+});
+
+// 웹훅 엔드포인트 (인증 없음 - 외부 서비스용)
+app.post('/api/webhook/toonation', express.json(), async (req, res) => {
+  try {
+    console.log('🎁 투네이션 웹훅 수신:', req.body);
+
+    const { name, amount, message } = req.body;
+
+    // 데이터 검증
+    if (!name || !amount) {
+      console.log('❌ 웹훅 데이터 부족:', { name, amount });
+      return res.status(400).json({ success: false, error: '후원자 이름과 금액이 필요합니다' });
+    }
+
+    // 스트리머 자동 매핑 (메시지에서 추출 또는 기본값)
+    let streamer = '국고'; // 기본값
+
+    // 메시지에서 스트리머 이름 감지
+    if (message) {
+      const streamerList = currentData.streamers || [];
+      const foundStreamer = streamerList.find(s => message.includes(s));
+      if (foundStreamer) {
+        streamer = foundStreamer;
+      }
+    }
+
+    // 새 후원 생성
+    const newDonation = {
+      donor: name,
+      streamer: streamer,
+      type: '투네',
+      amount: parseFloat(amount),
+      time: new Date().toISOString(),
+      message: message || '',
+      source: 'toonation-webhook'
+    };
+
+    // 후원 추가
+    currentData.donations.unshift(newDonation);
+    await saveData();
+
+    // 실시간 업데이트
+    io.emit('dataUpdate', currentData);
+    console.log(`✅ 투네이션 후원 자동 등록: ${name} - ${amount}만원 (${streamer})`);
+
+    res.json({ success: true, donation: newDonation });
+  } catch (error) {
+    console.error('❌ 웹훅 처리 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // API 엔드포인트 (인증 적용)
@@ -599,33 +650,34 @@ app.post('/api/force-reload', async (req, res) => {
 // 미션 관리 API
 app.post('/api/missions', requireSuperAdmin, async (req, res) => {
   try {
-    const { streamer, target, description } = req.body;
-    
+    const { streamer, target, initialAmount, description } = req.body;
+
     if (!streamer || !target) {
       return res.status(400).json({ error: '스트리머와 목표액이 필요합니다.' });
     }
-    
-    console.log('🔍 미션 생성 요청:', { streamer, target, description });
-    
+
+    console.log('🔍 미션 생성 요청:', { streamer, target, initialAmount, description });
+
     // 트림 처리 및 정규화
     const normalizedStreamer = streamer.trim();
     const foundStreamer = currentData.streamers.find(s => s.trim() === normalizedStreamer);
-    
+
     if (!foundStreamer) {
       return res.status(400).json({ error: '존재하지 않는 스트리머입니다.', availableStreamers: currentData.streamers });
     }
-    
+
     // 이미 진행중인 미션이 있는지 확인
     const existingMission = currentData.missions.find(m => m.streamer === streamer && m.status === 'running');
     if (existingMission) {
       return res.status(400).json({ error: '이미 진행중인 미션이 있습니다.' });
     }
-    
+
     const newMission = {
       id: Date.now().toString(),
       streamer,
       target: parseFloat(target),
-      description: description || `${streamer} 퇴근미션`,
+      initialAmount: parseFloat(initialAmount) || 0,
+      description: description || `${streamer} 펀딩`,
       status: 'running',
       startTime: new Date().toISOString()
     };
