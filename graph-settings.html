@@ -414,6 +414,37 @@ body {
                 <p style="color: #666; font-size: 12px; margin-top: 8px;">원하는 그래프만 선택해서 표시할 수 있습니다</p>
             </div>
 
+            <!-- 펀딩 미션 금액 조정 -->
+            <div class="section" style="background: #e3f2fd; border-color: #2196f3; margin-bottom: 20px;">
+                <h4 style="color: #1565c0; margin-bottom: 15px;">🎯 펀딩 미션 금액 조정</h4>
+                <div id="mission-adjustments">
+                    <p style="color: #666; font-size: 12px;">진행 중인 펀딩이 없습니다</p>
+                </div>
+            </div>
+
+            <!-- 펀딩 미션 크기 설정 (총액 오버레이용) -->
+            <div class="section" style="background: #e8f5e9; border-color: #4caf50; margin-bottom: 20px;">
+                <h4 style="color: #2e7d32; margin-bottom: 15px;">📐 펀딩 미션 크기 (총액 오버레이용)</h4>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">미션 바 높이</label>
+                        <div class="slider-group">
+                            <span class="slider-label">낮게</span>
+                            <input type="range" class="slider" id="total-mission-height" min="20" max="40" value="28">
+                            <span class="slider-value" id="total-mission-height-value">28px</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">텍스트 크기</label>
+                        <div class="slider-group">
+                            <span class="slider-label">작게</span>
+                            <input type="range" class="slider" id="total-mission-font-size" min="10" max="20" value="14">
+                            <span class="slider-value" id="total-mission-font-size-value">14px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 목표 설정 -->
             <div class="grid grid-3">
                 <div class="form-group">
@@ -646,6 +677,8 @@ function saveLocalSettings() {
         // 총액목표 그래프 설정
         'total-show-graph': document.getElementById('total-show-graph').checked,
         'total-show-missions': document.getElementById('total-show-missions').checked,
+        'total-mission-height': document.getElementById('total-mission-height').value,
+        'total-mission-font-size': document.getElementById('total-mission-font-size').value,
         'daily-goal-target': document.getElementById('daily-goal-target').value,
         'auto-extend-enabled': document.getElementById('auto-extend-enabled').checked,
         'extend-amount': document.getElementById('extend-amount').value,
@@ -692,6 +725,8 @@ function loadLocalSettings() {
             // 총액목표 그래프 설정
             if (localSettings['total-show-graph'] !== undefined) document.getElementById('total-show-graph').checked = localSettings['total-show-graph'];
             if (localSettings['total-show-missions'] !== undefined) document.getElementById('total-show-missions').checked = localSettings['total-show-missions'];
+            if (localSettings['total-mission-height']) document.getElementById('total-mission-height').value = localSettings['total-mission-height'];
+            if (localSettings['total-mission-font-size']) document.getElementById('total-mission-font-size').value = localSettings['total-mission-font-size'];
             if (localSettings['daily-goal-target']) document.getElementById('daily-goal-target').value = localSettings['daily-goal-target'];
             if (localSettings['auto-extend-enabled'] !== undefined) document.getElementById('auto-extend-enabled').checked = localSettings['auto-extend-enabled'];
             if (localSettings['extend-amount']) document.getElementById('extend-amount').value = localSettings['extend-amount'];
@@ -752,6 +787,8 @@ async function loadCurrentSettings() {
             
             document.getElementById('total-show-graph').checked = settings['total-show-graph'] !== false;
             document.getElementById('total-show-missions').checked = settings['total-show-missions'] || false;
+            document.getElementById('total-mission-height').value = settings['total-mission-height'] || 28;
+            document.getElementById('total-mission-font-size').value = settings['total-mission-font-size'] || 14;
             document.getElementById('total-bg-opacity').value = settings['total-goal-bg-opacity'] || 0;
             document.getElementById('total-bg-color').value = settings['total-goal-bg-color'] || '#000000';
             document.getElementById('total-text-outline-width').value = settings['total-goal-text-outline-width'] || 1;
@@ -772,7 +809,10 @@ async function loadCurrentSettings() {
         // 체크박스에 따른 비활성화
         document.getElementById('extend-amount').disabled = !document.getElementById('auto-extend-enabled').checked;
         document.getElementById('total-text-switch-interval').disabled = !document.getElementById('total-text-switch-enabled').checked;
-        
+
+        // 펀딩 미션 목록 렌더링
+        renderMissionAdjustments(data.missions || [], data.emojis || {});
+
         showStatus('✅ 현재 설정을 불러왔습니다', 'success');
     } catch (error) {
         console.error('설정 로드 실패:', error);
@@ -831,6 +871,8 @@ async function saveTotalSettings() {
         const settings = {
             'total-show-graph': document.getElementById('total-show-graph').checked,
             'total-show-missions': document.getElementById('total-show-missions').checked,
+            'total-mission-height': document.getElementById('total-mission-height').value,
+            'total-mission-font-size': document.getElementById('total-mission-font-size').value,
             dailyGoal: {
                 target: target,
                 initialAmount: initialAmount,
@@ -897,6 +939,8 @@ function resetTotalSettings() {
     if (confirm('🔄 총액목표 그래프 설정을 기본값으로 초기화하시겠습니까?')) {
         document.getElementById('total-show-graph').checked = true;
         document.getElementById('total-show-missions').checked = false;
+        document.getElementById('total-mission-height').value = 28;
+        document.getElementById('total-mission-font-size').value = 14;
         document.getElementById('daily-goal-target').value = '';
         document.getElementById('auto-extend-enabled').checked = false;
         document.getElementById('extend-amount').value = 50;
@@ -940,6 +984,66 @@ function clearLocalSettings() {
         setTimeout(() => {
             location.reload();
         }, 3000);
+    }
+}
+
+// 펀딩 미션 조정 UI 렌더링
+function renderMissionAdjustments(missions, emojis) {
+    const container = document.getElementById('mission-adjustments');
+    if (!container) return;
+
+    const runningMissions = missions.filter(m => m && (m.status === 'running' || m.status === 'completed'));
+
+    if (runningMissions.length === 0) {
+        container.innerHTML = '<p style="color: #666; font-size: 12px;">진행 중인 펀딩이 없습니다</p>';
+        return;
+    }
+
+    const html = runningMissions.map(mission => {
+        const emoji = emojis[mission.streamer] || '';
+        const target = parseFloat(mission.target) || 0;
+        const initialAmount = parseFloat(mission.initialAmount) || 0;
+
+        return `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                <span style="min-width: 80px; font-weight: bold;">${emoji} ${mission.streamer}</span>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; color: #666;">목표(만원)</label>
+                    <input type="number" class="form-input" style="padding: 5px; font-size: 13px;"
+                           id="mission-target-${mission.streamer}" value="${target}"
+                           onchange="updateMission('${mission.streamer}', 'target', this.value)">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; color: #666;">시작금액(만원)</label>
+                    <input type="number" class="form-input" style="padding: 5px; font-size: 13px;"
+                           id="mission-initial-${mission.streamer}" value="${initialAmount}"
+                           onchange="updateMission('${mission.streamer}', 'initialAmount', this.value)">
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = html;
+}
+
+// 펀딩 미션 수정
+async function updateMission(streamer, field, value) {
+    try {
+        const response = await fetch('/api/mission/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ streamer, field, value: parseFloat(value) || 0 })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            showStatus(`✅ ${streamer} ${field === 'target' ? '목표' : '시작금액'} 수정됨`, 'success');
+        } else {
+            showStatus('❌ 수정 실패: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('미션 수정 실패:', error);
+        showStatus('❌ 네트워크 오류', 'error');
     }
 }
 

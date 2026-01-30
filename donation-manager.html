@@ -602,6 +602,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 
 <div style="margin-bottom: 15px;">
+<label class="form-label">계좌번호 입력</label>
+<input type="text" id="kakaobank-account-input" placeholder="예: 카카오뱅크 3333-25-7378436 엄삼O"
+       onchange="updateKakaoBankAccount(this.value)" class="form-input" style="width: 100%;">
+<small style="color: #666; font-size: 11px;">오버레이에 표시될 계좌 정보를 입력하세요</small>
+</div>
+
+<div style="margin-bottom: 15px;">
 <label class="form-label">글자 크기: <span id="kakaobank-size-value">18px</span></label>
 <input type="range" id="kakaobank-size-range" min="10" max="36" value="18"
        onInput="updateKakaoBankSize(this.value)" class="form-input" style="width: 100%;">
@@ -4852,6 +4859,11 @@ function applyServerSettingsToUI(settings) {
             localStorage.setItem('kakaoBankLineHeight', kakaoBankLineHeight);
         }
 
+        if (settings.kakaoBankAccount !== undefined) {
+            document.getElementById('kakaobank-account-input').value = settings.kakaoBankAccount;
+            localStorage.setItem('kakaoBankAccount', settings.kakaoBankAccount);
+        }
+
         console.log('✅ [관리자] 서버 설정이 UI에 적용되었습니다:', settings);
         
     } catch (error) {
@@ -5142,6 +5154,24 @@ function updateKakaoBankLineHeight(value) {
     }
 }
 
+function updateKakaoBankAccount(value) {
+    localStorage.setItem('kakaoBankAccount', value);
+    updateServerSettings({ 'kakaoBankAccount': value });
+
+    // Socket.IO로 실시간 전송
+    if (socket) {
+        const isChecked = document.getElementById('showKakaoBank-checkbox').checked;
+        socket.emit('updateKakaoBankSettings', {
+            showKakaoBank: isChecked,
+            kakaoBankSize: parseInt(document.getElementById('kakaobank-size-range').value),
+            kakaoBankLineHeight: parseFloat(document.getElementById('kakaobank-lineheight-range').value),
+            kakaoBankAccount: value
+        });
+    }
+
+    showStatus('계좌번호가 저장되었습니다', 'success');
+}
+
 function setTableColorPreset(preset) {
     updateServerSettings({ 'table-color-preset': preset });
     showStatus(`테이블 색상이 ${preset}로 설정되었습니다`, 'success');
@@ -5186,12 +5216,14 @@ function loadOverlaySettings() {
     const showKakaoBank = localStorage.getItem('showKakaoBank') === 'true';
     const kakaoBankSize = localStorage.getItem('kakaoBankSize') || '18';
     const kakaoBankLineHeight = localStorage.getItem('kakaoBankLineHeight') || '1.2';
+    const kakaoBankAccount = localStorage.getItem('kakaoBankAccount') || '카카오뱅크 3333-25-7378436 엄삼O';
 
     document.getElementById('showKakaoBank-checkbox').checked = showKakaoBank;
     document.getElementById('kakaobank-size-range').value = kakaoBankSize;
     document.getElementById('kakaobank-lineheight-range').value = kakaoBankLineHeight;
     document.getElementById('kakaobank-size-value').textContent = kakaoBankSize + 'px';
     document.getElementById('kakaobank-lineheight-value').textContent = kakaoBankLineHeight;
+    document.getElementById('kakaobank-account-input').value = kakaoBankAccount;
     
     // 스트리머 테이블 오버레이 기본값
     document.getElementById('table-opacity-range').value = '85';

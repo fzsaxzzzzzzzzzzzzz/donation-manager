@@ -156,7 +156,8 @@ let currentData = {
     "table-title": "🏆 스트리머별 후원 현황 🏆",
     "showKakaoBank": false,
     "kakaoBankSize": 100,
-    "kakaoBankLineHeight": 1.2
+    "kakaoBankLineHeight": 1.2,
+    "kakaoBankAccount": "카카오뱅크 3333-25-7378436 엄삼O"
   },
   lastUpdated: new Date().toISOString()
 };
@@ -756,6 +757,39 @@ app.put('/api/missions/:id/complete', requireSuperAdmin, async (req, res) => {
   }
 });
 
+// 미션 수정 API
+app.post('/api/mission/update', async (req, res) => {
+  try {
+    const { streamer, field, value } = req.body;
+
+    if (!streamer || !field) {
+      return res.status(400).json({ error: '스트리머와 필드가 필요합니다.' });
+    }
+
+    const mission = currentData.missions.find(m => m.streamer === streamer && (m.status === 'running' || m.status === 'completed'));
+
+    if (!mission) {
+      return res.status(404).json({ error: '진행 중인 미션을 찾을 수 없습니다.' });
+    }
+
+    // 허용된 필드만 수정
+    if (field === 'target' || field === 'initialAmount') {
+      mission[field] = parseFloat(value) || 0;
+      console.log(`✅ 미션 수정: ${streamer} ${field} = ${value}`);
+
+      await saveData(false);
+      io.emit('dataUpdate', currentData);
+
+      res.json({ success: true, mission });
+    } else {
+      res.status(400).json({ error: '허용되지 않은 필드입니다.' });
+    }
+  } catch (error) {
+    console.error('미션 수정 실패:', error);
+    res.status(500).json({ error: '서버 오류' });
+  }
+});
+
 // 설정 초기화 API (디버깅용)
 app.post('/api/reset-settings', async (req, res) => {
   try {
@@ -887,22 +921,26 @@ io.on('connection', (socket) => {
   // 카카오뱅크 설정 업데이트
   socket.on('updateKakaoBankSettings', (kakaoBankSettings) => {
     console.log('🔧 카카오뱅크 설정 업데이트 수신:', kakaoBankSettings);
-    
+
     // 현재 데이터에 카카오뱅크 설정 저장
     currentData.settings.showKakaoBank = kakaoBankSettings.showKakaoBank;
     currentData.settings.kakaoBankSize = kakaoBankSettings.kakaoBankSize;
     currentData.settings.kakaoBankLineHeight = kakaoBankSettings.kakaoBankLineHeight;
-    
+    if (kakaoBankSettings.kakaoBankAccount !== undefined) {
+      currentData.settings.kakaoBankAccount = kakaoBankSettings.kakaoBankAccount;
+    }
+
     // 파일 저장
     saveData();
-    
+
     // 모든 후원자 오버레이 클라이언트에게 설정 전송
     io.emit('settingsUpdate', {
       showKakaoBank: kakaoBankSettings.showKakaoBank,
       kakaoBankSize: kakaoBankSettings.kakaoBankSize,
-      kakaoBankLineHeight: kakaoBankSettings.kakaoBankLineHeight
+      kakaoBankLineHeight: kakaoBankSettings.kakaoBankLineHeight,
+      kakaoBankAccount: currentData.settings.kakaoBankAccount
     });
-    
+
     console.log('🏦 카카오뱅크 설정 저장 및 전송 완료');
   });
 });
