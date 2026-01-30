@@ -266,8 +266,9 @@ class MobileDonorOverlay {
             let content = '';
             
             if (showKakaoBank) {
+                const accountText = this.settings.kakaoBankAccount || '카카오뱅크 3333-25-7378436 엄삼O';
                 const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}px;">
-                    <div>카카오뱅크 3333-25-7378436 엄삼O</div>
+                    <div>${accountText}</div>
                 </div>`;
                 contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + content + '</div>';
             } else {
@@ -348,8 +349,9 @@ class MobileDonorOverlay {
         
         // 카카오뱅크 정보 추가
         if (showKakaoBank) {
+            const accountText = this.settings.kakaoBankAccount || '카카오뱅크 3333-25-7378436 엄삼O';
             const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}px;">
-                <div>카카오뱅크 3333-25-7378436 엄삼O</div>
+                <div>${accountText}</div>
             </div>`;
             contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + finalText + '</div>';
         } else {
@@ -407,26 +409,27 @@ class MobileDonorOverlay {
         });
     }
     
-    // 🔥 카카오뱅크 강제 보호 - 절대 사라지지 않도록 감시  
+    // 🔥 카카오뱅크 강제 보호 - 절대 사라지지 않도록 감시
     forceKakaoBankProtection() {
         const contentEl = document.getElementById('donor-content');
         if (!contentEl) return;
-        
+
         const currentHTML = contentEl.innerHTML;
-        
+        const accountText = this.settings.kakaoBankAccount || '카카오뱅크 3333-25-7378436 엄삼O';
+
         // 카카오뱅크 정보가 없으면 강제 추가
-        if (!currentHTML.includes('카카오뱅크 3333-25-7378436 엄삼O')) {
+        if (!currentHTML.includes(accountText)) {
             console.log('📱🚨 모바일: 카카오뱅크 정보 없음 감지 - 강제 복구');
 
             // 기존 텍스트 보존하면서 카카오뱅크만 추가
             const existingText = contentEl.textContent || '';
 
             const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: 18px; font-weight: bold; color: #FFEB3B;">
-                <div>카카오뱅크 3333-25-7378436 엄삼O</div>
+                <div>${accountText}</div>
             </div>`;
 
-            const cleanText = existingText.replace('카카오뱅크 3333-25-7378436 엄삼O', '').trim() || '';
-            
+            const cleanText = existingText.replace(accountText, '').trim() || '';
+
             // 카카오뱅크 + 기존 텍스트 조합
             contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + cleanText + '</div>';
         }
@@ -438,10 +441,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('📱 모바일 전용 후원자 오버레이 초기화');
     const overlay = new MobileDonorOverlay();
     
-    // 🔥 카카오뱅크 강제 보호 - 1초마다 감시
+    // 🔥 카카오뱅크 강제 보호 - 10초마다 감시 (발열 방지)
     setInterval(() => {
-        overlay.forceKakaoBankProtection();
-    }, 1000);
+        if (!overlay.batterySaveMode) {
+            overlay.forceKakaoBankProtection();
+        }
+    }, 10000);
 });
 </script>
 

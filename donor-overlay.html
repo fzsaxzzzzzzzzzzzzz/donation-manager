@@ -446,7 +446,7 @@ class RealtimeDonorOverlay {
                 bankDiv.style.cssText = `font-size: ${kakaoBankSize}px; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
 
                 const bankInfo = document.createElement('div');
-                bankInfo.textContent = '카카오뱅크 3333-25-7378436 엄삼O';
+                bankInfo.textContent = this.settings.kakaoBankAccount || '카카오뱅크 3333-25-7378436 엄삼O';
                 bankInfo.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
 
                 bankDiv.appendChild(bankInfo);
@@ -556,7 +556,7 @@ class RealtimeDonorOverlay {
                 bankDiv.style.cssText = `font-size: ${kakaoBankSize}px; line-height: ${bankLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
 
                 const bankInfo = document.createElement('div');
-                bankInfo.textContent = '카카오뱅크 3333-25-7378436 엄삼O';
+                bankInfo.textContent = this.settings.kakaoBankAccount || '카카오뱅크 3333-25-7378436 엄삼O';
                 bankInfo.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
 
                 bankDiv.appendChild(bankInfo);
@@ -611,7 +611,7 @@ class RealtimeDonorOverlay {
             bankDiv.className = 'kakao-bank-info';
 
             const bankInfo = document.createElement('div');
-            bankInfo.textContent = '카카오뱅크 3333-25-7378436 엄삼O';
+            bankInfo.textContent = this.settings.kakaoBankAccount || '카카오뱅크 3333-25-7378436 엄삼O';
             bankInfo.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
 
             bankDiv.appendChild(bankInfo);
@@ -714,31 +714,32 @@ class RealtimeDonorOverlay {
         const currentHTML = contentEl.innerHTML;
 
         // 카카오뱅크 정보가 없으면 강제 추가
-        if (!currentHTML.includes('카카오뱅크 3333-25-7378436 엄삼O')) {
+        const accountText = this.settings.kakaoBankAccount || '카카오뱅크 3333-25-7378436 엄삼O';
+        if (!currentHTML.includes(accountText)) {
             console.log('🚨 카카오뱅크 정보 없음 감지 - 강제 복구');
 
             // 기존 텍스트 보존하면서 카카오뱅크만 추가
             const existingText = contentEl.textContent || '';
-            
+
             contentEl.innerHTML = '';
-            
+
             // 카카오뱅크 DOM 생성
             const bankDiv = document.createElement('div');
             bankDiv.className = 'kakao-bank-info';
             bankDiv.style.cssText = 'font-size: 18px; line-height: 1.2 !important; margin: 0 !important; padding: 0 !important;';
 
             const bankInfo = document.createElement('div');
-            bankInfo.textContent = '카카오뱅크 3333-25-7378436 엄삼O';
+            bankInfo.textContent = accountText;
             bankInfo.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.2 !important; font-weight: bold; color: #FFEB3B;';
 
             bankDiv.appendChild(bankInfo);
-            
+
             // 텍스트 DOM 생성
             const textDiv = document.createElement('div');
             textDiv.className = 'donor-text';
-            textDiv.textContent = existingText.replace('카카오뱅크 3333-25-7378436 엄삼O', '').trim() || '';
+            textDiv.textContent = existingText.replace(accountText, '').trim() || '';
             textDiv.style.cssText = 'line-height: 1.5 !important; margin: 0 !important; padding: 0 !important;';
-            
+
             contentEl.appendChild(bankDiv);
             contentEl.appendChild(textDiv);
         }
@@ -751,12 +752,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🔧 카카오뱅크 간격 완전고정 - br태그 완전배제 DOM생성방식 적용');
     const overlay = new RealtimeDonorOverlay();
     
-    // 🔥 카카오뱅크 강제 보호 - 3초마다 감시 (발열 방지)
+    // 🔥 카카오뱅크 강제 보호 - 10초마다 감시 (발열 방지 강화)
     overlay.kakaoBankTimer = setInterval(() => {
         if (!overlay.batterySaveMode) {
             overlay.forceKakaoBankProtection();
         }
-    }, 3000);
+    }, 10000);
 });
 </script>
 

@@ -6,150 +6,175 @@
 <title>🎯 펀딩 오버레이</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    animation: none !important;
+    transition: none !important;
+}
 
 body {
     background: transparent;
     font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
-    padding: 15px;
+    padding: 8px;
     overflow: hidden;
 }
 
 .container {
-    max-width: 450px;
+    width: 100%;
 }
 
-.funding-card {
-    background: transparent;
+/* 미션 카드 */
+.mission-card {
+    position: relative;
+    width: 100%;
+    height: 28px;
+    background: rgba(30, 30, 30, 0.85);
+    border-radius: 14px;
+    margin-bottom: 6px;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.15);
+}
+
+/* 프로그레스 바 (배경) */
+.mission-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #059669, #10b981, #34d399);
     border-radius: 12px;
-    padding: 15px 20px;
-    margin-bottom: 12px;
-    border: none;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
-.funding-header {
+.mission-progress.complete {
+    background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+}
+
+/* 텍스트 컨테이너 */
+.mission-content {
+    position: relative;
+    z-index: 10;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
-}
-
-.funding-name {
-    font-size: 22px;
-    font-weight: bold;
-    color: #fff;
-    text-shadow:
-        -2px -2px 0 #000, 2px -2px 0 #000,
-        -2px 2px 0 #000, 2px 2px 0 #000,
-        -2px 0 0 #000, 2px 0 0 #000,
-        0 -2px 0 #000, 0 2px 0 #000;
-}
-
-.funding-stat {
-    font-size: 20px;
-    font-weight: bold;
-    color: #4ade80;
-    text-shadow:
-        -2px -2px 0 #000, 2px -2px 0 #000,
-        -2px 2px 0 #000, 2px 2px 0 #000,
-        -1px 0 0 #000, 1px 0 0 #000,
-        0 -1px 0 #000, 0 1px 0 #000;
-}
-
-.funding-stat.completed {
-    color: #fbbf24;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 28px;
-    background: #333;
-    border-radius: 14px;
-    overflow: hidden;
-    position: relative;
-    border: 2px solid #555;
-}
-
-.progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #22c55e, #4ade80, #86efac);
-    border-radius: 12px;
-    transition: width 0.5s ease;
-}
-
-.progress-fill.completed {
-    background: linear-gradient(90deg, #f59e0b, #fbbf24, #fde047);
-}
-
-.progress-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 15px;
+    padding: 0 12px;
+    font-size: var(--stats-size, 14px);
     font-weight: bold;
     color: #fff;
-    text-shadow:
-        -2px -2px 0 #000, 2px -2px 0 #000,
-        -2px 2px 0 #000, 2px 2px 0 #000,
-        -1px 0 0 #000, 1px 0 0 #000,
-        0 -1px 0 #000, 0 1px 0 #000;
-    white-space: nowrap;
-    z-index: 10;
+    text-shadow: var(--text-shadow, 1px 1px 2px rgba(0,0,0,0.8));
 }
 
-.progress-text.completed {
-    color: #fff;
-}
-
-.funding-info {
+.mission-left {
     display: flex;
-    justify-content: space-between;
-    margin-top: 8px;
+    align-items: center;
+    gap: 6px;
+}
+
+.mission-emoji {
     font-size: 16px;
-    color: #ccc;
-    text-shadow:
-        -1px -1px 0 #000, 1px -1px 0 #000,
-        -1px 1px 0 #000, 1px 1px 0 #000;
 }
 
-.funding-current {
-    color: #4ade80;
-    font-weight: bold;
-}
-
-.funding-target {
+.mission-name {
     color: #fff;
+}
+
+.mission-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mission-amount {
+    color: #fff;
+    font-size: 13px;
+}
+
+.mission-percent {
+    color: #a5f3fc;
+    min-width: 36px;
+    text-align: right;
+}
+
+.mission-percent.complete {
+    color: #fef08a;
 }
 
 .no-funding {
     text-align: center;
-    padding: 40px 20px;
+    padding: 20px;
     color: #888;
-    font-size: 18px;
-    text-shadow:
-        -1px -1px 0 #000, 1px -1px 0 #000,
-        -1px 1px 0 #000, 1px 1px 0 #000;
+    font-size: 16px;
+    text-shadow: var(--text-shadow, 1px 1px 2px rgba(0,0,0,0.8));
 }
 
-.title {
-    text-align: center;
-    font-size: 24px;
+/* 총액 그래프 */
+.total-graph-section {
+    display: none;
+    margin-bottom: 10px;
+}
+
+.total-graph-section.visible {
+    display: block;
+}
+
+.total-card {
+    position: relative;
+    width: 100%;
+    height: 32px;
+    background: rgba(40, 40, 40, 0.9);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.2);
+}
+
+.total-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #ea580c, #f97316, #fb923c);
+    border-radius: 14px;
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.5);
+}
+
+.total-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-size: var(--total-stats-size, 15px);
     font-weight: bold;
     color: #fff;
-    margin-bottom: 15px;
-    text-shadow:
-        -2px -2px 0 #000, 2px -2px 0 #000,
-        -2px 2px 0 #000, 2px 2px 0 #000,
-        -2px 0 0 #000, 2px 0 0 #000,
-        0 -2px 0 #000, 0 2px 0 #000;
+    text-shadow: var(--text-shadow, 1px 1px 2px rgba(0,0,0,0.8));
+}
+
+.total-title {
+    text-align: center;
+    font-size: var(--total-title-size, 16px);
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 6px;
+    text-shadow: var(--text-shadow, 1px 1px 2px rgba(0,0,0,0.8));
 }
 </style>
 </head>
 <body>
 
 <div class="container" id="container">
-    <div class="title">🎯 펀딩 현황</div>
+    <div class="total-graph-section" id="total-graph-section">
+        <div class="total-title" id="total-title" style="display: none;"></div>
+        <div class="total-card">
+            <div class="total-progress" id="total-progress-bar"></div>
+            <div class="total-content" id="total-progress-text">0 / 50만원 (0%)</div>
+        </div>
+    </div>
+
     <div class="no-funding" id="no-funding">진행 중인 펀딩이 없습니다</div>
     <div id="funding-list"></div>
 </div>
@@ -162,31 +187,50 @@ class FundingOverlay {
         this.donations = [];
         this.emojis = {};
         this.missionAdjustments = [];
-        this.displayMode = 0; // 0: 금액+퍼센트, 1: 남은금액
+        this.settings = {};
+        this.dailyGoal = { target: 50 };
+        this.displayMode = 0;
+        this.totalDisplayMode = 0;
+        this.isPaused = false;
+        this.switchTimer = null;
 
         this.init();
         this.startTextSwitch();
+        this.setupVisibilityHandler();
+    }
+
+    setupVisibilityHandler() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.isPaused = true;
+                if (this.switchTimer) {
+                    clearInterval(this.switchTimer);
+                    this.switchTimer = null;
+                }
+            } else {
+                this.isPaused = false;
+                this.startTextSwitch();
+                this.render();
+                this.renderTotalGraph();
+            }
+        });
     }
 
     startTextSwitch() {
-        setInterval(() => {
+        if (this.switchTimer) return;
+        this.switchTimer = setInterval(() => {
+            if (this.isPaused) return;
             this.displayMode = (this.displayMode + 1) % 2;
+            this.totalDisplayMode = (this.totalDisplayMode + 1) % 2;
             this.render();
-        }, 3000); // 3초마다 전환
+            this.renderTotalGraph();
+        }, 5000);
     }
 
     init() {
-        this.socket.on('connect', () => {
-            console.log('✅ 서버 연결됨');
-        });
-
-        this.socket.on('initialData', (data) => {
-            this.updateData(data);
-        });
-
-        this.socket.on('dataUpdate', (data) => {
-            this.updateData(data);
-        });
+        this.socket.on('connect', () => console.log('✅ 서버 연결됨'));
+        this.socket.on('initialData', (data) => this.updateData(data));
+        this.socket.on('dataUpdate', (data) => this.updateData(data));
     }
 
     updateData(data) {
@@ -194,15 +238,53 @@ class FundingOverlay {
         this.donations = data.donations || [];
         this.emojis = data.emojis || {};
         this.missionAdjustments = data.missionAdjustments || [];
+        this.settings = data.settings || {};
+        this.dailyGoal = data.settings?.dailyGoal || { target: 50 };
 
+        this.applySettings();
         this.render();
+        this.renderTotalGraph();
+    }
+
+    applySettings() {
+        const s = this.settings;
+        const statsSize = s['mission-stats-font-size'] || 14;
+        const outlineWidth = parseFloat(s['mission-text-outline-width']) || 1;
+        const outlineColor = s['mission-text-outline-color'] || '#000000';
+
+        document.documentElement.style.setProperty('--stats-size', statsSize + 'px');
+        document.documentElement.style.setProperty('--text-shadow', this.generateTextShadow(outlineWidth, outlineColor));
+
+        // 펀딩 미션 표시 여부
+        const showMissions = s['mission-show-missions'] !== false;
+        document.getElementById('funding-list').style.display = showMissions ? 'block' : 'none';
+        document.getElementById('no-funding').style.display = showMissions ? 'block' : 'none';
+
+        // 총액 그래프 표시 여부
+        const showTotalGraph = s['mission-show-total-graph'] || false;
+        const totalSection = document.getElementById('total-graph-section');
+        totalSection.classList.toggle('visible', showTotalGraph);
+
+        const totalStatsSize = s['total-goal-stats-font-size'] || 15;
+        const totalTitleSize = s['total-goal-title-font-size'] || 16;
+        document.documentElement.style.setProperty('--total-stats-size', totalStatsSize + 'px');
+        document.documentElement.style.setProperty('--total-title-size', totalTitleSize + 'px');
+    }
+
+    generateTextShadow(maxWidth, color = '#000000') {
+        if (maxWidth <= 0) return 'none';
+        const shadows = [];
+        for (let i = 1; i <= Math.ceil(maxWidth); i++) {
+            shadows.push(`${i}px 0 0 ${color}`, `-${i}px 0 0 ${color}`);
+            shadows.push(`0 ${i}px 0 ${color}`, `0 -${i}px 0 ${color}`);
+            shadows.push(`${i}px ${i}px 0 ${color}`, `-${i}px ${i}px 0 ${color}`);
+            shadows.push(`${i}px -${i}px 0 ${color}`, `-${i}px -${i}px 0 ${color}`);
+        }
+        return shadows.join(', ');
     }
 
     render() {
-        const runningMissions = this.missions.filter(m =>
-            m && (m.status === 'running' || m.status === 'completed')
-        );
-
+        const runningMissions = this.missions.filter(m => m && (m.status === 'running' || m.status === 'completed'));
         const noFunding = document.getElementById('no-funding');
         const fundingList = document.getElementById('funding-list');
 
@@ -213,17 +295,16 @@ class FundingOverlay {
         }
 
         noFunding.style.display = 'none';
+        const formatNum = (n) => n % 1 === 0 ? Math.floor(n) : n.toFixed(1);
 
         const html = runningMissions.map(mission => {
             const target = parseFloat(mission.target) || 0;
             const initialAmount = parseFloat(mission.initialAmount) || 0;
 
-            // 미션 시작 후 후원 합계
             const donationAmount = this.donations
                 .filter(d => d.streamer === mission.streamer && new Date(d.time) >= new Date(mission.startTime))
                 .reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
 
-            // 조정 금액 합계
             const adjustmentAmount = this.missionAdjustments
                 .filter(adj => adj.streamer === mission.streamer && new Date(adj.time) >= new Date(mission.startTime))
                 .reduce((sum, adj) => sum + (parseFloat(adj.amount) || 0), 0);
@@ -234,25 +315,22 @@ class FundingOverlay {
             const remaining = Math.max(target - current, 0);
             const emoji = this.emojis[mission.streamer] || '';
 
-            // 소수점 처리
-            const formatNum = (n) => n % 1 === 0 ? Math.floor(n) : n.toFixed(1);
-
-            // 전환 모드에 따른 텍스트 (0: 금액+퍼센트, 1: 남은금액)
-            let statsText = '';
-            if (this.displayMode === 0) {
-                statsText = `${formatNum(current)} / ${formatNum(target)}만원 (${Math.round(percent)}%)`;
-            } else {
-                statsText = isCompleted ? '🎉 목표 달성!' : `${formatNum(remaining)}만원 남음`;
-            }
+            const rightText = this.displayMode === 0
+                ? `${Math.round(percent)}%`
+                : (isCompleted ? '달성!' : `-${formatNum(remaining)}`);
 
             return `
-                <div class="funding-card">
-                    <div class="funding-header">
-                        <span class="funding-name">${emoji} ${mission.streamer} ${isCompleted ? '🎉' : ''}</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill ${isCompleted ? 'completed' : ''}" style="width: ${percent}%"></div>
-                        <span class="progress-text ${isCompleted ? 'completed' : ''}">${statsText}</span>
+                <div class="mission-card">
+                    <div class="mission-progress ${isCompleted ? 'complete' : ''}" style="width: ${percent}%"></div>
+                    <div class="mission-content">
+                        <div class="mission-left">
+                            <span class="mission-emoji">${emoji}</span>
+                            <span class="mission-name">${mission.streamer}</span>
+                        </div>
+                        <div class="mission-right">
+                            <span class="mission-amount">${formatNum(current)}/${formatNum(target)}</span>
+                            <span class="mission-percent ${isCompleted ? 'complete' : ''}">${rightText}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -260,11 +338,40 @@ class FundingOverlay {
 
         fundingList.innerHTML = html;
     }
+
+    getTotalDonationAmount() {
+        return this.donations
+            .filter(d => !d.excludeFromTotal && !d.isMissionAdjustment)
+            .reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+    }
+
+    renderTotalGraph() {
+        if (!this.settings['mission-show-total-graph']) return;
+
+        const donationTotal = this.getTotalDonationAmount();
+        const initialAmount = parseFloat(this.dailyGoal.initialAmount) || 0;
+        const currentAmount = donationTotal + initialAmount;
+        const targetAmount = parseFloat(this.dailyGoal.target) || 50;
+        const progressPercent = targetAmount > 0 ? Math.min((currentAmount / targetAmount) * 100, 100) : 0;
+        const remainingAmount = Math.max(targetAmount - currentAmount, 0);
+        const formatNum = (n) => n % 1 === 0 ? Math.floor(n) : n.toFixed(1);
+
+        const titleElement = document.getElementById('total-title');
+        const customTitle = this.settings['total-goal-custom-title'] || '';
+        const showTitle = this.settings['total-goal-show-title'] || false;
+        titleElement.style.display = showTitle && customTitle ? 'block' : 'none';
+        titleElement.textContent = customTitle;
+
+        const progressTextElement = document.getElementById('total-progress-text');
+        progressTextElement.textContent = this.totalDisplayMode === 1
+            ? (remainingAmount > 0 ? `목표까지 ${formatNum(remainingAmount)}만원` : `🎉 달성! +${formatNum(currentAmount - targetAmount)}`)
+            : `${formatNum(currentAmount)} / ${formatNum(targetAmount)}만원 (${Math.round(progressPercent)}%)`;
+
+        document.getElementById('total-progress-bar').style.width = `${Math.min(progressPercent, 100)}%`;
+    }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    new FundingOverlay();
-});
+document.addEventListener('DOMContentLoaded', () => new FundingOverlay());
 </script>
 </body>
 </html>

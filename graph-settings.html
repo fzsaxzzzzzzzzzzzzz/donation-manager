@@ -290,6 +290,20 @@ body {
             <h3>🎯 펀딩 그래프 오버레이 설정</h3>
             <p style="color: #666; font-size: 12px; margin-bottom: 15px;">💡 시작 금액은 펀딩 생성 시 개별 설정</p>
 
+            <!-- 표시 옵션 -->
+            <div class="section" style="background: #e8f5e9; border-color: #4caf50; margin-bottom: 20px;">
+                <h4 style="color: #2e7d32; margin-bottom: 15px;">👁️ 표시 옵션</h4>
+                <div class="checkbox-group">
+                    <input type="checkbox" class="checkbox" id="mission-show-missions" checked>
+                    <label>펀딩 미션 그래프 표시</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" class="checkbox" id="mission-show-total-graph">
+                    <label>총액 그래프 함께 표시</label>
+                </div>
+                <p style="color: #666; font-size: 12px; margin-top: 8px;">원하는 그래프만 선택해서 표시할 수 있습니다</p>
+            </div>
+
             <!-- 배경 설정 -->
             <div class="grid grid-2">
                 <div class="form-group">
@@ -385,7 +399,21 @@ body {
     <div class="tab-content" id="total-tab">
         <div class="section">
             <h3>💰 총액목표 그래프 오버레이 설정</h3>
-            
+
+            <!-- 표시 옵션 -->
+            <div class="section" style="background: #fff3e0; border-color: #ff9800; margin-bottom: 20px;">
+                <h4 style="color: #e65100; margin-bottom: 15px;">👁️ 표시 옵션</h4>
+                <div class="checkbox-group">
+                    <input type="checkbox" class="checkbox" id="total-show-graph" checked>
+                    <label>총액목표 그래프 표시</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" class="checkbox" id="total-show-missions">
+                    <label>펀딩 미션 그래프 함께 표시</label>
+                </div>
+                <p style="color: #666; font-size: 12px; margin-top: 8px;">원하는 그래프만 선택해서 표시할 수 있습니다</p>
+            </div>
+
             <!-- 목표 설정 -->
             <div class="grid grid-3">
                 <div class="form-group">
@@ -602,6 +630,8 @@ function updateSliderValue(slider) {
 function saveLocalSettings() {
     const localSettings = {
         // 펀딩 그래프 설정
+        'mission-show-missions': document.getElementById('mission-show-missions').checked,
+        'mission-show-total-graph': document.getElementById('mission-show-total-graph').checked,
         'mission-bg-opacity': document.getElementById('mission-bg-opacity').value,
         'mission-bg-color': document.getElementById('mission-bg-color').value,
         'mission-text-outline-width': document.getElementById('mission-text-outline-width').value,
@@ -614,6 +644,8 @@ function saveLocalSettings() {
         'mission-progress-text-color': document.getElementById('mission-progress-text-color').value,
         
         // 총액목표 그래프 설정
+        'total-show-graph': document.getElementById('total-show-graph').checked,
+        'total-show-missions': document.getElementById('total-show-missions').checked,
         'daily-goal-target': document.getElementById('daily-goal-target').value,
         'auto-extend-enabled': document.getElementById('auto-extend-enabled').checked,
         'extend-amount': document.getElementById('extend-amount').value,
@@ -644,6 +676,8 @@ function loadLocalSettings() {
             console.log('📂 로컬 설정 로드됨:', localSettings);
             
             // 펀딩 그래프 설정
+            if (localSettings['mission-show-missions'] !== undefined) document.getElementById('mission-show-missions').checked = localSettings['mission-show-missions'];
+            if (localSettings['mission-show-total-graph'] !== undefined) document.getElementById('mission-show-total-graph').checked = localSettings['mission-show-total-graph'];
             if (localSettings['mission-bg-opacity']) document.getElementById('mission-bg-opacity').value = localSettings['mission-bg-opacity'];
             if (localSettings['mission-bg-color']) document.getElementById('mission-bg-color').value = localSettings['mission-bg-color'];
             if (localSettings['mission-text-outline-width']) document.getElementById('mission-text-outline-width').value = localSettings['mission-text-outline-width'];
@@ -656,6 +690,8 @@ function loadLocalSettings() {
             if (localSettings['mission-progress-text-color']) document.getElementById('mission-progress-text-color').value = localSettings['mission-progress-text-color'];
             
             // 총액목표 그래프 설정
+            if (localSettings['total-show-graph'] !== undefined) document.getElementById('total-show-graph').checked = localSettings['total-show-graph'];
+            if (localSettings['total-show-missions'] !== undefined) document.getElementById('total-show-missions').checked = localSettings['total-show-missions'];
             if (localSettings['daily-goal-target']) document.getElementById('daily-goal-target').value = localSettings['daily-goal-target'];
             if (localSettings['auto-extend-enabled'] !== undefined) document.getElementById('auto-extend-enabled').checked = localSettings['auto-extend-enabled'];
             if (localSettings['extend-amount']) document.getElementById('extend-amount').value = localSettings['extend-amount'];
@@ -693,6 +729,8 @@ async function loadCurrentSettings() {
         // 로컬 설정이 없는 경우에만 서버 설정 사용
         if (!hasLocalSettings) {
             // 펀딩 그래프 설정
+            document.getElementById('mission-show-missions').checked = settings['mission-show-missions'] !== false;
+            document.getElementById('mission-show-total-graph').checked = settings['mission-show-total-graph'] || false;
             document.getElementById('mission-bg-opacity').value = settings['mission-graph-opacity'] || 85;
             document.getElementById('mission-bg-color').value = settings['mission-graph-bg-color'] || '#000000';
             document.getElementById('mission-text-outline-width').value = settings['mission-text-outline-width'] || 1;
@@ -712,6 +750,8 @@ async function loadCurrentSettings() {
                 document.getElementById('extend-amount').value = settings.dailyGoal.extendAmount || 50;
             }
             
+            document.getElementById('total-show-graph').checked = settings['total-show-graph'] !== false;
+            document.getElementById('total-show-missions').checked = settings['total-show-missions'] || false;
             document.getElementById('total-bg-opacity').value = settings['total-goal-bg-opacity'] || 0;
             document.getElementById('total-bg-color').value = settings['total-goal-bg-color'] || '#000000';
             document.getElementById('total-text-outline-width').value = settings['total-goal-text-outline-width'] || 1;
@@ -744,6 +784,8 @@ async function loadCurrentSettings() {
 async function saveMissionSettings() {
     try {
         const settings = {
+            'mission-show-missions': document.getElementById('mission-show-missions').checked,
+            'mission-show-total-graph': document.getElementById('mission-show-total-graph').checked,
             'mission-graph-opacity': document.getElementById('mission-bg-opacity').value,
             'mission-graph-bg-color': document.getElementById('mission-bg-color').value,
             'mission-text-outline-width': document.getElementById('mission-text-outline-width').value,
@@ -787,6 +829,8 @@ async function saveTotalSettings() {
         const initialAmount = parseFloat(document.getElementById('initial-amount').value) || 0;
 
         const settings = {
+            'total-show-graph': document.getElementById('total-show-graph').checked,
+            'total-show-missions': document.getElementById('total-show-missions').checked,
             dailyGoal: {
                 target: target,
                 initialAmount: initialAmount,
@@ -830,6 +874,8 @@ async function saveTotalSettings() {
 // 기본값 초기화
 function resetMissionSettings() {
     if (confirm('🔄 펀딩 그래프 설정을 기본값으로 초기화하시겠습니까?')) {
+        document.getElementById('mission-show-missions').checked = true;
+        document.getElementById('mission-show-total-graph').checked = false;
         document.getElementById('mission-bg-opacity').value = 85;
         document.getElementById('mission-bg-color').value = '#000000';
         document.getElementById('mission-text-outline-width').value = 1;
@@ -849,6 +895,8 @@ function resetMissionSettings() {
 
 function resetTotalSettings() {
     if (confirm('🔄 총액목표 그래프 설정을 기본값으로 초기화하시겠습니까?')) {
+        document.getElementById('total-show-graph').checked = true;
+        document.getElementById('total-show-missions').checked = false;
         document.getElementById('daily-goal-target').value = '';
         document.getElementById('auto-extend-enabled').checked = false;
         document.getElementById('extend-amount').value = 50;
