@@ -425,7 +425,7 @@ body {
             <!-- 펀딩 미션 크기 설정 (총액 오버레이용) -->
             <div class="section" style="background: #e8f5e9; border-color: #4caf50; margin-bottom: 20px;">
                 <h4 style="color: #2e7d32; margin-bottom: 15px;">📐 펀딩 미션 크기 (총액 오버레이용)</h4>
-                <div class="grid grid-2">
+                <div class="grid grid-3">
                     <div class="form-group">
                         <label class="form-label">미션 바 높이</label>
                         <div class="slider-group">
@@ -440,6 +440,14 @@ body {
                             <span class="slider-label">작게</span>
                             <input type="range" class="slider" id="total-mission-font-size" min="10" max="20" value="14">
                             <span class="slider-value" id="total-mission-font-size-value">14px</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">그래프 사이 간격</label>
+                        <div class="slider-group">
+                            <span class="slider-label">좁게</span>
+                            <input type="range" class="slider" id="total-mission-section-gap" min="0" max="30" value="6">
+                            <span class="slider-value" id="total-mission-section-gap-value">6px</span>
                         </div>
                     </div>
                 </div>
@@ -679,6 +687,7 @@ function saveLocalSettings() {
         'total-show-missions': document.getElementById('total-show-missions').checked,
         'total-mission-height': document.getElementById('total-mission-height').value,
         'total-mission-font-size': document.getElementById('total-mission-font-size').value,
+        'total-mission-section-gap': document.getElementById('total-mission-section-gap').value,
         'daily-goal-target': document.getElementById('daily-goal-target').value,
         'auto-extend-enabled': document.getElementById('auto-extend-enabled').checked,
         'extend-amount': document.getElementById('extend-amount').value,
@@ -727,6 +736,7 @@ function loadLocalSettings() {
             if (localSettings['total-show-missions'] !== undefined) document.getElementById('total-show-missions').checked = localSettings['total-show-missions'];
             if (localSettings['total-mission-height']) document.getElementById('total-mission-height').value = localSettings['total-mission-height'];
             if (localSettings['total-mission-font-size']) document.getElementById('total-mission-font-size').value = localSettings['total-mission-font-size'];
+            if (localSettings['total-mission-section-gap']) document.getElementById('total-mission-section-gap').value = localSettings['total-mission-section-gap'];
             if (localSettings['daily-goal-target']) document.getElementById('daily-goal-target').value = localSettings['daily-goal-target'];
             if (localSettings['auto-extend-enabled'] !== undefined) document.getElementById('auto-extend-enabled').checked = localSettings['auto-extend-enabled'];
             if (localSettings['extend-amount']) document.getElementById('extend-amount').value = localSettings['extend-amount'];
@@ -789,6 +799,7 @@ async function loadCurrentSettings() {
             document.getElementById('total-show-missions').checked = settings['total-show-missions'] || false;
             document.getElementById('total-mission-height').value = settings['total-mission-height'] || 28;
             document.getElementById('total-mission-font-size').value = settings['total-mission-font-size'] || 14;
+            document.getElementById('total-mission-section-gap').value = settings['total-mission-section-gap'] || 6;
             document.getElementById('total-bg-opacity').value = settings['total-goal-bg-opacity'] || 0;
             document.getElementById('total-bg-color').value = settings['total-goal-bg-color'] || '#000000';
             document.getElementById('total-text-outline-width').value = settings['total-goal-text-outline-width'] || 1;
@@ -873,6 +884,7 @@ async function saveTotalSettings() {
             'total-show-missions': document.getElementById('total-show-missions').checked,
             'total-mission-height': document.getElementById('total-mission-height').value,
             'total-mission-font-size': document.getElementById('total-mission-font-size').value,
+            'total-mission-section-gap': document.getElementById('total-mission-section-gap').value,
             dailyGoal: {
                 target: target,
                 initialAmount: initialAmount,
@@ -941,6 +953,7 @@ function resetTotalSettings() {
         document.getElementById('total-show-missions').checked = false;
         document.getElementById('total-mission-height').value = 28;
         document.getElementById('total-mission-font-size').value = 14;
+        document.getElementById('total-mission-section-gap').value = 6;
         document.getElementById('daily-goal-target').value = '';
         document.getElementById('auto-extend-enabled').checked = false;
         document.getElementById('extend-amount').value = 50;

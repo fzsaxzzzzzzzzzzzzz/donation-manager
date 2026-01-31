@@ -42,7 +42,7 @@ body {
     overflow: hidden;
     border: 3px solid #555;
     box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.6);
-    margin-bottom: 15px;
+    margin-bottom: var(--section-gap, 6px);
     position: relative;
 }
 
@@ -104,7 +104,7 @@ body {
 /* 펀딩 미션 카드 */
 .missions-section {
     display: none;
-    margin-top: 6px;
+    margin-top: 0;
 }
 
 .missions-section.visible {
@@ -287,8 +287,10 @@ class TotalGoalOverlay {
         // 펀딩 미션 크기 설정
         const missionHeight = this.settings['total-mission-height'] || 28;
         const missionFontSize = this.settings['total-mission-font-size'] || 14;
+        const sectionGap = this.settings['total-mission-section-gap'] || 6;
         document.documentElement.style.setProperty('--mission-height', missionHeight + 'px');
         document.documentElement.style.setProperty('--mission-font-size', missionFontSize + 'px');
+        document.documentElement.style.setProperty('--section-gap', sectionGap + 'px');
 
         // 총액 그래프 설정을 CSS 변수로 적용
         if (this.settings['total-goal-progress-height']) {
