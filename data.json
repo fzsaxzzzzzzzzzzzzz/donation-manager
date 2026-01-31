@@ -1,18 +1,18 @@
 {
   "donations": [
     {
-      "donor": "A",
-      "streamer": "엄삼용",
-      "type": "계좌",
-      "amount": 1,
-      "time": "2026-01-13T18:51:30.645Z"
+      "donor": "d",
+      "streamer": "해외여행",
+      "type": "투네",
+      "amount": 20,
+      "time": "2026-01-30T20:20:47.608Z"
     },
     {
-      "donor": "V",
-      "streamer": "엄삼용",
+      "donor": "cz",
+      "streamer": "해외여행",
       "type": "계좌",
-      "amount": 21,
-      "time": "2025-09-03T18:02:19.448Z"
+      "amount": 11,
+      "time": "2026-01-30T20:19:57.691Z"
     }
   ],
   "streamers": [
@@ -22,7 +22,8 @@
     "릴라",
     "도치",
     "익수",
-    "국고"
+    "국고",
+    "해외여행"
   ],
   "emojis": {
     "엄삼용": "🫅",
@@ -33,12 +34,32 @@
     "익수": "🥰",
     "국고": "🏦"
   },
-  "missions": [],
-  "runningMissions": [],
+  "missions": [
+    {
+      "id": "1769805952389",
+      "streamer": "해외여행",
+      "target": 100,
+      "initialAmount": 11,
+      "description": "해외여행 펀딩",
+      "status": "running",
+      "startTime": "2026-01-30T20:45:52.389Z"
+    }
+  ],
+  "runningMissions": [
+    {
+      "id": "1769805952389",
+      "streamer": "해외여행",
+      "target": 100,
+      "initialAmount": 11,
+      "description": "해외여행 펀딩",
+      "status": "running",
+      "startTime": "2026-01-30T20:45:52.389Z"
+    }
+  ],
   "missionAdjustments": [],
   "settings": {
     "overlay-font-size": "24",
-    "overlay-stroke-width": "1.8",
+    "overlay-stroke-width": "2.6",
     "overlay-text-align": "left",
     "overlay-line-height": "1.5",
     "table-opacity": "85",
@@ -47,7 +68,7 @@
     "table-text-color": "white",
     "hidden-streamers": "[]",
     "group-threshold": "2",
-    "groupThreshold": 2,
+    "groupThreshold": 9,
     "includeSuperchat": false,
     "show-total-row": "true",
     "show-update-time": "false",
@@ -55,13 +76,46 @@
     "showKakaoBank": true,
     "kakaoBankSize": 34,
     "kakaoBankLineHeight": 1,
+    "kakaoBankAccount": "카카오뱅크 3333-25-7378436 엄삼O",
     "table-color-preset": "blue",
     "dailyGoal": {
-      "target": 100,
+      "target": 2814,
+      "initialAmount": 0,
+      "autoExtendEnabled": false,
       "extendAmount": 50,
-      "autoExtendEnabled": true,
-      "achievedGoals": []
-    }
+      "createdDate": "2026-01-30"
+    },
+    "total-goal-bg-opacity": "0",
+    "total-goal-bg-color": "#000000",
+    "total-goal-text-outline-width": "1",
+    "total-goal-text-outline-color": "#000000",
+    "total-goal-show-top-stats": true,
+    "total-goal-text-switch-enabled": false,
+    "total-goal-text-switch-interval": "5",
+    "total-goal-title-font-size": "24",
+    "total-goal-stats-font-size": "20",
+    "total-goal-progress-height": "30",
+    "total-goal-show-title": false,
+    "total-goal-custom-title": "",
+    "mission-graph-opacity": "0",
+    "mission-graph-bg-color": "#000000",
+    "mission-text-outline-width": "0",
+    "mission-text-outline-color": "#000000",
+    "mission-title-font-size": "17",
+    "mission-stats-font-size": "18",
+    "mission-progress-height": "28",
+    "mission-show-progress-text": true,
+    "mission-progress-text-size": "14",
+    "mission-progress-text-color": "#ffffff",
+    "mission-initial-amount": 40,
+    "total-show-graph": true,
+    "total-show-missions": true,
+    "mission-show-missions": true,
+    "mission-show-total-graph": false,
+    "total-mission-height": "28",
+    "total-mission-font-size": "14",
+    "total-mission-gap": "0",
+    "total-mission-section-gap": "6"
   },
-  "lastUpdated": "2026-01-13T18:51:30.645Z"
+  "lastUpdated": "2026-01-30T20:45:52.389Z"
 }
