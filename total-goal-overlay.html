@@ -391,7 +391,7 @@ class TotalGoalOverlay {
         let targetAmount = parseFloat(this.dailyGoal.target) || 50;
 
         // 자동 연장 기능 체크
-        if (this.dailyGoal.autoExtend && currentAmount >= targetAmount) {
+        if ((this.dailyGoal.autoExtendEnabled || this.dailyGoal.autoExtend) && currentAmount >= targetAmount) {
             // 현재 금액이 목표를 달성했을 때 자동으로 목표 증가
             const extendAmount = parseFloat(this.dailyGoal.extendAmount) || 50;
             const newTarget = Math.ceil(currentAmount / extendAmount) * extendAmount + extendAmount;
@@ -519,7 +519,8 @@ class TotalGoalOverlay {
                     settings: {
                         'dailyGoal': {
                             target: newTarget,
-                            autoExtend: this.dailyGoal.autoExtend,
+                            initialAmount: this.dailyGoal.initialAmount || 0,
+                            autoExtendEnabled: true,
                             extendAmount: this.dailyGoal.extendAmount
                         }
                     }
