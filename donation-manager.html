@@ -2136,7 +2136,7 @@ function updateSummary() {
         sortedDetailStreamers.unshift(samyongData);
     }
     
-    const samyongSchool = sortedDetailStreamers.map(s => `${emojis[s.name] || ''}${s.name}(${s.total})`).join(' ');
+    const samyongSchool = sortedDetailStreamers.map(s => `${emojis[s.name] || ''}${s.name}(${parseFloat(s.total.toFixed(1))})`).join(' ');
     
     // 국고 데이터 계산
     const gukgoData = streamerDetailData['국고'] || { account: 0, toonation: 0, total: 0 };
