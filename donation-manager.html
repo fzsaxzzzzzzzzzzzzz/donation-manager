@@ -2260,8 +2260,8 @@ function updateSummary() {
     }, {});
     document.getElementById('recent-log').textContent = Object.values(groupedDonations).sort((a,b) => b.time - a.time).map(group => {
         const donationTexts = group.donations.map(d => {
-            const totalForStreamer = parseFloat(streamerTotals[d.streamer] || 0);
-            return `${emojis[d.streamer] || ''}${d.streamer} (+${parseFloat(d.amount)}/${totalForStreamer})`;
+            const totalForStreamer = parseFloat((streamerTotals[d.streamer] || 0).toFixed(1));
+            return `${emojis[d.streamer] || ''}${d.streamer} (+${parseFloat(d.amount).toFixed(1)}/${totalForStreamer})`;
         }).join(', ');
         return `${group.donor} > ${donationTexts}`;
     }).join('\n');
@@ -2407,9 +2407,9 @@ function updateDetailedSummaryTable() {
             const remaining = target - currentAmount;
             
             if (mission.status === 'success' || mission.status === 'completed' || remaining <= 0) {
-                streamerData[mission.streamer].missionStatus = `✅완료(${currentAmount}/${target})`;
+                streamerData[mission.streamer].missionStatus = `✅완료(${currentAmount.toFixed(1)}/${target.toFixed(1)})`;
             } else {
-                streamerData[mission.streamer].missionStatus = `🎯진행중(${currentAmount}/${target})`;
+                streamerData[mission.streamer].missionStatus = `🎯진행중(${currentAmount.toFixed(1)}/${target.toFixed(1)})`;
             }
         }
     });
@@ -2525,16 +2525,17 @@ function updateMissionSummary() {
             autoCompleteMission(mission.id);
         }
         
-        const currentAmountStr = parseFloat(currentAmount);
-        const remainingStr = parseFloat(remaining > 0 ? remaining : 0);
+        const currentAmountStr = parseFloat(currentAmount.toFixed(1));
+        const remainingStr = parseFloat((remaining > 0 ? remaining : 0).toFixed(1));
+        const targetStr = parseFloat(parseFloat(mission.target).toFixed(1));
         const isCompleted = mission.status === 'success' || mission.status === 'completed' || remaining <= 0;
-        
+
         return {
             ...mission,
             currentAmount,
             remaining,
             text: isCompleted
-                ? `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/${parseFloat(mission.target)}✅)` 
+                ? `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/${targetStr}✅)`
                 : `${emojis[mission.streamer] || ''}${mission.streamer}(${currentAmountStr}/-${remainingStr})`
         };
     });
@@ -2626,18 +2627,18 @@ function updateRunningMissionsList() {
                 
                 <div style="margin-bottom: 8px;">
                     <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                        <span>현재: ${currentAmount}만원</span>
-                        <span>목표: ${mission.target}만원</span>
+                        <span>현재: ${currentAmount.toFixed(1)}만원</span>
+                        <span>목표: ${parseFloat(mission.target).toFixed(1)}만원</span>
                     </div>
                     <div style="font-size: 12px; color: #28a745;">진행률: ${Math.round(progressPercent)}%</div>
                 </div>
-                
+
                 <div style="background: #e9ecef; border-radius: 10px; height: 8px; overflow: hidden;">
                     <div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; width: ${progressPercent}%; transition: width 0.3s ease;"></div>
                 </div>
-                
-                ${remaining > 0 ? 
-                    `<div style="font-size: 12px; color: #dc3545; margin-top: 5px;">${remaining}만원 남음</div>` : 
+
+                ${remaining > 0 ?
+                    `<div style="font-size: 12px; color: #dc3545; margin-top: 5px;">${remaining.toFixed(1)}만원 남음</div>` :
                     `<div style="font-size: 12px; color: #28a745; margin-top: 5px;">✅ 목표 달성!</div>`
                 }
             </div>`;

@@ -20,6 +20,40 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 3001;
 
+// Nightbot 설정
+const NIGHTBOT_TOKEN = process.env.NIGHTBOT_TOKEN || '';
+
+// Nightbot으로 메시지 전송
+async function sendToNightbot(message) {
+  if (!NIGHTBOT_TOKEN) {
+    console.log('⚠️ Nightbot 토큰 없음 - 메시지 전송 스킵');
+    return false;
+  }
+
+  try {
+    const response = await fetch('https://api.nightbot.tv/1/channel/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${NIGHTBOT_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message })
+    });
+
+    if (response.ok) {
+      console.log('🤖 Nightbot 메시지 전송 성공:', message);
+      return true;
+    } else {
+      const error = await response.text();
+      console.error('❌ Nightbot 전송 실패:', error);
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Nightbot API 에러:', error.message);
+    return false;
+  }
+}
+
 // 비밀번호 설정
 const PASSWORDS = {
   admin: '1130',      // 일반 관리자 (조회만 가능)
@@ -423,12 +457,26 @@ app.post('/api/donations', requireSuperAdmin, async (req, res) => {
   
   currentData.donations.unshift(newDonation);
   await saveData();
-  
+
   // 모든 클라이언트에게 실시간 업데이트 전송
   console.log(`📡 [서버] dataUpdate 이벤트 전송 (${io.sockets.sockets.size}명 클라이언트)`);
   io.emit('dataUpdate', currentData);
   console.log(`📊 [서버] 전송된 데이터: ${currentData.donations.length}건`);
-  
+
+  // YouTube 챗봇으로 후원 알림 전송
+  const emoji = currentData.emojis?.[streamer] || '';
+  const chatMessage = `${emoji} ${donor}님 ${amount}만원 감사합니다! (${streamer})`;
+
+  // Tampermonkey 챗봇 (기존)
+  if (chatbotClients.size > 0) {
+    sendToYouTubeChat(chatMessage);
+  }
+
+  // Nightbot으로도 전송 (설정된 경우)
+  if (NIGHTBOT_TOKEN) {
+    sendToNightbot(chatMessage);
+  }
+
   res.json({ success: true, donation: newDonation });
 });
 
@@ -501,6 +549,43 @@ app.put('/api/donations/bulk', requireSuperAdmin, async (req, res) => {
     console.error('벌크 업데이트 실패:', error);
     res.status(500).json({ error: '서버 오류' });
   }
+});
+
+// YouTube 챗봇 메시지 전송 API
+app.post('/api/youtube-chat', (req, res) => {
+  const { message, messages } = req.body;
+
+  if (chatbotClients.size === 0) {
+    return res.json({ success: false, error: '연결된 YouTube 챗봇 클라이언트가 없습니다. Tampermonkey 스크립트가 실행 중인지 확인하세요.' });
+  }
+
+  if (messages && Array.isArray(messages)) {
+    // 다중 메시지 전송
+    chatbotClients.forEach(clientId => {
+      const clientSocket = io.sockets.sockets.get(clientId);
+      if (clientSocket) {
+        clientSocket.emit('sendYouTubeChatBulk', { messages });
+      }
+    });
+    console.log('📤 YouTube 챗봇으로 다중 메시지 전송:', messages.length, '개');
+    return res.json({ success: true, sentCount: messages.length });
+  }
+
+  if (message) {
+    sendToYouTubeChat(message);
+    return res.json({ success: true, message: '메시지 전송됨' });
+  }
+
+  res.status(400).json({ error: 'message 또는 messages 필드가 필요합니다' });
+});
+
+// YouTube 챗봇 상태 확인 API
+app.get('/api/youtube-chat/status', (req, res) => {
+  res.json({
+    connected: chatbotClients.size > 0,
+    clientCount: chatbotClients.size,
+    clients: Array.from(chatbotClients)
+  });
 });
 
 // 스트리머 관리 API
@@ -873,6 +958,25 @@ app.post('/api/settings', requireSuperAdmin, async (req, res) => {
   }
 });
 
+// YouTube 챗봇 클라이언트 추적
+const chatbotClients = new Set();
+
+// YouTube 채팅으로 메시지 전송 함수
+function sendToYouTubeChat(message) {
+  if (chatbotClients.size === 0) {
+    console.log('⚠️ 연결된 YouTube 챗봇 클라이언트 없음');
+    return false;
+  }
+  chatbotClients.forEach(clientId => {
+    const clientSocket = io.sockets.sockets.get(clientId);
+    if (clientSocket) {
+      clientSocket.emit('sendYouTubeChat', { message });
+      console.log('📤 YouTube 챗봇으로 메시지 전송:', message);
+    }
+  });
+  return true;
+}
+
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
   console.log('🔗 클라이언트 연결:', socket.id, '(총', io.sockets.sockets.size, '명)');
@@ -889,8 +993,30 @@ io.on('connection', (socket) => {
   
   socket.on('disconnect', () => {
     console.log('❌ 클라이언트 연결 해제:', socket.id, '(총', io.sockets.sockets.size, '명)');
+    // 챗봇 클라이언트면 목록에서 제거
+    if (chatbotClients.has(socket.id)) {
+      chatbotClients.delete(socket.id);
+      console.log('🤖 YouTube 챗봇 클라이언트 연결 해제:', socket.id);
+    }
     // 연결된 클라이언트 수 업데이트
     io.emit('userCount', io.sockets.sockets.size);
+  });
+
+  // YouTube 챗봇 클라이언트 등록
+  socket.on('chatbotConnect', (data) => {
+    chatbotClients.add(socket.id);
+    console.log('🤖 YouTube 챗봇 클라이언트 연결:', socket.id, data);
+    socket.emit('chatbotConnected', { success: true, clientId: socket.id });
+    // 연결된 챗봇 수 브로드캐스트
+    io.emit('chatbotCount', chatbotClients.size);
+  });
+
+  // 수동으로 YouTube 채팅 메시지 전송 요청
+  socket.on('sendYouTubeChatRequest', (data) => {
+    console.log('📨 YouTube 채팅 전송 요청:', data);
+    if (data.message) {
+      sendToYouTubeChat(data.message);
+    }
   });
   
   // 데이터 요청 처리 (미션 그래프 오버레이용)
