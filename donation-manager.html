@@ -2195,10 +2195,10 @@ function updateSummary() {
     
     // 국고 표시 (excludeGukgo가 false일 때 항상 표시, 0원이어도)
     if (!excludeGukgo) {
-        summaryText += ` 🏦국고(${gukgoData.total})`;
+        summaryText += ` 🏦국고(${parseFloat(gukgoData.total.toFixed(1))})`;
     }
-    
-    summaryText += ` 💵총합(${displayTotalAmount}) ${footerText}${missionResultText}`;
+
+    summaryText += ` 💵총합(${parseFloat(displayTotalAmount.toFixed(1))}) ${footerText}${missionResultText}`;
     
     document.getElementById('summary-output').textContent = summaryText;
     
