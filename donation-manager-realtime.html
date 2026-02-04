@@ -619,6 +619,55 @@ body {
     </div>
 </div>
 
+<!-- 정산 패널 -->
+<div class="container" style="grid-template-columns: 1fr;">
+    <div class="panel">
+        <h2>💵 스트리머 정산</h2>
+
+        <div class="form-group">
+            <label class="form-label">📊 수수료 설정 (기본값: 전체 적용)</label>
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                <label style="font-size: 14px;">기본 수수료:</label>
+                <input type="number" id="defaultFeePercent" class="form-input" style="width: 100px;"
+                       value="10" min="0" max="100" step="0.1" onchange="updateSettlement()">
+                <span>%</span>
+                <button type="button" class="btn btn-primary" onclick="applyDefaultFee()">전체 적용</button>
+            </div>
+        </div>
+
+        <div class="table-container" style="max-height: none;">
+            <table class="table" id="settlementTable">
+                <thead>
+                    <tr>
+                        <th>스트리머</th>
+                        <th>총 후원금 (원)</th>
+                        <th>수수료 (%)</th>
+                        <th>수수료 금액</th>
+                        <th>정산 금액</th>
+                    </tr>
+                </thead>
+                <tbody id="settlementBody">
+                    <tr><td colspan="5">데이터 로딩 중...</td></tr>
+                </tbody>
+                <tfoot style="background: #e9f3ff; font-weight: bold;">
+                    <tr>
+                        <td>합계</td>
+                        <td id="totalDonationSum">₩0</td>
+                        <td>-</td>
+                        <td id="totalFeeSum">₩0</td>
+                        <td id="totalSettlementSum">₩0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <button type="button" class="btn btn-success" onclick="exportSettlement()">📥 엑셀 다운로드</button>
+            <button type="button" class="btn btn-primary" onclick="copySettlement()">📋 복사</button>
+        </div>
+    </div>
+</div>
+
 <!-- 총액 오버레이 설정 패널 -->
 <div class="container" style="grid-template-columns: 1fr;">
     <div class="panel">
@@ -915,11 +964,68 @@ class RealtimeDonationManager {
 
     renderAll() {
         if (!this.data) return;
-        
+
         this.renderStreamers();
         this.renderDonationTable();
         this.renderStats();
+        this.renderSettlement();
         this.updateLastUpdate();
+    }
+
+    renderSettlement() {
+        if (!this.data || !this.data.donations) return;
+
+        const tbody = document.getElementById('settlementBody');
+        if (!tbody) return;
+
+        // 스트리머별 총액 계산 (만원 단위를 원 단위로 변환: amount * 10000)
+        const streamerTotals = {};
+        this.data.donations.forEach(donation => {
+            const amountInWon = donation.amount * 10000; // 만원 → 원
+            streamerTotals[donation.streamer] = (streamerTotals[donation.streamer] || 0) + amountInWon;
+        });
+
+        // 수수료 설정 로드 (localStorage에서)
+        const feeSettings = JSON.parse(localStorage.getItem('streamerFees') || '{}');
+        const defaultFee = parseFloat(document.getElementById('defaultFeePercent')?.value || 10);
+
+        let totalDonation = 0;
+        let totalFee = 0;
+        let totalSettlement = 0;
+
+        const rows = (this.data.streamers || []).map(streamer => {
+            const total = Math.round(streamerTotals[streamer] || 0);
+            const feePercent = feeSettings[streamer] !== undefined ? feeSettings[streamer] : defaultFee;
+            const feeAmount = Math.round(total * feePercent / 100);
+            const settlement = total - feeAmount;
+
+            totalDonation += total;
+            totalFee += feeAmount;
+            totalSettlement += settlement;
+
+            const emoji = this.data.emojis?.[streamer] || '';
+
+            return `
+                <tr>
+                    <td>${emoji} ${streamer}</td>
+                    <td style="text-align: right;">₩${total.toLocaleString()}</td>
+                    <td>
+                        <input type="number" class="form-input" style="width: 70px; padding: 5px; text-align: center;"
+                               value="${feePercent}" min="0" max="100" step="0.1"
+                               onchange="updateStreamerFee('${streamer}', this.value)">
+                    </td>
+                    <td style="text-align: right; color: #fa383e;">-₩${feeAmount.toLocaleString()}</td>
+                    <td style="text-align: right; font-weight: bold; color: #42b72a;">₩${settlement.toLocaleString()}</td>
+                </tr>
+            `;
+        }).join('');
+
+        tbody.innerHTML = rows || '<tr><td colspan="5">스트리머가 없습니다.</td></tr>';
+
+        // 합계 업데이트
+        document.getElementById('totalDonationSum').textContent = `₩${totalDonation.toLocaleString()}`;
+        document.getElementById('totalFeeSum').textContent = `-₩${totalFee.toLocaleString()}`;
+        document.getElementById('totalSettlementSum').textContent = `₩${totalSettlement.toLocaleString()}`;
     }
 
     renderStreamers() {
@@ -1786,6 +1892,137 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+}
+
+// 정산 관련 함수들
+function updateStreamerFee(streamer, feePercent) {
+    const feeSettings = JSON.parse(localStorage.getItem('streamerFees') || '{}');
+    feeSettings[streamer] = parseFloat(feePercent);
+    localStorage.setItem('streamerFees', JSON.stringify(feeSettings));
+
+    // 정산 테이블 다시 렌더링
+    if (window.donationManager) {
+        window.donationManager.renderSettlement();
+    }
+    showNotification(`${streamer} 수수료가 ${feePercent}%로 설정되었습니다.`, 'success');
+}
+
+function applyDefaultFee() {
+    const defaultFee = parseFloat(document.getElementById('defaultFeePercent').value || 10);
+    const feeSettings = {};
+
+    if (window.donationManager && window.donationManager.data?.streamers) {
+        window.donationManager.data.streamers.forEach(streamer => {
+            feeSettings[streamer] = defaultFee;
+        });
+    }
+
+    localStorage.setItem('streamerFees', JSON.stringify(feeSettings));
+
+    if (window.donationManager) {
+        window.donationManager.renderSettlement();
+    }
+    showNotification(`모든 스트리머에 ${defaultFee}% 수수료가 적용되었습니다.`, 'success');
+}
+
+function updateSettlement() {
+    if (window.donationManager) {
+        window.donationManager.renderSettlement();
+    }
+}
+
+function exportSettlement() {
+    if (!window.donationManager || !window.donationManager.data) {
+        alert('데이터가 없습니다.');
+        return;
+    }
+
+    const data = window.donationManager.data;
+    const feeSettings = JSON.parse(localStorage.getItem('streamerFees') || '{}');
+    const defaultFee = parseFloat(document.getElementById('defaultFeePercent')?.value || 10);
+
+    // 스트리머별 총액 계산
+    const streamerTotals = {};
+    data.donations.forEach(donation => {
+        const amountInWon = donation.amount * 10000;
+        streamerTotals[donation.streamer] = (streamerTotals[donation.streamer] || 0) + amountInWon;
+    });
+
+    // CSV 생성
+    let csv = '\uFEFF스트리머,총 후원금(원),수수료(%),수수료 금액(원),정산 금액(원)\n';
+
+    let totalDonation = 0, totalFee = 0, totalSettlement = 0;
+
+    (data.streamers || []).forEach(streamer => {
+        const total = Math.round(streamerTotals[streamer] || 0);
+        const feePercent = feeSettings[streamer] !== undefined ? feeSettings[streamer] : defaultFee;
+        const feeAmount = Math.round(total * feePercent / 100);
+        const settlement = total - feeAmount;
+
+        totalDonation += total;
+        totalFee += feeAmount;
+        totalSettlement += settlement;
+
+        csv += `${streamer},${total},${feePercent},${feeAmount},${settlement}\n`;
+    });
+
+    csv += `합계,${totalDonation},-,${totalFee},${totalSettlement}\n`;
+
+    // 다운로드
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `정산_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+
+    showNotification('정산 내역이 다운로드되었습니다.', 'success');
+}
+
+function copySettlement() {
+    if (!window.donationManager || !window.donationManager.data) {
+        alert('데이터가 없습니다.');
+        return;
+    }
+
+    const data = window.donationManager.data;
+    const feeSettings = JSON.parse(localStorage.getItem('streamerFees') || '{}');
+    const defaultFee = parseFloat(document.getElementById('defaultFeePercent')?.value || 10);
+
+    // 스트리머별 총액 계산
+    const streamerTotals = {};
+    data.donations.forEach(donation => {
+        const amountInWon = donation.amount * 10000;
+        streamerTotals[donation.streamer] = (streamerTotals[donation.streamer] || 0) + amountInWon;
+    });
+
+    // 텍스트 생성
+    let text = '📊 스트리머 정산 내역\n';
+    text += '━━━━━━━━━━━━━━━━━━━━\n';
+
+    let totalSettlement = 0;
+
+    (data.streamers || []).forEach(streamer => {
+        const total = Math.round(streamerTotals[streamer] || 0);
+        const feePercent = feeSettings[streamer] !== undefined ? feeSettings[streamer] : defaultFee;
+        const feeAmount = Math.round(total * feePercent / 100);
+        const settlement = total - feeAmount;
+        totalSettlement += settlement;
+
+        const emoji = data.emojis?.[streamer] || '';
+        text += `${emoji} ${streamer}\n`;
+        text += `  총액: ₩${total.toLocaleString()}\n`;
+        text += `  수수료(${feePercent}%): -₩${feeAmount.toLocaleString()}\n`;
+        text += `  정산: ₩${settlement.toLocaleString()}\n\n`;
+    });
+
+    text += '━━━━━━━━━━━━━━━━━━━━\n';
+    text += `💰 총 정산 합계: ₩${totalSettlement.toLocaleString()}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification('정산 내역이 클립보드에 복사되었습니다.', 'success');
+    }).catch(() => {
+        showNotification('복사 실패', 'error');
+    });
 }
 
 // 페이지 로드 시 오버레이 설정 초기화
