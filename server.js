@@ -84,16 +84,77 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Firebase 세션 스토어 (서버 재시작해도 세션 유지)
+const Store = session.Store;
+class FirebaseSessionStore extends Store {
+  constructor(options = {}) {
+    super(options);
+    this.prefix = options.prefix || 'sessions:';
+  }
+
+  async get(sid, callback) {
+    try {
+      if (!firebaseDB) return callback(null, null);
+      const snapshot = await firebaseDB.ref(`sessions/${sid}`).once('value');
+      const data = snapshot.val();
+      if (data && data.expires > Date.now()) {
+        callback(null, data.session);
+      } else {
+        callback(null, null);
+      }
+    } catch (err) {
+      callback(err);
+    }
+  }
+
+  async set(sid, session, callback) {
+    try {
+      if (!firebaseDB) return callback && callback();
+      const expires = Date.now() + (session.cookie.maxAge || 7 * 24 * 60 * 60 * 1000);
+      await firebaseDB.ref(`sessions/${sid}`).set({ session, expires });
+      callback && callback();
+    } catch (err) {
+      callback && callback(err);
+    }
+  }
+
+  async destroy(sid, callback) {
+    try {
+      if (!firebaseDB) return callback && callback();
+      await firebaseDB.ref(`sessions/${sid}`).remove();
+      callback && callback();
+    } catch (err) {
+      callback && callback(err);
+    }
+  }
+}
+
 // 세션 설정
-app.use(session({
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
+const sessionConfig = {
   secret: 'donation-tracker-secret-key-2025',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: false, // HTTP에서도 사용 (HTTPS에서는 true)
-    maxAge: 24 * 60 * 60 * 1000 // 24시간
-  }
-}));
+  cookie: {
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7일
+  },
+  proxy: isProduction
+};
+
+// Firebase 있으면 Firebase 스토어 사용
+if (firebaseDB) {
+  sessionConfig.store = new FirebaseSessionStore();
+  console.log('🔐 Firebase 세션 스토어 활성화');
+}
+
+app.use(session(sessionConfig));
+
+// 프록시 신뢰 설정 (Render.com용)
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
 
 // 인증 미들웨어
 function requireAuth(req, res, next) {
