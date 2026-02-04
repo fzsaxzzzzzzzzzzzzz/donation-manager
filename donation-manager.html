@@ -1102,6 +1102,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div class="management-nav" style="margin-bottom: 0;">
 <button class="tab-button active" onclick="switchSummaryTab(event, 'basic-summary')">기본 요약</button>
 <button class="tab-button" onclick="switchSummaryTab(event, 'table-summary')">상세 테이블</button>
+<button class="tab-button" onclick="switchSummaryTab(event, 'settlement-summary')">💵 정산</button>
 </div>
 <div id="basic-summary" class="summary-tab-content active" style="padding-top: 15px;">
 <div>
@@ -1242,6 +1243,51 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 
 </div>
+
+<!-- 정산 탭 -->
+<div id="settlement-summary" class="summary-tab-content" style="padding-top: 15px;">
+<div style="margin-bottom: 15px;">
+    <label class="form-label">📊 수수료 설정</label>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <span>기본 수수료:</span>
+        <input type="number" id="settlement-default-fee" class="form-input" style="width: 80px;" value="10" min="0" max="100" step="0.1">
+        <span>%</span>
+        <button onclick="applyDefaultFeeAll()" class="btn btn-primary">전체 적용</button>
+    </div>
+</div>
+
+<div class="table-container" style="max-height: 400px; overflow-y: auto;">
+    <table class="table" id="settlement-table">
+        <thead>
+            <tr>
+                <th>스트리머</th>
+                <th>총 후원금 (원)</th>
+                <th>수수료 (%)</th>
+                <th>수수료 금액</th>
+                <th>정산 금액</th>
+            </tr>
+        </thead>
+        <tbody id="settlement-table-body">
+            <tr><td colspan="5">데이터 로딩 중...</td></tr>
+        </tbody>
+        <tfoot style="background: #e9f3ff; font-weight: bold;">
+            <tr>
+                <td>합계</td>
+                <td id="settlement-total-donation">₩0</td>
+                <td>-</td>
+                <td id="settlement-total-fee">₩0</td>
+                <td id="settlement-total-amount">₩0</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<div style="margin-top: 15px; display: flex; gap: 10px;">
+    <button onclick="exportSettlementCSV()" class="btn btn-success">📥 엑셀 다운로드</button>
+    <button onclick="copySettlementText()" class="btn btn-primary">📋 복사</button>
+</div>
+</div>
+
 </div>
 <div class="panel">
 <h2>후원내역</h2>
@@ -2268,6 +2314,7 @@ function updateSummary() {
 
     updateMissionSummary();
     updateDetailedSummaryTable();
+    updateSettlementTable();
 }
 
 function updateStreamerInputs() {
@@ -6844,6 +6891,175 @@ function resetTotalGoalSettings() {
         
         alert('🔄 설정이 초기화되었습니다');
     }
+}
+
+// ==================== 정산 관련 함수들 ====================
+
+function updateSettlementTable() {
+    const tbody = document.getElementById('settlement-table-body');
+    if (!tbody) return;
+
+    // 스트리머별 총액 계산 (만원 → 원 변환)
+    const streamerTotals = {};
+    (streamers || []).forEach(s => streamerTotals[s] = 0);
+
+    (donations || []).forEach(d => {
+        if (d.excludeFromTotal || d.isMissionAdjustment) return;
+        const amountInWon = (parseFloat(d.amount) || 0) * 10000;
+        if (streamerTotals.hasOwnProperty(d.streamer)) {
+            streamerTotals[d.streamer] += amountInWon;
+        }
+    });
+
+    // 수수료 설정 로드
+    const feeSettings = JSON.parse(localStorage.getItem('settlement-fees') || '{}');
+    const defaultFee = parseFloat(document.getElementById('settlement-default-fee')?.value || 10);
+
+    let totalDonation = 0, totalFee = 0, totalSettlement = 0;
+
+    const rows = (streamers || []).map(streamer => {
+        const total = Math.round(streamerTotals[streamer] || 0);
+        const feePercent = feeSettings[streamer] !== undefined ? feeSettings[streamer] : defaultFee;
+        const feeAmount = Math.round(total * feePercent / 100);
+        const settlement = total - feeAmount;
+
+        totalDonation += total;
+        totalFee += feeAmount;
+        totalSettlement += settlement;
+
+        const emoji = emojis[streamer] || '';
+
+        return `
+            <tr>
+                <td>${emoji} ${streamer}</td>
+                <td style="text-align: right;">₩${total.toLocaleString()}</td>
+                <td>
+                    <input type="number" class="form-input" style="width: 70px; padding: 4px; text-align: center;"
+                           value="${feePercent}" min="0" max="100" step="0.1"
+                           onchange="updateStreamerSettlementFee('${streamer}', this.value)">
+                </td>
+                <td style="text-align: right; color: #dc3545;">-₩${feeAmount.toLocaleString()}</td>
+                <td style="text-align: right; font-weight: bold; color: #28a745;">₩${settlement.toLocaleString()}</td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = rows || '<tr><td colspan="5">스트리머가 없습니다.</td></tr>';
+
+    // 합계 업데이트
+    document.getElementById('settlement-total-donation').textContent = `₩${totalDonation.toLocaleString()}`;
+    document.getElementById('settlement-total-fee').textContent = `-₩${totalFee.toLocaleString()}`;
+    document.getElementById('settlement-total-amount').textContent = `₩${totalSettlement.toLocaleString()}`;
+}
+
+function updateStreamerSettlementFee(streamer, feePercent) {
+    const feeSettings = JSON.parse(localStorage.getItem('settlement-fees') || '{}');
+    feeSettings[streamer] = parseFloat(feePercent);
+    localStorage.setItem('settlement-fees', JSON.stringify(feeSettings));
+    updateSettlementTable();
+    showStatus(`${streamer} 수수료가 ${feePercent}%로 설정되었습니다.`, 'success');
+}
+
+function applyDefaultFeeAll() {
+    const defaultFee = parseFloat(document.getElementById('settlement-default-fee')?.value || 10);
+    const feeSettings = {};
+
+    (streamers || []).forEach(streamer => {
+        feeSettings[streamer] = defaultFee;
+    });
+
+    localStorage.setItem('settlement-fees', JSON.stringify(feeSettings));
+    updateSettlementTable();
+    showStatus(`모든 스트리머에 ${defaultFee}% 수수료가 적용되었습니다.`, 'success');
+}
+
+function exportSettlementCSV() {
+    const feeSettings = JSON.parse(localStorage.getItem('settlement-fees') || '{}');
+    const defaultFee = parseFloat(document.getElementById('settlement-default-fee')?.value || 10);
+
+    // 스트리머별 총액 계산
+    const streamerTotals = {};
+    (streamers || []).forEach(s => streamerTotals[s] = 0);
+    (donations || []).forEach(d => {
+        if (d.excludeFromTotal || d.isMissionAdjustment) return;
+        const amountInWon = (parseFloat(d.amount) || 0) * 10000;
+        if (streamerTotals.hasOwnProperty(d.streamer)) {
+            streamerTotals[d.streamer] += amountInWon;
+        }
+    });
+
+    // CSV 생성
+    let csv = '\uFEFF스트리머,총 후원금(원),수수료(%),수수료 금액(원),정산 금액(원)\n';
+    let totalDonation = 0, totalFee = 0, totalSettlement = 0;
+
+    (streamers || []).forEach(streamer => {
+        const total = Math.round(streamerTotals[streamer] || 0);
+        const feePercent = feeSettings[streamer] !== undefined ? feeSettings[streamer] : defaultFee;
+        const feeAmount = Math.round(total * feePercent / 100);
+        const settlement = total - feeAmount;
+
+        totalDonation += total;
+        totalFee += feeAmount;
+        totalSettlement += settlement;
+
+        csv += `${streamer},${total},${feePercent},${feeAmount},${settlement}\n`;
+    });
+
+    csv += `합계,${totalDonation},-,${totalFee},${totalSettlement}\n`;
+
+    // 다운로드
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `정산_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+
+    showStatus('정산 내역이 다운로드되었습니다.', 'success');
+}
+
+function copySettlementText() {
+    const feeSettings = JSON.parse(localStorage.getItem('settlement-fees') || '{}');
+    const defaultFee = parseFloat(document.getElementById('settlement-default-fee')?.value || 10);
+
+    // 스트리머별 총액 계산
+    const streamerTotals = {};
+    (streamers || []).forEach(s => streamerTotals[s] = 0);
+    (donations || []).forEach(d => {
+        if (d.excludeFromTotal || d.isMissionAdjustment) return;
+        const amountInWon = (parseFloat(d.amount) || 0) * 10000;
+        if (streamerTotals.hasOwnProperty(d.streamer)) {
+            streamerTotals[d.streamer] += amountInWon;
+        }
+    });
+
+    // 텍스트 생성
+    let text = '📊 스트리머 정산 내역\n';
+    text += '━━━━━━━━━━━━━━━━━━━━\n';
+
+    let totalSettlement = 0;
+
+    (streamers || []).forEach(streamer => {
+        const total = Math.round(streamerTotals[streamer] || 0);
+        const feePercent = feeSettings[streamer] !== undefined ? feeSettings[streamer] : defaultFee;
+        const feeAmount = Math.round(total * feePercent / 100);
+        const settlement = total - feeAmount;
+        totalSettlement += settlement;
+
+        const emoji = emojis[streamer] || '';
+        text += `${emoji} ${streamer}\n`;
+        text += `  총액: ₩${total.toLocaleString()}\n`;
+        text += `  수수료(${feePercent}%): -₩${feeAmount.toLocaleString()}\n`;
+        text += `  정산: ₩${settlement.toLocaleString()}\n\n`;
+    });
+
+    text += '━━━━━━━━━━━━━━━━━━━━\n';
+    text += `💰 총 정산 합계: ₩${totalSettlement.toLocaleString()}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+        showStatus('정산 내역이 클립보드에 복사되었습니다.', 'success');
+    }).catch(() => {
+        showStatus('복사 실패', 'error');
+    });
 }
 
 </script>
