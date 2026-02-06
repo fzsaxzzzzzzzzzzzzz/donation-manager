@@ -104,6 +104,37 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .chatbot-step .status { font-size: 14px; }
 .chatbot-step h5 { color: #1877f2; font-weight: 600; }
 
+/* 검색 관련 스타일 */
+.search-box { display: flex; gap: 5px; margin-bottom: 10px; align-items: center; }
+.search-box .form-input { flex: 1; }
+.search-box .search-clear { background: none; border: none; cursor: pointer; font-size: 16px; color: #999; padding: 4px 8px; }
+.search-box .search-clear:hover { color: #333; }
+.search-highlight { background-color: #fff3cd; }
+.search-result-count { font-size: 12px; color: #606770; margin-bottom: 5px; }
+
+/* 랭킹 검색 스타일 */
+.ranking-search-container { margin-bottom: 15px; }
+.ranking-search-container .form-input { margin-bottom: 8px; }
+.ranking-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+.ranking-tabs .rank-tab { padding: 6px 12px; border: 1px solid #dddfe2; background: #f5f6f7; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+.ranking-tabs .rank-tab.active { background: #1877f2; color: white; border-color: #1877f2; }
+.ranking-result { max-height: 400px; overflow-y: auto; }
+.ranking-item { display: flex; align-items: center; padding: 10px 12px; border-bottom: 1px solid #f0f2f5; }
+.ranking-item:last-child { border-bottom: none; }
+.ranking-item:hover { background: #f8f9fa; }
+.ranking-medal { font-size: 20px; width: 32px; text-align: center; flex-shrink: 0; }
+.ranking-rank { font-size: 14px; font-weight: bold; color: #606770; width: 32px; text-align: center; flex-shrink: 0; }
+.ranking-info { flex: 1; margin-left: 10px; }
+.ranking-name { font-weight: 600; font-size: 14px; }
+.ranking-detail { font-size: 12px; color: #606770; margin-top: 2px; }
+.ranking-amount { font-weight: bold; font-size: 15px; color: #1877f2; flex-shrink: 0; }
+.ranking-bar-bg { height: 6px; background: #e9ecef; border-radius: 3px; margin-top: 4px; }
+.ranking-bar { height: 100%; background: linear-gradient(90deg, #1877f2, #42b72a); border-radius: 3px; }
+.ranking-empty { text-align: center; padding: 30px; color: #999; font-size: 14px; }
+.ranking-summary-box { background: #f0f7ff; border: 1px solid #cbe3ff; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.ranking-summary-box .stat { display: inline-block; margin-right: 15px; font-size: 13px; }
+.ranking-summary-box .stat-value { font-weight: bold; color: #1877f2; }
+
 @media (max-width: 1200px) { .container { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 900px) { .container { grid-template-columns: 1fr !important; } .panel { min-height: auto !important; resize: none !important; } }
 </style>
@@ -709,7 +740,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 </div>
 <div class="tab-content" id="data-tab">
 <button onclick="showAdminPassword()" class="btn btn-secondary" id="pwd-btn" style="display:none;">🔑 비번조회</button>
-<div style="display: flex; flex-wrap: wrap; gap: 10px;"><button onclick="exportData()" class="btn btn-primary">📄 데이터 내보내기</button><button onclick="saveData()" class="btn btn-success" id="save-btn">💾 일간저장</button><button onclick="showResetDialog()" class="btn btn-warning" id="reset-btn">🔄 초기화</button><button onclick="importData()" class="btn btn-secondary" id="import-btn">📂 데이터 가져오기</button></div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px;"><button onclick="exportData()" class="btn btn-primary">📄 데이터 내보내기</button><button onclick="saveData()" class="btn btn-success" id="save-btn">💾 일간저장</button><button onclick="backupAndReset()" class="btn btn-danger" id="backup-reset-btn">💾 백업 후 초기화</button><button onclick="showResetDialog()" class="btn btn-warning" id="reset-btn">🔄 초기화</button><button onclick="importData()" class="btn btn-secondary" id="import-btn">📂 데이터 가져오기</button></div>
 
 <div style="margin-top: 20px; padding: 15px; border: 2px solid #4285f4; border-radius: 8px; background: #f8f9ff;">
 <h4 style="color: #4285f4; margin: 0 0 15px 0;">☁️ 구글 드라이브 백업</h4>
@@ -1102,6 +1133,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <div class="management-nav" style="margin-bottom: 0;">
 <button class="tab-button active" onclick="switchSummaryTab(event, 'basic-summary')">기본 요약</button>
 <button class="tab-button" onclick="switchSummaryTab(event, 'table-summary')">상세 테이블</button>
+<button class="tab-button" onclick="switchSummaryTab(event, 'ranking-summary')">🏅 후원정리</button>
 <button class="tab-button" onclick="switchSummaryTab(event, 'settlement-summary')">💵 정산</button>
 </div>
 <div id="basic-summary" class="summary-tab-content active" style="padding-top: 15px;">
@@ -1244,6 +1276,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 
 </div>
 
+<!-- 후원정리 탭 -->
+<div id="ranking-summary" class="summary-tab-content" style="padding-top: 15px;">
+<div class="ranking-search-container">
+    <label class="form-label">🔍 스트리머 또는 후원자 검색</label>
+    <input type="text" id="ranking-search-input" class="form-input" placeholder="이름을 입력하면 랭킹이 표시됩니다..." oninput="searchRanking()" autocomplete="off">
+    <div class="ranking-tabs" id="ranking-tabs" style="display:none;">
+        <button class="rank-tab active" onclick="switchRankingMode('streamer', event)">스트리머별 후원자 랭킹</button>
+        <button class="rank-tab" onclick="switchRankingMode('donor', event)">후원자별 스트리머 랭킹</button>
+    </div>
+    <div id="ranking-result" class="ranking-result"></div>
+</div>
+</div>
+
 <!-- 정산 탭 -->
 <div id="settlement-summary" class="summary-tab-content" style="padding-top: 15px;">
 <div style="margin-bottom: 15px;">
@@ -1308,7 +1353,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 <button onclick="quickAddDonation()" id="quick-add-btn" class="btn btn-primary">추가</button>
 </div>
 <div id="status-container"></div>
-<div class="table-container" style="max-height: calc(100vh - 280px); overflow-y: auto;">
+<div class="search-box">
+<input type="text" id="donation-search" class="form-input" placeholder="후원자, 스트리머, 타입 검색..." oninput="filterDonationTable()" autocomplete="off">
+<button class="search-clear" onclick="clearDonationSearch()" title="검색 초기화">&times;</button>
+</div>
+<div id="donation-search-count" class="search-result-count" style="display:none;"></div>
+<div class="table-container" style="max-height: calc(100vh - 320px); overflow-y: auto;">
 <table class="table" id="data-table">
 <thead><tr><th style="width: 40px;"><input type="checkbox" id="select-all"></th><th>#</th><th>후원자</th><th>스트리머</th><th>타입</th><th>금액(만)</th><th>시간</th></tr></thead>
 <tbody id="data-table-body"></tbody>
@@ -3648,6 +3698,79 @@ async function confirmReset() {
             location.reload();
         }
     }, 1000);
+}
+
+// --- 백업 후 초기화 ---
+async function backupAndReset() {
+    if (!donations || donations.length === 0) {
+        showStatus('초기화할 후원 데이터가 없습니다.', 'warning');
+        return;
+    }
+
+    const count = donations.length;
+    if (!confirm(`현재 후원 ${count}건을 백업 파일로 저장한 뒤 초기화합니다.\n계속하시겠습니까?`)) return;
+
+    // 1. 백업 파일 다운로드
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().slice(0,5).replace(':','');
+    const backupData = {
+        donations,
+        streamers,
+        emojis,
+        missions: currentData.missions || [],
+        settings: currentData.settings || {},
+        backupTime: now.toISOString(),
+        totalDonations: count
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `backup_${dateStr}_${timeStr}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+
+    showStatus(`📥 백업 파일 다운로드 완료 (${count}건)`, 'success');
+
+    // 2. 잠시 대기 후 초기화 진행
+    await new Promise(r => setTimeout(r, 1000));
+
+    if (!confirm('백업 파일을 확인하셨나요?\n확인을 누르면 후원 데이터를 초기화합니다.')) {
+        showStatus('초기화가 취소되었습니다.', 'info');
+        return;
+    }
+
+    // 3. 데이터 초기화
+    donations = [];
+    selectedRows.clear();
+    todayDonors.clear();
+
+    try {
+        localStorage.removeItem('donation_data');
+        localStorage.removeItem('streamer_data');
+        localStorage.removeItem('emoji_data');
+    } catch (e) {}
+
+    if (isSocketConnected) {
+        try {
+            await fetch('/api/donations/bulk', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ donations: [] })
+            });
+        } catch (e) {
+            console.error('서버 초기화 실패:', e);
+        }
+    }
+
+    updateAllUI();
+    showStatus(`💾 ${count}건 백업 완료 → 데이터 초기화 완료`, 'success');
+
+    setTimeout(() => {
+        if (confirm('초기화를 완전히 적용하려면 새로고침이 필요합니다.\n새로고침하시겠습니까?')) {
+            location.reload();
+        }
+    }, 500);
 }
 
 // --- 데이터 내보내기/가져오기 ---
@@ -7060,6 +7183,220 @@ function copySettlementText() {
     }).catch(() => {
         showStatus('복사 실패', 'error');
     });
+}
+
+// ==================== 후원 내역 검색 ====================
+
+function filterDonationTable() {
+    const query = document.getElementById('donation-search').value.trim().toLowerCase();
+    const rows = document.querySelectorAll('#data-table-body tr');
+    const countEl = document.getElementById('donation-search-count');
+
+    if (!query) {
+        rows.forEach(r => r.style.display = '');
+        countEl.style.display = 'none';
+        return;
+    }
+
+    let matched = 0;
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 7) return;
+        const donor = (cells[2]?.textContent || '').toLowerCase();
+        const streamer = (cells[3]?.textContent || '').toLowerCase();
+        const type = (cells[4]?.textContent || '').toLowerCase();
+        const amount = (cells[5]?.textContent || '').toLowerCase();
+
+        if (donor.includes(query) || streamer.includes(query) || type.includes(query) || amount.includes(query)) {
+            row.style.display = '';
+            matched++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    countEl.style.display = 'block';
+    countEl.textContent = `검색 결과: ${matched}건 / 전체 ${rows.length}건`;
+}
+
+function clearDonationSearch() {
+    document.getElementById('donation-search').value = '';
+    filterDonationTable();
+}
+
+// ==================== 정산 탭 랭킹 검색 ====================
+
+let currentRankingMode = 'streamer';
+
+function searchRanking() {
+    const query = document.getElementById('ranking-search-input').value.trim().toLowerCase();
+    const resultEl = document.getElementById('ranking-result');
+    const tabsEl = document.getElementById('ranking-tabs');
+
+    if (!query) {
+        resultEl.innerHTML = '';
+        tabsEl.style.display = 'none';
+        return;
+    }
+
+    tabsEl.style.display = 'flex';
+    renderRanking(query);
+}
+
+function switchRankingMode(mode, event) {
+    currentRankingMode = mode;
+    document.querySelectorAll('#ranking-tabs .rank-tab').forEach(t => t.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    const query = document.getElementById('ranking-search-input').value.trim().toLowerCase();
+    if (query) renderRanking(query);
+}
+
+function renderRanking(query) {
+    const resultEl = document.getElementById('ranking-result');
+    const validDonations = (donations || []).filter(d => !d.excludeFromTotal && !d.isMissionAdjustment);
+
+    if (currentRankingMode === 'streamer') {
+        renderStreamerRanking(query, validDonations, resultEl);
+    } else {
+        renderDonorRanking(query, validDonations, resultEl);
+    }
+}
+
+function getMedal(rank) {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return '';
+}
+
+function renderStreamerRanking(query, validDonations, resultEl) {
+    // 검색어와 매칭되는 스트리머 찾기
+    const matchedStreamers = (streamers || []).filter(s => s.toLowerCase().includes(query));
+
+    if (matchedStreamers.length === 0) {
+        resultEl.innerHTML = '<div class="ranking-empty">일치하는 스트리머가 없습니다.</div>';
+        return;
+    }
+
+    let html = '';
+
+    matchedStreamers.forEach(streamer => {
+        const emoji = emojis[streamer] || '';
+        const streamerDonations = validDonations.filter(d => d.streamer === streamer);
+
+        // 후원자별 합산
+        const donorTotals = {};
+        let totalAmount = 0;
+        streamerDonations.forEach(d => {
+            const amount = parseFloat(d.amount) || 0;
+            const donor = d.donor;
+            if (!donorTotals[donor]) donorTotals[donor] = { amount: 0, count: 0, types: new Set() };
+            donorTotals[donor].amount += amount;
+            donorTotals[donor].count++;
+            donorTotals[donor].types.add(d.type);
+            totalAmount += amount;
+        });
+
+        // 정렬
+        const sorted = Object.entries(donorTotals)
+            .map(([name, data]) => ({ name, ...data, types: Array.from(data.types) }))
+            .sort((a, b) => b.amount - a.amount);
+
+        const maxAmount = sorted.length > 0 ? sorted[0].amount : 1;
+
+        html += `<div class="ranking-summary-box">
+            <strong>${emoji} ${streamer}</strong>
+            <span class="stat">후원자 <span class="stat-value">${sorted.length}명</span></span>
+            <span class="stat">총액 <span class="stat-value">${parseFloat(totalAmount.toFixed(1))}만원</span></span>
+            <span class="stat">건수 <span class="stat-value">${streamerDonations.length}건</span></span>
+        </div>`;
+
+        if (sorted.length === 0) {
+            html += '<div class="ranking-empty">후원 내역이 없습니다.</div>';
+        } else {
+            sorted.forEach((item, idx) => {
+                const rank = idx + 1;
+                const medal = getMedal(rank);
+                const barWidth = (item.amount / maxAmount * 100).toFixed(1);
+                html += `<div class="ranking-item">
+                    ${medal ? `<div class="ranking-medal">${medal}</div>` : `<div class="ranking-rank">${rank}</div>`}
+                    <div class="ranking-info">
+                        <div class="ranking-name">${item.name}</div>
+                        <div class="ranking-detail">${item.count}건 | ${item.types.join(', ')}</div>
+                        <div class="ranking-bar-bg"><div class="ranking-bar" style="width:${barWidth}%"></div></div>
+                    </div>
+                    <div class="ranking-amount">${parseFloat(item.amount.toFixed(1))}만</div>
+                </div>`;
+            });
+        }
+    });
+
+    resultEl.innerHTML = html;
+}
+
+function renderDonorRanking(query, validDonations, resultEl) {
+    // 검색어와 매칭되는 후원자 찾기
+    const allDonors = [...new Set(validDonations.map(d => d.donor))];
+    const matchedDonors = allDonors.filter(d => d.toLowerCase().includes(query));
+
+    if (matchedDonors.length === 0) {
+        resultEl.innerHTML = '<div class="ranking-empty">일치하는 후원자가 없습니다.</div>';
+        return;
+    }
+
+    let html = '';
+
+    matchedDonors.forEach(donor => {
+        const donorDonations = validDonations.filter(d => d.donor === donor);
+
+        // 스트리머별 합산
+        const streamerTotals = {};
+        let totalAmount = 0;
+        donorDonations.forEach(d => {
+            const amount = parseFloat(d.amount) || 0;
+            const s = d.streamer;
+            if (!streamerTotals[s]) streamerTotals[s] = { amount: 0, count: 0, types: new Set() };
+            streamerTotals[s].amount += amount;
+            streamerTotals[s].count++;
+            streamerTotals[s].types.add(d.type);
+            totalAmount += amount;
+        });
+
+        // 정렬
+        const sorted = Object.entries(streamerTotals)
+            .map(([name, data]) => ({ name, emoji: emojis[name] || '', ...data, types: Array.from(data.types) }))
+            .sort((a, b) => b.amount - a.amount);
+
+        const maxAmount = sorted.length > 0 ? sorted[0].amount : 1;
+
+        html += `<div class="ranking-summary-box">
+            <strong>${donor}</strong>
+            <span class="stat">후원 스트리머 <span class="stat-value">${sorted.length}명</span></span>
+            <span class="stat">총액 <span class="stat-value">${parseFloat(totalAmount.toFixed(1))}만원</span></span>
+            <span class="stat">건수 <span class="stat-value">${donorDonations.length}건</span></span>
+        </div>`;
+
+        if (sorted.length === 0) {
+            html += '<div class="ranking-empty">후원 내역이 없습니다.</div>';
+        } else {
+            sorted.forEach((item, idx) => {
+                const rank = idx + 1;
+                const medal = getMedal(rank);
+                const barWidth = (item.amount / maxAmount * 100).toFixed(1);
+                html += `<div class="ranking-item">
+                    ${medal ? `<div class="ranking-medal">${medal}</div>` : `<div class="ranking-rank">${rank}</div>`}
+                    <div class="ranking-info">
+                        <div class="ranking-name">${item.emoji} ${item.name}</div>
+                        <div class="ranking-detail">${item.count}건 | ${item.types.join(', ')}</div>
+                        <div class="ranking-bar-bg"><div class="ranking-bar" style="width:${barWidth}%"></div></div>
+                    </div>
+                    <div class="ranking-amount">${parseFloat(item.amount.toFixed(1))}만</div>
+                </div>`;
+            });
+        }
+    });
+
+    resultEl.innerHTML = html;
 }
 
 </script>
