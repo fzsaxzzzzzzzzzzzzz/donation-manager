@@ -2368,7 +2368,8 @@ function updateSummary() {
             const totalForStreamer = parseFloat((streamerTotals[d.streamer] || 0).toFixed(1));
             return `${emojis[d.streamer] || ''}${d.streamer} (+${parseFloat(d.amount).toFixed(1)}/${totalForStreamer})`;
         }).join(', ');
-        return `${group.donor} > ${donationTexts}`;
+        const types = [...new Set(group.donations.map(d => d.type))].join('/');
+        return `💝 ${group.donor}님(${types}) > ${donationTexts} 감사합니다!`;
     }).join('\n');
 
     updateMissionSummary();
