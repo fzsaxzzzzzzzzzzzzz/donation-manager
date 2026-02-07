@@ -449,6 +449,98 @@ app.get('/ping', (req, res) => {
   });
 });
 
+// Nightbot 커스텀 명령어용 API (인증 없음 - $(urlfetch) 용)
+app.get('/api/nightbot/status', (req, res) => {
+  try {
+    const donations = currentData.donations || [];
+    const streamers = currentData.streamers || [];
+    const emojis = currentData.emojis || {};
+
+    if (donations.length === 0) {
+      return res.type('text/plain').send('아직 후원 내역이 없습니다.');
+    }
+
+    // 스트리머별 합계 계산
+    const totals = {};
+    let grandTotal = 0;
+    streamers.forEach(s => { totals[s] = 0; });
+
+    donations.forEach(d => {
+      const amt = parseFloat(d.amount) || 0;
+      if (totals[d.streamer] !== undefined) {
+        totals[d.streamer] += amt;
+      }
+      grandTotal += amt;
+    });
+
+    // 텍스트 조합 (Nightbot 400자 제한)
+    const parts = streamers
+      .filter(s => s !== '국고')
+      .map(s => `${emojis[s] || ''}${s}(${totals[s] || 0})`);
+
+    const treasury = totals['국고'] || 0;
+    const text = `${parts.join(' ')} 🏦국고(${treasury}) 💵총합(${grandTotal})`;
+
+    res.type('text/plain').send(text);
+  } catch (error) {
+    res.type('text/plain').send('오류 발생');
+  }
+});
+
+app.get('/api/nightbot/top', (req, res) => {
+  try {
+    const donations = currentData.donations || [];
+
+    if (donations.length === 0) {
+      return res.type('text/plain').send('아직 후원 내역이 없습니다.');
+    }
+
+    // 후원자별 합계
+    const donorTotals = {};
+    donations.forEach(d => {
+      const amt = parseFloat(d.amount) || 0;
+      donorTotals[d.donor] = (donorTotals[d.donor] || 0) + amt;
+    });
+
+    // 상위 5명
+    const sorted = Object.entries(donorTotals)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    const text = '🏆 후원 TOP5: ' + sorted
+      .map(([name, amt], i) => `${i + 1}. ${name}(${amt}만원)`)
+      .join(' ');
+
+    res.type('text/plain').send(text);
+  } catch (error) {
+    res.type('text/plain').send('오류 발생');
+  }
+});
+
+app.get('/api/nightbot/mission', (req, res) => {
+  try {
+    const missions = (currentData.missions || []).filter(m => m.status === 'running');
+    const donations = currentData.donations || [];
+
+    if (missions.length === 0) {
+      return res.type('text/plain').send('진행 중인 펀딩 미션이 없습니다.');
+    }
+
+    const parts = missions.map(m => {
+      const donated = donations
+        .filter(d => d.streamer === m.streamer)
+        .reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+      const current = (m.initialAmount || 0) + donated;
+      const pct = Math.min(100, Math.round((current / m.target) * 100));
+      return `🎯 ${m.description}: ${current}/${m.target}만원 (${pct}%)`;
+    });
+
+    res.type('text/plain').send(parts.join(' | '));
+  } catch (error) {
+    res.type('text/plain').send('오류 발생');
+  }
+});
+
 // 웹훅 엔드포인트 (인증 없음 - 외부 서비스용)
 app.post('/api/webhook/toonation', express.json(), async (req, res) => {
   try {

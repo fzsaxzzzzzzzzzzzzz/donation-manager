@@ -2114,14 +2114,23 @@ function updateSimpleRecentList() {
     
     // 최근 10개만 표시
     const recentDonations = donations.slice(-10).reverse();
-    const listHtml = recentDonations.map(d => {
-        const timeStr = new Date(d.time).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
-        const emoji = emojis[d.streamer] || '';
+
+    // 후원자별로 그룹화 (같은 시간대 후원 묶기)
+    const grouped = {};
+    recentDonations.forEach(d => {
+        const key = `${d.donor}-${d.time}`;
+        if (!grouped[key]) grouped[key] = { donor: d.donor, donations: [], time: d.time };
+        grouped[key].donations.push(d);
+    });
+
+    const listHtml = Object.values(grouped).map(group => {
+        const donationTexts = group.donations.map(d => {
+            const streamerTotal = donations.filter(dd => dd.streamer === d.streamer).reduce((sum, dd) => sum + parseFloat(dd.amount), 0);
+            return `${emojis[d.streamer] || ''}${d.streamer} (+${parseFloat(d.amount).toFixed(1)}만/${parseFloat(streamerTotal).toFixed(1)}만)`;
+        }).join(', ');
+        const types = [...new Set(group.donations.map(d => d.type))].join('/');
         return `<div style="padding: 5px 0; border-bottom: 1px solid #ddd;">
-            <span style="font-weight: bold;">${d.donor}</span> →
-            <span style="color: #666;">${emoji}${d.streamer}</span>
-            <span style="color: #e74c3c; font-weight: bold;">${d.amount}만</span>
-            <span style="color: #999; font-size: 11px;">(${d.type}, ${timeStr})</span>
+            💝 <span style="font-weight: bold;">${group.donor}</span>님<span style="color: #888; font-size: 11px;">(${types})</span> > ${donationTexts} 감사합니다!
         </div>`;
     }).join('');
     
