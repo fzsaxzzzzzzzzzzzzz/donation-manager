@@ -131,6 +131,17 @@ div, span, p, br {
 .goal-bar::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.4) 50%,transparent 100%);border-radius:12px}
 .goal-text{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:var(--goal-text-size,16px);text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,2px 2px 4px rgba(0,0,0,.8);z-index:10;white-space:nowrap}
 
+/* 펀딩 미션 */
+.goal-missions{display:none;margin-top:4px}
+.goal-missions.visible{display:block}
+.gm-card{position:relative;width:100%;height:var(--gm-height,24px);background:rgba(30,30,30,.85);border-radius:12px;margin-bottom:3px;overflow:hidden;border:2px solid rgba(255,255,255,.15)}
+.gm-bar{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#059669,#10b981,#34d399);border-radius:10px}
+.gm-bar.done{background:linear-gradient(90deg,#d97706,#f59e0b,#fbbf24)}
+.gm-info{position:relative;z-index:10;display:flex;justify-content:space-between;align-items:center;height:100%;padding:0 10px;font-size:var(--gm-font,13px);font-weight:bold;color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+.gm-info .gm-l{display:flex;align-items:center;gap:4px}
+.gm-info .gm-r{display:flex;align-items:center;gap:6px}
+.gm-pct.done{color:#fef08a}
+
 .overlay-container{display:flex;flex-direction:column}
 
 /* 크로마키 지원 */
@@ -148,6 +159,7 @@ div, span, p, br {
             <div class="goal-text" id="goal-text">0 / 50만원 (0%)</div>
             <div class="goal-bar" id="goal-bar"></div>
         </div>
+        <div class="goal-missions" id="goal-missions"></div>
     </div>
     <div class="donor-content" id="donor-content">
         <div class="loading">실시간 서버 연결 중...</div>
@@ -170,6 +182,9 @@ class RealtimeDonorOverlay {
             'includeSuperchat': localStorage.getItem('include-superchat') === 'true'
         };
         this.dailyGoal = { target: 50 };
+        this.missions = [];
+        this.emojis = {};
+        this.missionAdjustments = [];
         this.currentTextMode = 'progress';
         this.goalTextSwitchInterval = null;
         this.isConnected = false;
@@ -329,12 +344,15 @@ class RealtimeDonorOverlay {
         this.socket.on('initialData', (data) => {
             console.log('📊 초기 데이터 수신:', data);
             this.donations = data.donations || [];
-            // 초기 설정 적용
+            this.missions = data.missions || data.runningMissions || [];
+            this.emojis = data.emojis || {};
+            this.missionAdjustments = data.missionAdjustments || [];
             const initialSettings = data.settings || {};
             this.settings = { ...this.settings, ...initialSettings };
             this.dailyGoal = initialSettings.dailyGoal || { target: 50 };
             this.applySettings();
             this.updateGoalGraph();
+            this.renderMissions();
             this.updateDisplay();
         });
         
@@ -347,6 +365,9 @@ class RealtimeDonorOverlay {
 
             console.log('🔄 실시간 데이터 업데이트 수신:', data.donations?.length || 0, '건');
             this.donations = data.donations || [];
+            this.missions = data.missions || data.runningMissions || this.missions;
+            this.emojis = data.emojis || this.emojis;
+            this.missionAdjustments = data.missionAdjustments || this.missionAdjustments;
 
             if (data.settings) {
                 console.log('⚙️ 설정 업데이트 포함:', Object.keys(data.settings));
@@ -356,6 +377,7 @@ class RealtimeDonorOverlay {
             }
 
             this.updateGoalGraph();
+            this.renderMissions();
             this.throttledUpdate();
             this.flashUpdate();
         });
@@ -366,6 +388,7 @@ class RealtimeDonorOverlay {
             this.dailyGoal = settings.dailyGoal || this.dailyGoal;
             this.applySettings();
             this.updateGoalGraph();
+            this.renderMissions();
             this.updateDisplay();
         });
     }
@@ -460,6 +483,15 @@ class RealtimeDonorOverlay {
         const alignMap = { left: 'flex-start', center: 'center', right: 'flex-end' };
         root.style.setProperty('--goal-align', alignMap[goalAlign] || 'flex-start');
 
+        // 펀딩 미션 표시
+        const showMissions = this.settings['total-show-missions'] === true || this.settings['total-show-missions'] === 'true';
+        const missionsEl = document.getElementById('goal-missions');
+        if (missionsEl) missionsEl.classList.toggle('visible', showMissions);
+        const missionHeight = this.settings['total-mission-height'] || 24;
+        const missionFont = this.settings['total-mission-font-size'] || 13;
+        root.style.setProperty('--gm-height', missionHeight + 'px');
+        root.style.setProperty('--gm-font', missionFont + 'px');
+
         // 그래프 크기 설정 반영
         const barHeight = this.settings['total-goal-progress-height'] || 30;
         const barTextSize = this.settings['total-goal-progress-text-size'] || 16;
@@ -541,6 +573,33 @@ class RealtimeDonorOverlay {
             }
         }
         if (goalBar) goalBar.style.width = `${Math.min(progressPercent, 100)}%`;
+    }
+
+    renderMissions() {
+        const showMissions = this.settings['total-show-missions'] === true || this.settings['total-show-missions'] === 'true';
+        if (!showMissions) return;
+        const el = document.getElementById('goal-missions');
+        if (!el) return;
+
+        const running = (this.missions || []).filter(m => m && (m.status === 'running' || m.status === 'completed'));
+        if (running.length === 0) { el.innerHTML = ''; return; }
+
+        const fmt = (n) => n % 1 === 0 ? Math.floor(n) : n.toFixed(1);
+        el.innerHTML = running.map(m => {
+            const target = parseFloat(m.target) || 0;
+            const init = parseFloat(m.initialAmount) || 0;
+            const donated = this.donations
+                .filter(d => d.streamer === m.streamer && new Date(d.time) >= new Date(m.startTime))
+                .reduce((s, d) => s + (parseFloat(d.amount) || 0), 0);
+            const adjusted = (this.missionAdjustments || [])
+                .filter(a => a.streamer === m.streamer && new Date(a.time) >= new Date(m.startTime))
+                .reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+            const cur = init + donated + adjusted;
+            const pct = target > 0 ? Math.min((cur / target) * 100, 100) : 0;
+            const done = pct >= 100 || m.status === 'completed';
+            const emoji = this.emojis[m.streamer] || '';
+            return `<div class="gm-card"><div class="gm-bar${done ? ' done' : ''}" style="width:${pct}%"></div><div class="gm-info"><span class="gm-l"><span>${emoji}</span><span>${m.streamer}</span></span><span class="gm-r"><span>${fmt(cur)}/${fmt(target)}</span><span class="gm-pct${done ? ' done' : ''}">${Math.round(pct)}%</span></span></div></div>`;
+        }).join('');
     }
 
     updateDisplay() {
