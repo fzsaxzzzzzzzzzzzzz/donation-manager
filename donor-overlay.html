@@ -42,7 +42,7 @@ body {
 .donor-content {
     font-size: var(--overlay-font-size, 18px) !important;
     font-weight: bold;
-    color: white;
+    color: var(--overlay-text-color, white);
     text-shadow: var(--overlay-text-shadow, 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000, 3px 0px 0 #000000, -3px 0px 0 #000000, 0px 3px 0 #000000, 0px -3px 0 #000000) !important;
     line-height: var(--overlay-line-height, 1.5);
     white-space: pre-line;
@@ -54,7 +54,7 @@ body {
 .no-data {
     font-size: var(--overlay-font-size, 20px) !important;
     font-weight: bold;
-    color: white !important;
+    color: var(--overlay-text-color, white) !important;
     text-shadow: var(--overlay-text-shadow, 3px 3px 0 #000000, -3px -3px 0 #000000, 3px -3px 0 #000000, -3px 3px 0 #000000) !important;
     text-align: var(--overlay-text-align, center) !important;
     padding: 40px 20px;
@@ -121,6 +121,18 @@ div, span, p, br {
 
 /* 연결 상태 표시 제거됨 */
 
+/* 총액 그래프 */
+.goal-section{margin-bottom:8px;display:none;width:var(--goal-width, 100%);align-self:var(--goal-align, flex-start)}
+.goal-section.show{display:block}
+.goal-section.pos-bottom{order:10;margin-bottom:0;margin-top:8px}
+.goal-title{text-align:center;margin-bottom:6px;font-size:var(--goal-title-size,18px);font-weight:bold;color:white;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,2px 2px 4px rgba(0,0,0,.8)}
+.goal-bar-wrap{width:100%;height:var(--goal-bar-height,30px);background:linear-gradient(90deg,#2c2c2c,#404040);border-radius:15px;overflow:hidden;border:3px solid #555;box-shadow:inset 0 3px 8px rgba(0,0,0,.6);position:relative}
+.goal-bar{height:100%;background:linear-gradient(90deg,#ff6b35,#ff8a50,#ffa726);width:0%;border-radius:12px;position:relative;box-shadow:0 3px 15px rgba(255,107,53,.6)}
+.goal-bar::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.4) 50%,transparent 100%);border-radius:12px}
+.goal-text{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:var(--goal-text-size,16px);text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,2px 2px 4px rgba(0,0,0,.8);z-index:10;white-space:nowrap}
+
+.overlay-container{display:flex;flex-direction:column}
+
 /* 크로마키 지원 */
 .transparent-mode {
     background: #00FF00;
@@ -130,6 +142,13 @@ div, span, p, br {
 <body>
 
 <div class="overlay-container">
+    <div class="goal-section" id="goal-section">
+        <div class="goal-title" id="goal-title" style="display:none">오늘의 목표</div>
+        <div class="goal-bar-wrap">
+            <div class="goal-text" id="goal-text">0 / 50만원 (0%)</div>
+            <div class="goal-bar" id="goal-bar"></div>
+        </div>
+    </div>
     <div class="donor-content" id="donor-content">
         <div class="loading">실시간 서버 연결 중...</div>
     </div>
@@ -150,9 +169,12 @@ class RealtimeDonorOverlay {
             'overlay-text-align': 'left',
             'includeSuperchat': localStorage.getItem('include-superchat') === 'true'
         };
+        this.dailyGoal = { target: 50 };
+        this.currentTextMode = 'progress';
+        this.goalTextSwitchInterval = null;
         this.isConnected = false;
         this.batterySaveMode = false;
-        
+
         // 극한 배터리 절약 모드 활성화
         this.enableBatterySaving();
         this.enableCPUThrottling();
@@ -310,7 +332,9 @@ class RealtimeDonorOverlay {
             // 초기 설정 적용
             const initialSettings = data.settings || {};
             this.settings = { ...this.settings, ...initialSettings };
+            this.dailyGoal = initialSettings.dailyGoal || { target: 50 };
             this.applySettings();
+            this.updateGoalGraph();
             this.updateDisplay();
         });
         
@@ -320,16 +344,18 @@ class RealtimeDonorOverlay {
                 console.log('📱 절전 모드: 업데이트 스킵');
                 return;
             }
-            
+
             console.log('🔄 실시간 데이터 업데이트 수신:', data.donations?.length || 0, '건');
             this.donations = data.donations || [];
-            
+
             if (data.settings) {
                 console.log('⚙️ 설정 업데이트 포함:', Object.keys(data.settings));
                 this.settings = { ...this.settings, ...data.settings };
+                this.dailyGoal = data.settings.dailyGoal || this.dailyGoal;
                 this.applySettings();
             }
-            
+
+            this.updateGoalGraph();
             this.throttledUpdate();
             this.flashUpdate();
         });
@@ -337,7 +363,9 @@ class RealtimeDonorOverlay {
         this.socket.on('settingsUpdate', (settings) => {
             console.log('⚙️ 설정 업데이트 수신:', settings);
             this.settings = { ...this.settings, ...settings };
+            this.dailyGoal = settings.dailyGoal || this.dailyGoal;
             this.applySettings();
+            this.updateGoalGraph();
             this.updateDisplay();
         });
     }
@@ -413,11 +441,111 @@ class RealtimeDonorOverlay {
         root.style.setProperty('--overlay-line-height', lineHeight);
         root.style.setProperty('--overlay-text-shadow', this.generateTextShadow(strokeWidth));
 
-        console.log('🔧 설정 적용됨:', { fontSize, strokeWidth, textAlign, lineHeight });
+        // 후원자 텍스트 색상
+        const textColor = this.settings['overlay-text-color'] || '#ffffff';
+        root.style.setProperty('--overlay-text-color', textColor);
+
+        // 총액 그래프 설정 적용
+        const goalSection = document.getElementById('goal-section');
+        const showGoal = this.settings['donor-overlay-show-goal'] === true || this.settings['donor-overlay-show-goal'] === 'true';
+        const goalPosition = this.settings['donor-overlay-goal-position'] || 'top';
+        const goalWidth = parseInt(this.settings['donor-overlay-goal-width']) || 100;
+
+        goalSection.classList.toggle('show', showGoal);
+        goalSection.classList.toggle('pos-bottom', goalPosition === 'bottom');
+        root.style.setProperty('--goal-width', goalWidth + '%');
+
+        // 그래프 좌중우 정렬
+        const goalAlign = this.settings['donor-overlay-goal-align'] || 'left';
+        const alignMap = { left: 'flex-start', center: 'center', right: 'flex-end' };
+        root.style.setProperty('--goal-align', alignMap[goalAlign] || 'flex-start');
+
+        // 그래프 크기 설정 반영
+        const barHeight = this.settings['total-goal-progress-height'] || 30;
+        const barTextSize = this.settings['total-goal-progress-text-size'] || 16;
+        const titleSize = this.settings['total-goal-title-font-size'] || 18;
+        root.style.setProperty('--goal-bar-height', barHeight + 'px');
+        root.style.setProperty('--goal-text-size', barTextSize + 'px');
+        root.style.setProperty('--goal-title-size', titleSize + 'px');
+
+        // 목표 제목 표시
+        const goalTitle = document.getElementById('goal-title');
+        const customTitle = this.settings['total-goal-custom-title'] || '';
+        const showTitle = this.settings['total-goal-show-title'] !== false;
+        goalTitle.style.display = (showTitle && customTitle) ? 'block' : 'none';
+        if (customTitle) goalTitle.textContent = customTitle;
+
+        // 텍스트 전환 설정 (설정 변경 시에만 재설정)
+        const switchKey = `${this.settings['total-goal-text-switch-enabled']}_${this.settings['total-goal-text-switch-interval']}`;
+        if (this._lastSwitchKey !== switchKey) {
+            this._lastSwitchKey = switchKey;
+            this.setupGoalTextSwitch();
+        }
+
+        console.log('🔧 설정 적용됨:', { fontSize, strokeWidth, textAlign, lineHeight, showGoal, goalPosition, goalWidth, goalAlign });
     }
     
+    setupGoalTextSwitch() {
+        if (this.goalTextSwitchInterval) {
+            clearInterval(this.goalTextSwitchInterval);
+            this.goalTextSwitchInterval = null;
+        }
+        const val = this.settings['total-goal-text-switch-enabled'];
+        const enabled = val === true || val === 'true' || val === 1;
+        console.log('🔄 텍스트 전환 설정:', { raw: val, enabled });
+        if (enabled) {
+            const sec = (parseInt(this.settings['total-goal-text-switch-interval']) || 5) * 1000;
+            console.log(`🔄 텍스트 전환 시작: ${sec/1000}초 간격`);
+            this.goalTextSwitchInterval = setInterval(() => {
+                this.currentTextMode = this.currentTextMode === 'progress' ? 'remaining' : 'progress';
+                console.log('🔄 텍스트 모드 전환:', this.currentTextMode);
+                this.updateGoalGraph();
+            }, sec);
+        } else {
+            this.currentTextMode = 'progress';
+        }
+    }
+
+    updateGoalGraph() {
+        const showGoal = this.settings['donor-overlay-show-goal'] === true || this.settings['donor-overlay-show-goal'] === 'true';
+        if (!showGoal) return;
+
+        const donationTotal = this.donations
+            .filter(d => !d.excludeFromTotal && !d.isMissionAdjustment)
+            .reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+
+        const initialAmount = parseFloat(this.dailyGoal.initialAmount) || 0;
+        const currentAmount = donationTotal + initialAmount;
+        let targetAmount = parseFloat(this.dailyGoal.target) || 50;
+
+        // 자동 연장
+        if ((this.dailyGoal.autoExtendEnabled || this.dailyGoal.autoExtend) && currentAmount >= targetAmount) {
+            const extendAmount = parseFloat(this.dailyGoal.extendAmount) || 50;
+            targetAmount = Math.ceil(currentAmount / extendAmount) * extendAmount + extendAmount;
+        }
+
+        const progressPercent = targetAmount > 0 ? Math.min((currentAmount / targetAmount) * 100, 100) : 0;
+        const remainingAmount = Math.max(targetAmount - currentAmount, 0);
+        const formatAmt = (n) => n % 1 === 0 ? Math.floor(n).toString() : n.toFixed(1);
+
+        // 텍스트 전환
+        const goalText = document.getElementById('goal-text');
+        const goalBar = document.getElementById('goal-bar');
+        if (goalText) {
+            if (this.currentTextMode === 'remaining') {
+                goalText.textContent = remainingAmount > 0
+                    ? `목표까지 ${formatAmt(remainingAmount)}만원 남음`
+                    : `목표 달성! (+${formatAmt(currentAmount - targetAmount)}만원)`;
+            } else {
+                goalText.textContent = `${formatAmt(currentAmount)} / ${formatAmt(targetAmount)}만원 (${Math.round(progressPercent)}%)`;
+            }
+        }
+        if (goalBar) goalBar.style.width = `${Math.min(progressPercent, 100)}%`;
+    }
+
     updateDisplay() {
         const contentEl = document.getElementById('donor-content');
+        contentEl.style.color = '';
 
         // 카카오뱅크 계좌 정보 표시 설정
         const showKakaoBank = this.settings.showKakaoBank !== false;
@@ -639,7 +767,7 @@ class RealtimeDonorOverlay {
         const contentEl = document.getElementById('donor-content');
         contentEl.textContent = message;
         contentEl.className = 'no-data';
-        contentEl.style.color = '#ffcccb';
+        contentEl.style.color = '';
     }
     
     flashUpdate() {
