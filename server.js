@@ -183,10 +183,11 @@ function requireSuperAdmin(req, res, next) {
 const protectedPages = [
   'all-in-one.html',
   'donation-manager.html',
-  'donation-manager-realtime.html', 
+  'donation-manager-realtime.html',
   'admin-settings.html',
   'settings-sheet.html',
-  'donation-sheet.html'
+  'donation-sheet.html',
+  'dm0.1.html'
 ];
 
 // 최고 관리자만 접근 가능한 페이지들
@@ -194,7 +195,8 @@ const superAdminPages = [
   'admin-settings.html',
   'settings-sheet.html',
   'donation-manager.html',
-  'donation-manager-realtime.html'
+  'donation-manager-realtime.html',
+  'dm0.1.html'
 ];
 
 // 보호된 페이지들에 인증 적용
