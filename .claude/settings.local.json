@@ -2,7 +2,25 @@
   "permissions": {
     "allow": [
       "Bash(node:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(ls:*)",
+      "Bash(git push)",
+      "Bash(wc:*)",
+      "Bash(for f in *.html)",
+      "Bash(done)",
+      "Bash(curl:*)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(netstat:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 22452 -Force\")",
+      "Bash(powershell:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 해외여행 스트리머 추가 및 미션 텍스트 외곽선 강화\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(claude:*)",
+      "Bash(grep:*)",
+      "Bash(npm update:*)",
+      "Bash(dir:*)",
+      "Bash(git push:*)"
     ]
   }
 }

@@ -639,21 +639,22 @@ class RealtimeDonorOverlay {
                 bankDiv.appendChild(bankInfo);
                 
                 // 텍스트 DOM 생성 - 줄간격 설정값 적용
+                const textColor = this.settings['overlay-text-color'] || '#ffffff';
                 const textDiv = document.createElement('div');
                 textDiv.className = 'donor-text';
                 textDiv.textContent = content;
-                textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
-                
+                textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; color: ${textColor} !important;`;
+
                 contentEl.appendChild(bankDiv);
                 contentEl.appendChild(textDiv);
             } else {
                 contentEl.textContent = content;
             }
-            
+
             contentEl.className = 'no-data';
             return;
         }
-        
+
         // 후원자별 총액 계산 (계좌 + 슈퍼챗 옵션) - 정산요약과 동일한 로직
         const donorAccountTotals = {};
         
@@ -749,17 +750,18 @@ class RealtimeDonorOverlay {
                 bankDiv.appendChild(bankInfo);
                 
                 // 텍스트 DOM 생성 - 줄간격 설정값 적용
+                const textColor = this.settings['overlay-text-color'] || '#ffffff';
                 const textDiv = document.createElement('div');
                 textDiv.className = 'donor-text';
                 textDiv.textContent = content;
-                textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important;`;
-                
+                textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; color: ${textColor} !important;`;
+
                 contentEl.appendChild(bankDiv);
                 contentEl.appendChild(textDiv);
             } else {
                 contentEl.textContent = content;
             }
-            
+
             contentEl.className = 'no-data';
             return;
         }
@@ -808,14 +810,16 @@ class RealtimeDonorOverlay {
             const textLineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
             
             // 후원자 텍스트 - 리스트 단위 줄바꿈
+            const textColor = this.settings['overlay-text-color'] || '#ffffff';
             const textDiv = document.createElement('div');
             textDiv.className = 'donor-text';
             textDiv.innerHTML = finalText;
-            textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important;`;
+            textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important; color: ${textColor} !important;`;
 
             contentEl.appendChild(textDiv);
         } else {
-            contentEl.innerHTML = '<div style="line-height: 1.2;">' + finalText + '</div>';
+            const textColor = this.settings['overlay-text-color'] || '#ffffff';
+            contentEl.innerHTML = `<div style="line-height: 1.2; color: ${textColor} !important;">${finalText}</div>`;
         }
         contentEl.className = 'donor-content';
         
@@ -922,10 +926,11 @@ class RealtimeDonorOverlay {
             bankDiv.appendChild(bankInfo);
 
             // 텍스트 DOM 생성
+            const textColor = this.settings['overlay-text-color'] || '#ffffff';
             const textDiv = document.createElement('div');
             textDiv.className = 'donor-text';
             textDiv.textContent = existingText.replace(accountText, '').trim() || '';
-            textDiv.style.cssText = 'line-height: 1.5 !important; margin: 0 !important; padding: 0 !important;';
+            textDiv.style.cssText = `line-height: 1.5 !important; margin: 0 !important; padding: 0 !important; color: ${textColor} !important;`;
 
             contentEl.appendChild(bankDiv);
             contentEl.appendChild(textDiv);

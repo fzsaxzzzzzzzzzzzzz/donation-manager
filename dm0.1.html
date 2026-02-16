@@ -33,18 +33,9 @@ a{color:var(--c-primary);text-decoration:none}
 
 /* Layout */
 .app{display:flex;min-height:100vh}
-.sidebar{width:var(--sidebar-w);background:var(--bg-side);display:flex;flex-direction:column;flex-shrink:0;z-index:100;transition:width .2s ease;position:sticky;top:0;height:100vh}
-.sidebar.mini{width:52px}
-.sidebar.mini .side-hd h1{display:none}
-.sidebar.mini .side-hd{padding:10px 8px;justify-content:center}
-.sidebar.mini .nav-i{padding:12px 0;justify-content:center;gap:0}
-.sidebar.mini .nav-i .lb{display:none}
-.sidebar.mini .side-ft{padding:6px 4px}
-.sidebar.mini .theme-tog span:last-child{display:none}
-.sidebar.mini .theme-tog{justify-content:center;padding:6px 0}
-.sidebar.mini .side-collapse span{transform:rotate(180deg)}
+.sidebar{width:var(--sidebar-w);background:var(--bg-side);display:flex;flex-direction:column;flex-shrink:0;z-index:100}
 .side-hd{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px}
-.side-hd h1{font-size:20px;color:var(--tx-inv);font-weight:700;white-space:nowrap;overflow:hidden}
+.side-hd h1{font-size:20px;color:var(--tx-inv);font-weight:700}
 .side-nav{flex:1;overflow-y:auto;padding:8px 0}
 .nav-i{display:flex;align-items:center;gap:12px;padding:12px 18px;color:var(--tx-side);cursor:pointer;transition:all var(--tr);border-left:3px solid transparent;font-size:16px}
 .nav-i:hover{background:rgba(255,255,255,.05);color:var(--tx-side-a)}
@@ -53,9 +44,6 @@ a{color:var(--c-primary);text-decoration:none}
 .side-ft{padding:10px 16px;border-top:1px solid rgba(255,255,255,.1)}
 .theme-tog{display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--tx-side);font-size:15px;padding:10px 0}
 .theme-tog:hover{color:var(--tx-side-a)}
-.side-collapse{display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tx-side);padding:8px 0;font-size:14px;opacity:.6;transition:opacity .2s}
-.side-collapse:hover{opacity:1}
-.side-collapse span{display:inline-block;transition:transform .2s}
 
 .main{flex:1;display:flex;gap:8px;padding:8px;overflow-x:auto}
 .panel{background:var(--bg-s);border-radius:var(--r-sm);box-shadow:var(--sh-sm);display:flex;flex-direction:column;min-width:420px;flex:1}
@@ -172,23 +160,20 @@ tr:hover{background:var(--bg-sh)}
 
 .empty-msg{padding:30px;text-align:center;color:var(--tx3);font-size:16px}
 
-@media(max-width:1200px) and (min-width:769px){.main .panel:last-child{display:none}}
+@media(max-width:1200px){.main{grid-template-columns:1fr 1fr}.panel:nth-child(3){display:none}}
 @media(max-width:768px){
-  .sidebar{position:fixed;bottom:0;left:0;right:0;width:100%;height:auto;flex-direction:row;z-index:100;padding:0 4px}
-  .side-hd{display:none}
-  .side-ft{display:flex;position:absolute;right:8px;top:50%;transform:translateY(-50%)}
-  .side-ft .theme-tog{padding:4px 8px;font-size:12px;gap:2px}
-  .side-ft .theme-tog span:last-child{display:none}
-  .side-nav{display:flex;overflow-x:auto;padding:0;flex:1}
-  .nav-i{flex-direction:column;gap:2px;padding:8px 10px;font-size:9px;border-left:none;border-top:2px solid transparent;text-align:center;min-width:fit-content}
+  .sidebar{position:fixed;bottom:0;left:0;right:0;width:100%;height:auto;flex-direction:row;z-index:100}
+  .side-hd,.side-ft{display:none}
+  .side-nav{display:flex;overflow-x:auto;padding:0}
+  .nav-i{flex-direction:column;gap:2px;padding:6px 10px;font-size:9px;border-left:none;border-top:2px solid transparent;text-align:center;min-width:fit-content}
   .nav-i.active{border-left-color:transparent;border-top-color:var(--c-primary)}
   .nav-i .lb{display:none}
-  .mob-panel-tabs{display:flex!important;position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:2px solid var(--bd);margin-bottom:6px}
+  .main{display:flex;flex-direction:column;padding:0 4px 65px;gap:0;overflow-x:hidden}
+  .mob-panel-tabs{display:flex;position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:2px solid var(--bd);margin-bottom:6px}
   .mob-panel-tabs button{flex:1;padding:10px 6px;border:none;background:none;font-size:14px;font-weight:600;color:var(--tx3);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}
   .mob-panel-tabs button.active{color:var(--c-primary);border-bottom-color:var(--c-primary)}
-  .main{display:flex;flex-direction:column;padding:0 4px 65px;gap:0;overflow-x:hidden}
-  .main .panel{display:none!important;min-width:0;width:100%}
-  .main .panel.mob-active{display:block!important}
+  .panel{display:none;min-width:0;width:100%}
+  .panel.mob-active{display:block}
 }
 .mt-s{margin-top:6px}.mt-m{margin-top:10px}.mb-s{margin-bottom:6px}.mb-m{margin-bottom:10px}
 .hidden{display:none!important}
@@ -200,7 +185,7 @@ tr:hover{background:var(--bg-sh)}
 <div class="app">
 <!-- Sidebar -->
 <nav class="sidebar">
-  <div class="side-hd"><span style="font-size:20px">📋</span><h1>후원관리</h1><span class="side-collapse" onclick="toggleSidebar()" style="margin-left:auto"><span>◀</span></span></div>
+  <div class="side-hd"><span style="font-size:20px">📋</span><h1>후원관리</h1></div>
   <div class="side-nav" id="sidebar-nav">
     <div class="nav-i active" data-view="donation"><span class="ic">💰</span><span class="lb">후원등록</span></div>
     <div class="nav-i" data-view="streamer"><span class="ic">👥</span><span class="lb">스트리머</span></div>
@@ -215,7 +200,7 @@ tr:hover{background:var(--bg-sh)}
     <div class="theme-tog" onclick="toggleTheme()"><span id="theme-icon">🌙</span><span>다크모드</span></div>
   </div>
 </nav>
-<div class="main">
+
 <!-- Mobile Panel Tabs -->
 <div class="mob-panel-tabs" style="display:none">
   <button class="active" onclick="switchMobPanel(0, this)">📝 관리</button>
@@ -315,7 +300,6 @@ tr:hover{background:var(--bg-sh)}
           <div class="fg"><label class="fl">줄 간격</label>
             <div class="sl-g"><input type="range" id="overlay-line-height" min="1" max="3" step="0.1" value="1.5"><span class="sl-v" id="overlay-line-height-val">1.5</span></div>
           </div>
-          <div class="fg"><label class="fl">후원자 글자 색상</label><input type="color" class="fi" id="overlay-text-color" value="#ffffff" style="padding:2px;height:32px"></div>
           <div class="fchk"><input type="checkbox" id="showKakaoBank"><label for="showKakaoBank">카카오뱅크 계좌 표시</label></div>
           <div id="kakao-settings" class="mt-s" style="display:none">
             <div class="fg"><label class="fl">계좌 정보</label><input type="text" class="fi" id="kakaoBankAccount" value="카카오뱅크 3333-25-7378436 엄삼O"></div>
@@ -324,36 +308,13 @@ tr:hover{background:var(--bg-sh)}
               <div class="fg"><label class="fl">줄간격</label><input type="number" class="fi" id="kakaoBankLineHeight" value="1" min="0.5" max="3" step="0.1"></div>
             </div>
           </div>
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-            <div class="fchk"><input type="checkbox" id="donor-overlay-show-goal"><label for="donor-overlay-show-goal">총액 그래프 합쳐 보이기</label></div>
-            <div id="donor-goal-settings" class="mt-s" style="display:none">
-              <div class="fr">
-                <div class="fg"><label class="fl">위치</label>
-                  <select class="fs" id="donor-overlay-goal-position"><option value="top">위</option><option value="bottom">아래</option></select>
-                </div>
-                <div class="fg"><label class="fl">정렬</label>
-                  <select class="fs" id="donor-overlay-goal-align"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select>
-                </div>
-              </div>
-              <div class="fg"><label class="fl">넓이 (%)</label>
-                <div class="sl-g"><input type="range" id="donor-overlay-goal-width" min="10" max="100" value="100"><span class="sl-v" id="donor-overlay-goal-width-val">100%</span></div>
-              </div>
-            </div>
-          </div>
           <button class="btn btn-p btn-blk mt-s" onclick="saveOverlaySettings()">설정 저장</button>
         </div>
       </div>
-      <!-- 테이블 오버레이 설정 (통합) -->
+      <!-- 테이블 오버레이 설정 -->
       <div class="card">
         <div class="card-t fold-t" onclick="toggleFold(this)">📊 테이블 오버레이 설정 <span class="fold-arrow">▶</span></div>
         <div class="fold-body" style="display:none">
-          <div class="fg"><label class="fl">테이블 모드</label>
-            <select class="fs" id="table-mode-select" onchange="onTableModeChange(this.value)">
-              <option value="normal">일반 (계좌/투네 분리)</option>
-              <option value="totalOnly">총액만</option>
-            </select>
-          </div>
-          <!-- 공통 설정 -->
           <div class="fr">
             <div class="fg"><label class="fl">투명도 (%)</label><input type="number" class="fi" id="table-opacity" value="85" min="0" max="100"></div>
             <div class="fg"><label class="fl">번호 크기</label><input type="number" class="fi" id="table-number-size" value="16" min="8" max="30"></div>
@@ -366,29 +327,12 @@ tr:hover{background:var(--bg-sh)}
           <div class="fg"><label class="fl">색상 프리셋</label>
             <select class="fs" id="table-color-preset"><option value="blue">블루</option><option value="green">그린</option><option value="purple">퍼플</option><option value="red">레드</option><option value="dark">다크</option></select>
           </div>
-          <!-- 일반 모드 전용 -->
-          <div id="table-normal-options">
-            <div class="fr">
-              <div class="fchk"><input type="checkbox" id="show-total-row" checked><label for="show-total-row">합계 표시</label></div>
-              <div class="fchk"><input type="checkbox" id="show-update-time"><label for="show-update-time">업데이트 시간</label></div>
-            </div>
-            <div class="fg"><label class="fl">그룹 임계값 (만원)</label><input type="number" class="fi" id="groupThreshold" value="9" min="0"></div>
-            <div class="fchk"><input type="checkbox" id="includeSuperchat"><label for="includeSuperchat">슈퍼챗 포함</label></div>
+          <div class="fr">
+            <div class="fchk"><input type="checkbox" id="show-total-row" checked><label for="show-total-row">합계 표시</label></div>
+            <div class="fchk"><input type="checkbox" id="show-update-time"><label for="show-update-time">업데이트 시간</label></div>
           </div>
-          <!-- 총액만 모드 전용 -->
-          <div id="table-totalOnly-options" style="display:none">
-            <div class="fchk"><input type="checkbox" id="totalOnly-showRankNames"><label>랭크 이름 표시</label></div>
-            <div class="fchk mt-s"><input type="checkbox" id="totalOnly-showEomsamyong"><label>엄삼용 표시</label></div>
-            <div class="fchk mt-s"><input type="checkbox" id="totalOnly-fixEomsamyongFirst"><label>엄삼용 1위 고정</label></div>
-            <div class="fchk mt-s"><input type="checkbox" id="totalOnly-showOkgi"><label>옥긔 표시</label></div>
-            <div class="fchk mt-s"><input type="checkbox" id="totalOnly-fixOkgiLast"><label>옥긔 꼴찌 고정</label></div>
-            <div class="fchk mt-s"><input type="checkbox" id="totalOnly-hideGukgo"><label>국고 숨기기</label></div>
-            <div class="fchk mt-s"><input type="checkbox" id="totalOnly-fixGukgoLast"><label>국고 꼴찌 고정</label></div>
-            <div class="fg mt-m"><label class="fl">단위</label>
-              <div class="fchk"><input type="radio" name="totalOnly-currency" id="totalOnly-currencyManwon" value="manwon" checked><label>만원</label></div>
-              <div class="fchk"><input type="radio" name="totalOnly-currency" id="totalOnly-currencyWon" value="won"><label>원</label></div>
-            </div>
-          </div>
+          <div class="fg"><label class="fl">그룹 임계값 (만원)</label><input type="number" class="fi" id="groupThreshold" value="9" min="0"></div>
+          <div class="fchk"><input type="checkbox" id="includeSuperchat"><label for="includeSuperchat">슈퍼챗 포함</label></div>
           <button class="btn btn-p btn-blk mt-s" onclick="saveTableSettings()">테이블 설정 저장</button>
         </div>
       </div>
@@ -481,6 +425,23 @@ tr:hover{background:var(--bg-sh)}
           </div>
         </div>
       </div>
+      <!-- 총액만 오버레이 설정 -->
+      <div class="card">
+        <div class="card-t fold-t" onclick="toggleFold(this)">📊 총액만 오버레이 설정 <span class="fold-arrow">▶</span></div>
+        <div class="fold-body" style="display:none">
+          <div class="fchk"><input type="checkbox" id="totalOnly-showRankNames"><label>랭크 이름 표시</label></div>
+          <div class="fchk mt-s"><input type="checkbox" id="totalOnly-showEomsamyong"><label>엄삼용 표시</label></div>
+          <div class="fchk mt-s"><input type="checkbox" id="totalOnly-fixEomsamyongFirst"><label>엄삼용 1위 고정</label></div>
+          <div class="fchk mt-s"><input type="checkbox" id="totalOnly-showOkgi"><label>옥긔 표시</label></div>
+          <div class="fchk mt-s"><input type="checkbox" id="totalOnly-fixOkgiLast"><label>옥긔 꼴찌 고정</label></div>
+          <div class="fchk mt-s"><input type="checkbox" id="totalOnly-hideGukgo"><label>국고 숨기기</label></div>
+          <div class="fchk mt-s"><input type="checkbox" id="totalOnly-fixGukgoLast"><label>국고 꼴찌 고정</label></div>
+          <div class="fg mt-m"><label class="fl">단위</label>
+            <div class="fchk"><input type="radio" name="totalOnly-currency" id="totalOnly-currencyManwon" value="manwon" checked><label>만원</label></div>
+            <div class="fchk"><input type="radio" name="totalOnly-currency" id="totalOnly-currencyWon" value="won"><label>원</label></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 챗봇 -->
@@ -555,17 +516,13 @@ tr:hover{background:var(--bg-sh)}
       </div>
       <div class="card">
         <div class="card-t">👤 후원자 금액 조정</div>
-        <div class="fg"><label class="fl">후원자명</label><input type="text" class="fi" id="adjust-donor" placeholder="후원자 이름"></div>
-        <div class="fg">
-          <label class="fl">후원 타입</label>
-          <div style="display:flex;gap:15px;font-size:15px">
-            <label><input type="radio" name="donor-paytype" value="계좌" checked> 계좌</label>
-            <label><input type="radio" name="donor-paytype" value="투네"> 투네</label>
-            <label><input type="radio" name="donor-paytype" value="슈퍼챗"> 슈퍼챗</label>
-          </div>
+        <div class="fr">
+          <div class="fg"><label class="fl">후원자</label><input type="text" class="fi" id="adjust-donor" placeholder="후원자 이름"></div>
+          <div class="fg"><label class="fl">스트리머</label><select class="fs" id="adjust-donor-streamer"></select></div>
         </div>
-        <div class="fg"><label class="fl">조정액 (만원)</label><input type="number" class="fi" id="adjust-donor-amount" step="0.1" placeholder="예: +2.0 또는 -1.0"></div>
-        <button class="btn btn-w btn-blk" onclick="adjustDonorAmount()">💝 후원자 금액 조정</button>
+        <div class="fg"><label class="fl">조정액 (만원)</label><input type="number" class="fi" id="adjust-donor-amount" step="0.1"></div>
+        <div class="fg"><label class="fl">사유</label><input type="text" class="fi" id="adjust-donor-reason" placeholder="조정 사유"></div>
+        <button class="btn btn-w btn-blk" onclick="adjustDonorAmount()">후원자 금액 조정</button>
       </div>
     </div>
 
@@ -780,7 +737,7 @@ tr:hover{background:var(--bg-sh)}
     <tbody id="data-table-body"></tbody></table>
   </div>
 </div>
-</div><!-- /main -->
+</div>
 
 <!-- Reset Modal -->
 <div class="modal-ov" id="reset-modal">
@@ -798,7 +755,7 @@ tr:hover{background:var(--bg-sh)}
 <script>
 // ==================== SECTION 1: CONFIG ====================
 const CONFIG = {
-  GOOGLE: { CLIENT_ID: '493287022430-cnkrjl4ssesgvqje6aa4d323hh9pnub4.apps.googleusercontent.com', API_KEY: 'AIzaSyDe02l9470H3LIf3IB3D3zSfQFuNS9Sgfw', SCOPES: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets' },
+  GOOGLE: { CLIENT_ID: '493287022430-tl0bpoij1o2c7u1lqgjaoppo1vdkfcjh.apps.googleusercontent.com', API_KEY: 'AIzaSyBz5arSFW9xSBPW1E0MgsOTfnSCCNn97u8', SCOPES: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets' },
   STORAGE_KEYS: { DONATIONS: 'donation_data', STREAMERS: 'streamer_config', EMOJIS: 'streamer_emojis', MISSIONS: 'mission_data', PASSWORD: 'admin_password', YOUTUBE_API_KEY: 'youtube_api_key', YOUTUBE_VIDEO_ID: 'youtube_video_id' },
   OVERLAYS: [
     { id: 'donor', name: '후원자 목록', file: 'donor-overlay.html', desc: '실시간 후원자 목록' },
@@ -832,7 +789,6 @@ function initializeApp() {
   try {
     loadFromLocalStorage();
     initActiveStreamers();
-    if (localStorage.getItem('sidebar-mini') === 'true') document.querySelector('.sidebar').classList.add('mini');
     connectSocket();
     setupRouter();
     initMobilePanels();
@@ -933,11 +889,6 @@ function toggleTheme() {
 }
 
 function togglePanel(id) { document.getElementById(id).classList.toggle('open'); }
-function toggleSidebar() {
-  const sb = document.querySelector('.sidebar');
-  sb.classList.toggle('mini');
-  localStorage.setItem('sidebar-mini', sb.classList.contains('mini'));
-}
 function toggleFold(titleEl) {
   const body = titleEl.nextElementSibling;
   const arrow = titleEl.querySelector('.fold-arrow');
@@ -950,16 +901,19 @@ function toggleFold(titleEl) {
 // ==================== MOBILE PANEL TABS ====================
 function initMobilePanels() {
   const mq = window.matchMedia('(max-width:768px)');
-  function apply() {
+  function apply(e) {
+    const tabs = document.querySelector('.mob-panel-tabs');
     const panels = document.querySelectorAll('.main > .panel');
-    if (mq.matches) {
+    if (e.matches) {
+      tabs.style.display = 'flex';
       panels.forEach((p, i) => p.classList.toggle('mob-active', i === 0));
     } else {
-      panels.forEach(p => p.classList.remove('mob-active'));
+      tabs.style.display = 'none';
+      panels.forEach(p => { p.classList.remove('mob-active'); p.style.display = ''; });
     }
   }
   mq.addEventListener('change', apply);
-  apply();
+  apply(mq);
 }
 
 function switchMobPanel(idx, btn) {
@@ -1157,7 +1111,7 @@ function updateStreamerList() {
 
 function populateStreamerSelects() {
   const active = streamers.filter(s => activeStreamers.has(s));
-  const selects = ['mission-streamer', 'quick-streamer', 'adjust-streamer'];
+  const selects = ['mission-streamer', 'quick-streamer', 'adjust-streamer', 'adjust-donor-streamer'];
   selects.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
@@ -1766,7 +1720,7 @@ function clearDonationSearch() { document.getElementById('donation-search').valu
 function renderOverlayCards() {
   const el = document.getElementById('overlay-cards');
   if (!el) return;
-  el.innerHTML = CONFIG.OVERLAYS.map(o => `<div class="ov-card" data-overlay-id="${o.id}"><div class="ov-info"><div class="ov-name">${o.name}</div><div class="ov-desc">${o.desc}</div></div><div class="btn-g"><button class="btn btn-sm btn-p" onclick="openOverlay('${o.file}')">열기</button><button class="btn btn-sm btn-o" onclick="copyOverlayURL('${o.file}')">URL</button></div></div>`).join('');
+  el.innerHTML = CONFIG.OVERLAYS.map(o => `<div class="ov-card"><div class="ov-info"><div class="ov-name">${o.name}</div><div class="ov-desc">${o.desc}</div></div><div class="btn-g"><button class="btn btn-sm btn-p" onclick="openOverlay('${o.file}')">열기</button><button class="btn btn-sm btn-o" onclick="copyOverlayURL('${o.file}')">URL</button></div></div>`).join('');
 }
 
 function getOverlayURL(file) { return `${location.origin}/${file}`; }
@@ -1797,12 +1751,6 @@ function bindOverlaySliders() {
   // Text switch toggle
   const ts = document.getElementById('total-goal-text-switch-enabled');
   if (ts) ts.addEventListener('change', () => { document.getElementById('total-goal-text-switch-interval').disabled = !ts.checked; });
-  // Donor overlay goal toggle
-  const dg = document.getElementById('donor-overlay-show-goal');
-  if (dg) dg.addEventListener('change', () => { document.getElementById('donor-goal-settings').style.display = dg.checked ? 'block' : 'none'; });
-  // Donor overlay goal width slider
-  const gw = document.getElementById('donor-overlay-goal-width');
-  if (gw) gw.addEventListener('input', () => { document.getElementById('donor-overlay-goal-width-val').textContent = gw.value + '%'; });
 }
 
 function saveOverlaySettings() {
@@ -1811,39 +1759,18 @@ function saveOverlaySettings() {
     'overlay-stroke-width': document.getElementById('overlay-stroke-width').value,
     'overlay-text-align': document.getElementById('overlay-text-align').value,
     'overlay-line-height': document.getElementById('overlay-line-height').value,
-    'overlay-text-color': document.getElementById('overlay-text-color').value,
     'showKakaoBank': document.getElementById('showKakaoBank').checked,
     'kakaoBankAccount': document.getElementById('kakaoBankAccount').value,
     'kakaoBankSize': parseInt(document.getElementById('kakaoBankSize').value),
-    'kakaoBankLineHeight': parseFloat(document.getElementById('kakaoBankLineHeight').value),
-    'donor-overlay-show-goal': document.getElementById('donor-overlay-show-goal').checked,
-    'donor-overlay-goal-position': document.getElementById('donor-overlay-goal-position').value,
-    'donor-overlay-goal-align': document.getElementById('donor-overlay-goal-align').value,
-    'donor-overlay-goal-width': parseInt(document.getElementById('donor-overlay-goal-width').value)
+    'kakaoBankLineHeight': parseFloat(document.getElementById('kakaoBankLineHeight').value)
   };
   fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({settings}) })
     .then(r=>r.json()).then(d => { if(d.success) showToast('오버레이 설정 저장됨', 'saved'); else showToast('저장 실패', 'error'); })
     .catch(()=>showToast('서버 오류', 'error'));
 }
 
-function onTableModeChange(mode) {
-  document.getElementById('table-normal-options').style.display = mode === 'normal' ? '' : 'none';
-  document.getElementById('table-totalOnly-options').style.display = mode === 'totalOnly' ? '' : 'none';
-  // OBS 오버레이 링크에서 테이블 URL 업데이트
-  const tableFile = mode === 'totalOnly' ? 'total-only-overlay.html' : 'streamer-table-overlay.html';
-  const tableCard = document.querySelector('[data-overlay-id="table"]');
-  if (tableCard) {
-    tableCard.querySelector('.btn-p').setAttribute('onclick', `openOverlay('${tableFile}')`);
-    tableCard.querySelector('.btn-o').setAttribute('onclick', `copyOverlayURL('${tableFile}')`);
-    tableCard.querySelector('.ov-name').textContent = mode === 'totalOnly' ? '총액만 테이블' : '스트리머 테이블';
-    tableCard.querySelector('.ov-desc').textContent = mode === 'totalOnly' ? '총액만 표시 테이블' : '스트리머별 후원 현황';
-  }
-}
-
 function saveTableSettings() {
-  const mode = document.getElementById('table-mode-select').value;
   const settings = {
-    'table-display-mode': mode,
     'table-opacity': document.getElementById('table-opacity').value,
     'table-number-size': document.getElementById('table-number-size').value,
     'table-font-size': document.getElementById('table-font-size').value,
@@ -1868,18 +1795,11 @@ function loadOverlaySettings() {
   setVal('overlay-stroke-width', s['overlay-stroke-width']);
   setVal('overlay-text-align', s['overlay-text-align']);
   setVal('overlay-line-height', s['overlay-line-height']);
-  setVal('overlay-text-color', s['overlay-text-color'] || '#ffffff');
   setChk('showKakaoBank', s['showKakaoBank']);
   setVal('kakaoBankAccount', s['kakaoBankAccount']);
   setVal('kakaoBankSize', s['kakaoBankSize']);
   setVal('kakaoBankLineHeight', s['kakaoBankLineHeight']);
   if (s['showKakaoBank']) document.getElementById('kakao-settings').style.display = 'block';
-  setChk('donor-overlay-show-goal', s['donor-overlay-show-goal']);
-  setVal('donor-overlay-goal-position', s['donor-overlay-goal-position']);
-  setVal('donor-overlay-goal-align', s['donor-overlay-goal-align']);
-  setVal('donor-overlay-goal-width', s['donor-overlay-goal-width'] || 100);
-  const dgs = document.getElementById('donor-goal-settings');
-  if (dgs) dgs.style.display = s['donor-overlay-show-goal'] ? 'block' : 'none';
   // Trigger slider value updates
   document.querySelectorAll('#view-overlay input[type="range"]').forEach(i => i.dispatchEvent(new Event('input')));
 }
@@ -1888,10 +1808,6 @@ function loadTableSettingsFromServer() {
   const s = currentData.settings || {};
   const setVal = (id, val) => { const el = document.getElementById(id); if(el && val !== undefined) el.value = val; };
   const setChk = (id, val) => { const el = document.getElementById(id); if(el) el.checked = val === 'true' || val === true; };
-  // 모드 복원
-  const mode = s['table-display-mode'] || 'normal';
-  setVal('table-mode-select', mode);
-  onTableModeChange(mode);
   setVal('table-opacity', s['table-opacity']);
   setVal('table-number-size', s['table-number-size']);
   setVal('table-font-size', s['table-font-size']);
@@ -2063,25 +1979,19 @@ async function adjustStreamerAmount() {
   } catch(e) { showToast('서버 오류', 'error'); }
 }
 
-function adjustDonorAmount() {
+async function adjustDonorAmount() {
   const donor = document.getElementById('adjust-donor').value.trim();
+  const streamer = document.getElementById('adjust-donor-streamer').value;
   const amount = parseFloat(document.getElementById('adjust-donor-amount').value);
-  const type = document.querySelector('input[name="donor-paytype"]:checked').value;
-  if (!donor) { showToast('후원자명을 입력하세요', 'warning'); return; }
-  if (!amount || amount === 0) { showToast('조정할 금액을 입력하세요', 'warning'); return; }
-
-  const adjustmentDonation = {
-    donor: `${donor}(조정${amount > 0 ? '+' : ''}${amount})`,
-    streamer: '후원자조정',
-    type,
-    amount,
-    time: new Date()
-  };
-
-  document.getElementById('adjust-donor').value = '';
-  document.getElementById('adjust-donor-amount').value = '';
-  handleNewDonations([adjustmentDonation]);
-  showToast(`${donor}님 ${amount > 0 ? '+' : ''}${amount}만원 조정됨`, 'success');
+  const reason = document.getElementById('adjust-donor-reason').value.trim();
+  if (!donor || !streamer || !amount) { showToast('모든 필드를 입력하세요', 'warning'); return; }
+  try {
+    const res = await fetch('/api/donations', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ donor: `${donor} [${reason||'조정'}]`, streamer, type: '기타', amount })
+    });
+    const data = await res.json();
+    if (data.success) { showToast(`${donor} → ${streamer} ${amount>0?'+':''}${amount}만원 조정`, 'success'); document.getElementById('adjust-donor-amount').value=''; document.getElementById('adjust-donor-reason').value=''; }
+  } catch(e) { showToast('서버 오류', 'error'); }
 }
 
 // ==================== SECTION 14: CHATBOT ====================
@@ -2290,11 +2200,8 @@ function initGoogleAPI() {
   if (typeof gapi === 'undefined') return;
   gapi.load('client', async () => {
     try {
-      await gapi.client.init({ apiKey: CONFIG.GOOGLE.API_KEY });
-      // 개별 로드 - 실패해도 다른 API에 영향 없음
-      try { await gapi.client.load('sheets', 'v4'); console.log('✅ Sheets API 로드됨'); } catch(e) { console.warn('⚠️ Sheets API 로드 실패:', e); }
-      try { await gapi.client.load('youtube', 'v3'); console.log('✅ YouTube API 로드됨'); } catch(e) { console.warn('⚠️ YouTube API 로드 실패:', e); }
-    } catch(e) { console.error('❌ Google API 초기화 실패:', e); }
+      await gapi.client.init({ apiKey: CONFIG.GOOGLE.API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest', 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest', 'https://sheets.googleapis.com/$discovery/rest?version=v4'] });
+    } catch(e) {}
   });
 }
 
