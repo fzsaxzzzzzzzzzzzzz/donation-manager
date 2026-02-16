@@ -2292,7 +2292,7 @@ function initGoogleAPI() {
     try {
       await gapi.client.init({ apiKey: CONFIG.GOOGLE.API_KEY });
       // 개별 로드 - 실패해도 다른 API에 영향 없음
-      try { await gapi.client.load('sheets', 'v4'); console.log('✅ Sheets API 로드됨'); } catch(e) { console.warn('⚠️ Sheets API 로드 실패:', e); }
+      // Sheets API는 직접 REST 호출 사용 (gapi.client.load 400 에러 회피)
       try { await gapi.client.load('youtube', 'v3'); console.log('✅ YouTube API 로드됨'); } catch(e) { console.warn('⚠️ YouTube API 로드 실패:', e); }
     } catch(e) { console.error('❌ Google API 초기화 실패:', e); }
   });
@@ -2352,21 +2352,19 @@ async function backupToGoogleSheet() {
   const sheetId = document.getElementById('google-sheet-id').value.trim();
   if (!sheetId) { showToast('Sheet ID를 입력하세요', 'warning'); return; }
   try {
-    // Sheets API 로드 확인 및 재시도
-    if (!gapi.client.sheets) {
-      showToast('Sheets API 로드 중...', 'info');
-      await gapi.client.load('sheets', 'v4');
-    }
+    const token = gapi.client.getToken();
     const values = [['번호','후원자','스트리머','유형','금액','시간']];
     donations.forEach((d,i) => { values.push([i+1, d.donor, d.streamer, d.type, d.amount, d.time]); });
-    await gapi.client.sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId, range: 'Sheet1!A1', valueInputOption: 'RAW', resource: { values }
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A1?valueInputOption=RAW`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ range: 'Sheet1!A1', majorDimension: 'ROWS', values })
     });
-    showToast('Google Sheets 백업 완료', 'success');
+    if (res.ok) showToast('Google Sheets 백업 완료', 'success');
+    else { const err = await res.json(); showToast('Sheets 백업 실패: ' + (err.error?.message || res.status), 'error'); }
   } catch(e) {
     console.error('Sheets 백업 에러:', e);
-    const msg = e.result?.error?.message || e.message || JSON.stringify(e);
-    showToast('Sheets 백업 실패: ' + msg, 'error');
+    showToast('Sheets 백업 실패: ' + e.message, 'error');
   }
 }
 
@@ -2376,18 +2374,18 @@ async function restoreFromGoogleSheet() {
   if (!sheetId) { showToast('Sheet ID를 입력하세요', 'warning'); return; }
   if (!confirm('현재 데이터를 Sheet에서 복원하시겠습니까?')) return;
   try {
-    if (!gapi.client.sheets) {
-      showToast('Sheets API 로드 중...', 'info');
-      await gapi.client.load('sheets', 'v4');
-    }
-    const res = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:F9999' });
-    const rows = res.result.values || [];
+    const token = gapi.client.getToken();
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A2:F9999`, {
+      headers: { 'Authorization': `Bearer ${token.access_token}` }
+    });
+    const data = await res.json();
+    const rows = data.values || [];
     const restored = rows.map(r => ({ id: Date.now().toString() + Math.random().toString(36).substr(2,5), donor:r[1]||'', streamer:r[2]||'', type:r[3]||'', amount:parseFloat(r[4])||0, time:r[5]||new Date().toISOString() }));
     const bulkRes = await fetch('/api/donations/bulk', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({donations:restored, replace:true}) });
-    const data = await bulkRes.json();
-    if (data.success) showToast(`${restored.length}건 복원 완료`, 'success');
+    const result = await bulkRes.json();
+    if (result.success) showToast(`${restored.length}건 복원 완료`, 'success');
     else showToast('복원 실패', 'error');
-  } catch(e) { showToast('복원 오류: ' + (e.result?.error?.message || e.message), 'error'); }
+  } catch(e) { showToast('복원 오류: ' + e.message, 'error'); }
 }
 
 function saveSheetId() {
