@@ -1,6 +1,13 @@
 {
   "donations": [
     {
+      "donor": "s",
+      "streamer": "엄삼용",
+      "type": "계좌",
+      "amount": 13,
+      "time": "2026-02-17T10:18:25.505Z"
+    },
+    {
       "donor": "1",
       "streamer": "엄삼용",
       "type": "계좌",
@@ -83,7 +90,8 @@
     "donor-overlay-goal-width": 52,
     "total-goal-progress-text-size": "16",
     "donor-overlay-goal-align": "right",
-    "table-display-mode": "normal"
+    "table-display-mode": "normal",
+    "donor-list-font-percent": 84
   },
-  "lastUpdated": "2026-02-12T19:52:59.985Z"
+  "lastUpdated": "2026-02-17T10:18:25.505Z"
 }

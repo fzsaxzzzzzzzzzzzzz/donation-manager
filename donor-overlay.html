@@ -14,7 +14,7 @@ body {
     background: transparent;
     font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
     color: white;
-    overflow: hidden;
+    overflow: visible;
     /* 극한 배터리 절약: 하드웨어 가속 완전 비활성화 */
     transform: none;
     -webkit-transform: none;
@@ -35,8 +35,8 @@ body {
 
 .overlay-container {
     background: transparent;
-    max-width: 800px;
     width: 100%;
+    overflow: visible !important;
 }
 
 .donor-content {
@@ -71,6 +71,7 @@ body {
     margin: 0 !important;
     padding: 0 !important;
     display: block !important;
+    white-space: nowrap !important;
 }
 
 .kakao-bank-info div {
@@ -612,6 +613,10 @@ class RealtimeDonorOverlay {
         
         // 카카오뱅크 크기 설정 (절대값 px)
         const kakaoBankSize = this.settings.kakaoBankSize || 18;
+
+        // 후원자 리스트 크기 (계좌 대비 %)
+        const donorListPercent = parseInt(this.settings['donor-list-font-percent']) || 100;
+        const donorListFontSize = Math.round(kakaoBankSize * donorListPercent / 100);
         
         // 카카오뱅크 줄간격 설정
         const kakaoBankLineHeight = this.settings.kakaoBankLineHeight || 1.2;
@@ -643,7 +648,7 @@ class RealtimeDonorOverlay {
                 const textDiv = document.createElement('div');
                 textDiv.className = 'donor-text';
                 textDiv.textContent = content;
-                textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; color: ${textColor} !important;`;
+                textDiv.style.cssText = `font-size: ${donorListFontSize}px !important; line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; color: ${textColor} !important;`;
 
                 contentEl.appendChild(bankDiv);
                 contentEl.appendChild(textDiv);
@@ -754,7 +759,7 @@ class RealtimeDonorOverlay {
                 const textDiv = document.createElement('div');
                 textDiv.className = 'donor-text';
                 textDiv.textContent = content;
-                textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; color: ${textColor} !important;`;
+                textDiv.style.cssText = `font-size: ${donorListFontSize}px !important; line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; color: ${textColor} !important;`;
 
                 contentEl.appendChild(bankDiv);
                 contentEl.appendChild(textDiv);
@@ -814,12 +819,12 @@ class RealtimeDonorOverlay {
             const textDiv = document.createElement('div');
             textDiv.className = 'donor-text';
             textDiv.innerHTML = finalText;
-            textDiv.style.cssText = `line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important; color: ${textColor} !important;`;
+            textDiv.style.cssText = `font-size: ${donorListFontSize}px !important; line-height: ${textLineHeight} !important; margin: 0 !important; padding: 0 !important; display: block !important; color: ${textColor} !important;`;
 
             contentEl.appendChild(textDiv);
         } else {
             const textColor = this.settings['overlay-text-color'] || '#ffffff';
-            contentEl.innerHTML = `<div style="line-height: 1.2; color: ${textColor} !important;">${finalText}</div>`;
+            contentEl.innerHTML = `<div style="font-size: ${donorListFontSize}px; line-height: 1.2; color: ${textColor} !important;">${finalText}</div>`;
         }
         contentEl.className = 'donor-content';
         
