@@ -315,9 +315,7 @@ tr:hover{background:var(--bg-sh)}
           <div class="fg"><label class="fl">줄 간격</label>
             <div class="sl-g"><input type="range" id="overlay-line-height" min="1" max="3" step="0.1" value="1.5"><span class="sl-v" id="overlay-line-height-val">1.5</span></div>
           </div>
-          <div class="fg"><label class="fl">후원자 리스트 크기 (%)</label>
-            <div class="sl-g"><input type="range" id="donor-list-font-percent" min="30" max="150" value="100"><span class="sl-v" id="donor-list-font-percent-val">100%</span></div>
-          </div>
+
           <div class="fg"><label class="fl">후원자 글자 색상</label><input type="color" class="fi" id="overlay-text-color" value="#ffffff" style="padding:2px;height:32px"></div>
           <div class="fchk"><input type="checkbox" id="showKakaoBank"><label for="showKakaoBank">카카오뱅크 계좌 표시</label></div>
           <div id="kakao-settings" class="mt-s" style="display:none">
@@ -1799,7 +1797,6 @@ function bindOverlaySliders() {
     { id: 'overlay-font-size', valId: 'overlay-font-size-val', suffix: 'px' },
     { id: 'overlay-stroke-width', valId: 'overlay-stroke-width-val', suffix: 'px' },
     { id: 'overlay-line-height', valId: 'overlay-line-height-val', suffix: '' },
-    { id: 'donor-list-font-percent', valId: 'donor-list-font-percent-val', suffix: '%' }
   ];
   sliders.forEach(s => {
     const input = document.getElementById(s.id);
@@ -1837,7 +1834,7 @@ function saveOverlaySettings() {
     'kakaoBankAccount': document.getElementById('kakaoBankAccount').value,
     'kakaoBankSize': parseInt(document.getElementById('kakaoBankSize').value),
     'kakaoBankLineHeight': parseFloat(document.getElementById('kakaoBankLineHeight').value),
-    'donor-list-font-percent': parseInt(document.getElementById('donor-list-font-percent').value),
+
     'donor-overlay-show-goal': document.getElementById('donor-overlay-show-goal').checked,
     'donor-overlay-goal-position': document.getElementById('donor-overlay-goal-position').value,
     'donor-overlay-goal-align': document.getElementById('donor-overlay-goal-align').value,
@@ -1891,8 +1888,7 @@ function loadOverlaySettings() {
   setVal('overlay-text-align', s['overlay-text-align']);
   setVal('overlay-line-height', s['overlay-line-height']);
   setVal('overlay-text-color', s['overlay-text-color'] || '#ffffff');
-  setVal('donor-list-font-percent', s['donor-list-font-percent'] || 100);
-  if(document.getElementById('donor-list-font-percent-val')) document.getElementById('donor-list-font-percent-val').textContent = (s['donor-list-font-percent'] || 100) + '%';
+
   setChk('showKakaoBank', s['showKakaoBank']);
   setVal('kakaoBankAccount', s['kakaoBankAccount']);
   setVal('kakaoBankSize', s['kakaoBankSize']);

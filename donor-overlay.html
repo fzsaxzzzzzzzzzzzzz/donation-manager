@@ -614,9 +614,8 @@ class RealtimeDonorOverlay {
         // 카카오뱅크 크기 설정 (절대값 px)
         const kakaoBankSize = this.settings.kakaoBankSize || 18;
 
-        // 후원자 리스트 크기 (계좌 대비 %)
-        const donorListPercent = parseInt(this.settings['donor-list-font-percent']) || 100;
-        const donorListFontSize = Math.round(kakaoBankSize * donorListPercent / 100);
+        // 후원자 리스트 크기 (px)
+        const donorListFontSize = parseInt(this.settings['overlay-font-size']) || 24;
         
         // 카카오뱅크 줄간격 설정
         const kakaoBankLineHeight = this.settings.kakaoBankLineHeight || 1.2;
