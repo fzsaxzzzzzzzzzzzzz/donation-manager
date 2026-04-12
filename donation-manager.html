@@ -1266,7 +1266,7 @@ async function saveBulkUpdate(donation) {
   try {
     await fetch('/api/donations/bulk', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ donations: [donation] })
+      body: JSON.stringify({ donations })
     });
   } catch(e) { showToast('수정 실패', 'error'); }
 }
