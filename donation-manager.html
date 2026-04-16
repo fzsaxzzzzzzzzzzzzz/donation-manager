@@ -326,6 +326,18 @@ tr:hover{background:var(--bg-sh)}
             </div>
           </div>
           <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
+            <div class="fchk"><input type="checkbox" id="showQrCode"><label for="showQrCode">QR 코드 표시</label></div>
+            <div id="qr-settings" class="mt-s" style="display:none">
+              <div class="fg"><label class="fl">QR URL</label><input type="text" class="fi" id="qrCodeUrl" value="https://toon.at/donate/eomsamyong"></div>
+              <div class="fr">
+                <div class="fg"><label class="fl">크기(px)</label><input type="number" class="fi" id="qrCodeSize" value="120" min="50" max="300"></div>
+                <div class="fg"><label class="fl">정렬</label>
+                  <select class="fs" id="qrCodeAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
             <div class="fchk"><input type="checkbox" id="donor-overlay-show-goal"><label for="donor-overlay-show-goal">총액 그래프 합쳐 보이기</label></div>
             <div id="donor-goal-settings" class="mt-s" style="display:none">
               <div class="fr">
@@ -1815,6 +1827,9 @@ function bindOverlaySliders() {
   // Text switch toggle
   const ts = document.getElementById('total-goal-text-switch-enabled');
   if (ts) ts.addEventListener('change', () => { document.getElementById('total-goal-text-switch-interval').disabled = !ts.checked; });
+  // QR code toggle
+  const qr = document.getElementById('showQrCode');
+  if (qr) qr.addEventListener('change', () => { document.getElementById('qr-settings').style.display = qr.checked ? 'block' : 'none'; });
   // Donor overlay goal toggle
   const dg = document.getElementById('donor-overlay-show-goal');
   if (dg) dg.addEventListener('change', () => { document.getElementById('donor-goal-settings').style.display = dg.checked ? 'block' : 'none'; });
@@ -1834,6 +1849,11 @@ function saveOverlaySettings() {
     'kakaoBankAccount': document.getElementById('kakaoBankAccount').value,
     'kakaoBankSize': parseInt(document.getElementById('kakaoBankSize').value),
     'kakaoBankLineHeight': parseFloat(document.getElementById('kakaoBankLineHeight').value),
+
+    'showQrCode': document.getElementById('showQrCode').checked,
+    'qrCodeUrl': document.getElementById('qrCodeUrl').value,
+    'qrCodeSize': parseInt(document.getElementById('qrCodeSize').value),
+    'qrCodeAlign': document.getElementById('qrCodeAlign').value,
 
     'donor-overlay-show-goal': document.getElementById('donor-overlay-show-goal').checked,
     'donor-overlay-goal-position': document.getElementById('donor-overlay-goal-position').value,
@@ -1894,6 +1914,13 @@ function loadOverlaySettings() {
   setVal('kakaoBankSize', s['kakaoBankSize']);
   setVal('kakaoBankLineHeight', s['kakaoBankLineHeight']);
   if (s['showKakaoBank']) document.getElementById('kakao-settings').style.display = 'block';
+
+  setChk('showQrCode', s['showQrCode']);
+  setVal('qrCodeUrl', s['qrCodeUrl'] || 'https://toon.at/donate/eomsamyong');
+  setVal('qrCodeSize', s['qrCodeSize'] || 120);
+  setVal('qrCodeAlign', s['qrCodeAlign'] || 'left');
+  if (s['showQrCode']) document.getElementById('qr-settings').style.display = 'block';
+
   setChk('donor-overlay-show-goal', s['donor-overlay-show-goal']);
   setVal('donor-overlay-goal-position', s['donor-overlay-goal-position']);
   setVal('donor-overlay-goal-align', s['donor-overlay-goal-align']);

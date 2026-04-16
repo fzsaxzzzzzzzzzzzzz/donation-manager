@@ -145,6 +145,14 @@ div, span, p, br {
 
 .overlay-container{display:flex;flex-direction:column}
 
+/* QR 코드 */
+.qr-section{display:none;margin-top:8px}
+.qr-section.show{display:flex}
+.qr-section.align-left{justify-content:flex-start}
+.qr-section.align-center{justify-content:center}
+.qr-section.align-right{justify-content:flex-end}
+.qr-section img{border-radius:6px;background:#fff;padding:4px}
+
 /* 크로마키 지원 */
 .transparent-mode {
     background: #00FF00;
@@ -164,6 +172,9 @@ div, span, p, br {
     </div>
     <div class="donor-content" id="donor-content">
         <div class="loading">실시간 서버 연결 중...</div>
+    </div>
+    <div class="qr-section" id="qr-section">
+        <img id="qr-img" src="" alt="QR Code">
     </div>
 </div>
 
@@ -513,6 +524,24 @@ class RealtimeDonorOverlay {
         if (this._lastSwitchKey !== switchKey) {
             this._lastSwitchKey = switchKey;
             this.setupGoalTextSwitch();
+        }
+
+        // QR 코드 설정
+        const qrSection = document.getElementById('qr-section');
+        const showQr = this.settings.showQrCode === true || this.settings.showQrCode === 'true';
+        qrSection.classList.toggle('show', showQr);
+        if (showQr) {
+            const qrUrl = this.settings.qrCodeUrl || 'https://toon.at/donate/eomsamyong';
+            const qrSize = parseInt(this.settings.qrCodeSize) || 120;
+            const qrAlign = this.settings.qrCodeAlign || 'left';
+            qrSection.className = `qr-section show align-${qrAlign}`;
+            const qrImg = document.getElementById('qr-img');
+            const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(qrUrl)}&margin=0`;
+            if (qrImg.src !== apiUrl) {
+                qrImg.src = apiUrl;
+                qrImg.width = qrSize;
+                qrImg.height = qrSize;
+            }
         }
 
         console.log('🔧 설정 적용됨:', { fontSize, strokeWidth, textAlign, lineHeight, showGoal, goalPosition, goalWidth, goalAlign });
