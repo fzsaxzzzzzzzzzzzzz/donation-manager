@@ -335,6 +335,11 @@ tr:hover{background:var(--bg-sh)}
                   <select class="fs" id="qrCodeAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select>
                 </div>
               </div>
+              <div class="fg"><label class="fl">라벨 텍스트</label><input type="text" class="fi" id="qrLabelText" value="💸 투네이션 후원하기"></div>
+              <div class="fr">
+                <div class="fg"><label class="fl">글자 크기</label><input type="number" class="fi" id="qrLabelFontSize" value="14" min="8" max="40"></div>
+                <div class="fg"><label class="fl">외곽선 두께</label><input type="number" class="fi" id="qrLabelStrokeWidth" value="1" min="0" max="5" step="0.5"></div>
+              </div>
             </div>
           </div>
           <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
@@ -1854,6 +1859,9 @@ function saveOverlaySettings() {
     'qrCodeUrl': document.getElementById('qrCodeUrl').value,
     'qrCodeSize': parseInt(document.getElementById('qrCodeSize').value),
     'qrCodeAlign': document.getElementById('qrCodeAlign').value,
+    'qrLabelText': document.getElementById('qrLabelText').value,
+    'qrLabelFontSize': parseInt(document.getElementById('qrLabelFontSize').value),
+    'qrLabelStrokeWidth': parseFloat(document.getElementById('qrLabelStrokeWidth').value),
 
     'donor-overlay-show-goal': document.getElementById('donor-overlay-show-goal').checked,
     'donor-overlay-goal-position': document.getElementById('donor-overlay-goal-position').value,
@@ -1919,6 +1927,9 @@ function loadOverlaySettings() {
   setVal('qrCodeUrl', s['qrCodeUrl'] || 'https://toon.at/donate/eomsamyong');
   setVal('qrCodeSize', s['qrCodeSize'] || 120);
   setVal('qrCodeAlign', s['qrCodeAlign'] || 'left');
+  setVal('qrLabelText', s['qrLabelText'] || '💸 투네이션 후원하기');
+  setVal('qrLabelFontSize', s['qrLabelFontSize'] || 14);
+  setVal('qrLabelStrokeWidth', s['qrLabelStrokeWidth'] !== undefined ? s['qrLabelStrokeWidth'] : 1);
   if (s['showQrCode']) document.getElementById('qr-settings').style.display = 'block';
 
   setChk('donor-overlay-show-goal', s['donor-overlay-show-goal']);

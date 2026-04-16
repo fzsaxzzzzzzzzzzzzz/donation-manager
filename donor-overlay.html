@@ -152,7 +152,6 @@ div, span, p, br {
 .qr-section.align-center{align-items:center}
 .qr-section.align-right{align-items:flex-end}
 .qr-label{font-size:14px;font-weight:bold;color:#fff;margin-bottom:4px;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
-.qr-label .qr-icon{color:#19c8fa}
 .qr-section img{border-radius:6px;background:#fff;padding:4px}
 
 /* 크로마키 지원 */
@@ -176,7 +175,7 @@ div, span, p, br {
         <div class="loading">실시간 서버 연결 중...</div>
     </div>
     <div class="qr-section" id="qr-section">
-        <div class="qr-label"><span class="qr-icon">&#x1F4B8;</span> 투네이션 후원하기</div>
+        <div class="qr-label">💸 투네이션 후원하기</div>
         <img id="qr-img" src="" alt="QR Code">
     </div>
 </div>
@@ -544,6 +543,16 @@ class RealtimeDonorOverlay {
                 qrImg.src = apiUrl;
                 qrImg.width = qrSize;
                 qrImg.height = qrSize;
+            }
+            // 라벨 설정
+            const qrLabel = qrSection.querySelector('.qr-label');
+            if (qrLabel) {
+                const labelText = this.settings.qrLabelText || '💸 투네이션 후원하기';
+                const labelFontSize = parseInt(this.settings.qrLabelFontSize) || 14;
+                const labelStroke = parseFloat(this.settings.qrLabelStrokeWidth) ?? 1;
+                qrLabel.textContent = labelText;
+                qrLabel.style.fontSize = labelFontSize + 'px';
+                qrLabel.style.textShadow = this.generateTextShadow(labelStroke);
             }
         }
 
