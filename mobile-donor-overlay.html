@@ -271,7 +271,7 @@ class MobileDonorOverlay {
                 const thanksText = (this.settings.kakaoBankThanksText || '고마우신 계좌분들').replace(/</g,'&lt;').replace(/>/g,'&gt;');
                 const thanksSize = this.settings.kakaoBankThanksSize || 20;
                 const thanksColor = this.settings.kakaoBankThanksColor || '#FFEB3B';
-                const thanksHtml = showThanks ? `<div style="font-size: ${thanksSize}px; font-weight: bold; color: ${thanksColor};">${thanksText}</div>` : '';
+                const thanksHtml = showThanks ? `<div style="font-size: ${thanksSize}px; font-weight: bold; color: ${thanksColor} !important;">${thanksText}</div>` : '';
                 const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}px;">
                     <div>${accountText}</div>
                     ${thanksHtml}
@@ -434,7 +434,7 @@ class MobileDonorOverlay {
             const thanksText = (this.settings.kakaoBankThanksText || '고마우신 계좌분들').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             const thanksSize = this.settings.kakaoBankThanksSize || 20;
             const thanksColor = this.settings.kakaoBankThanksColor || '#FFEB3B';
-            const thanksHtml = showThanks ? `<div style="font-size: ${thanksSize}px; font-weight: bold; color: ${thanksColor};">${thanksText}</div>` : '';
+            const thanksHtml = showThanks ? `<div style="font-size: ${thanksSize}px; font-weight: bold; color: ${thanksColor} !important;">${thanksText}</div>` : '';
             const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: 18px; font-weight: bold; color: #FFEB3B;">
                 <div>${accountText}</div>
                 ${thanksHtml}
