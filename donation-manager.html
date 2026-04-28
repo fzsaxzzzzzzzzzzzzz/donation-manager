@@ -324,6 +324,14 @@ tr:hover{background:var(--bg-sh)}
               <div class="fg"><label class="fl">크기</label><input type="number" class="fi" id="kakaoBankSize" value="34" min="10" max="60"></div>
               <div class="fg"><label class="fl">줄간격</label><input type="number" class="fi" id="kakaoBankLineHeight" value="1" min="0.5" max="3" step="0.1"></div>
             </div>
+            <div class="fchk" style="margin-top:8px"><input type="checkbox" id="kakaoBankShowThanks"><label for="kakaoBankShowThanks">계좌 아래 문구 표시</label></div>
+            <div id="kakao-thanks-settings" style="display:none">
+              <div class="fg"><label class="fl">문구 내용</label><input type="text" class="fi" id="kakaoBankThanksText" value="고마우신 계좌분들"></div>
+              <div class="fr">
+                <div class="fg"><label class="fl">글자 크기</label><input type="number" class="fi" id="kakaoBankThanksSize" value="20" min="8" max="60"></div>
+                <div class="fg"><label class="fl">색상</label><input type="color" class="fi" id="kakaoBankThanksColor" value="#FFEB3B" style="padding:2px;height:32px"></div>
+              </div>
+            </div>
           </div>
           <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
             <div class="fchk"><input type="checkbox" id="showQrCode"><label for="showQrCode">QR 코드 표시</label></div>
@@ -1838,6 +1846,9 @@ function bindOverlaySliders() {
   // Donor overlay goal toggle
   const dg = document.getElementById('donor-overlay-show-goal');
   if (dg) dg.addEventListener('change', () => { document.getElementById('donor-goal-settings').style.display = dg.checked ? 'block' : 'none'; });
+  // Kakao thanks text toggle
+  const kt = document.getElementById('kakaoBankShowThanks');
+  if (kt) kt.addEventListener('change', () => { document.getElementById('kakao-thanks-settings').style.display = kt.checked ? 'block' : 'none'; });
   // Donor overlay goal width slider
   const gw = document.getElementById('donor-overlay-goal-width');
   if (gw) gw.addEventListener('input', () => { document.getElementById('donor-overlay-goal-width-val').textContent = gw.value + '%'; });
@@ -1854,6 +1865,10 @@ function saveOverlaySettings() {
     'kakaoBankAccount': document.getElementById('kakaoBankAccount').value,
     'kakaoBankSize': parseInt(document.getElementById('kakaoBankSize').value),
     'kakaoBankLineHeight': parseFloat(document.getElementById('kakaoBankLineHeight').value),
+    'kakaoBankShowThanks': document.getElementById('kakaoBankShowThanks').checked,
+    'kakaoBankThanksText': document.getElementById('kakaoBankThanksText').value,
+    'kakaoBankThanksSize': parseInt(document.getElementById('kakaoBankThanksSize').value),
+    'kakaoBankThanksColor': document.getElementById('kakaoBankThanksColor').value,
 
     'showQrCode': document.getElementById('showQrCode').checked,
     'qrCodeUrl': document.getElementById('qrCodeUrl').value,
@@ -1921,7 +1936,12 @@ function loadOverlaySettings() {
   setVal('kakaoBankAccount', s['kakaoBankAccount']);
   setVal('kakaoBankSize', s['kakaoBankSize']);
   setVal('kakaoBankLineHeight', s['kakaoBankLineHeight']);
+  setChk('kakaoBankShowThanks', s['kakaoBankShowThanks']);
+  setVal('kakaoBankThanksText', s['kakaoBankThanksText'] || '고마우신 계좌분들');
+  setVal('kakaoBankThanksSize', s['kakaoBankThanksSize'] || 20);
+  setVal('kakaoBankThanksColor', s['kakaoBankThanksColor'] || '#FFEB3B');
   if (s['showKakaoBank']) document.getElementById('kakao-settings').style.display = 'block';
+  if (s['kakaoBankShowThanks']) document.getElementById('kakao-thanks-settings').style.display = 'block';
 
   setChk('showQrCode', s['showQrCode']);
   setVal('qrCodeUrl', s['qrCodeUrl'] || 'https://toon.at/donate/eomsamyong');

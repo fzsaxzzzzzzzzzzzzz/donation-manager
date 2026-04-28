@@ -267,8 +267,14 @@ class MobileDonorOverlay {
             
             if (showKakaoBank) {
                 const accountText = this.settings.kakaoBankAccount || '카카오뱅크 3333-25-7378436 엄삼O';
+                const showThanks = this.settings.kakaoBankShowThanks;
+                const thanksText = (this.settings.kakaoBankThanksText || '고마우신 계좌분들').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const thanksSize = this.settings.kakaoBankThanksSize || 20;
+                const thanksColor = this.settings.kakaoBankThanksColor || '#FFEB3B';
+                const thanksHtml = showThanks ? `<div style="font-size: ${thanksSize}px; font-weight: bold; color: ${thanksColor};">${thanksText}</div>` : '';
                 const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: ${kakaoBankSize}px;">
                     <div>${accountText}</div>
+                    ${thanksHtml}
                 </div>`;
                 contentEl.innerHTML = kakaoBankHtml + '<div class="donor-text">' + content + '</div>';
             } else {
@@ -424,8 +430,14 @@ class MobileDonorOverlay {
             // 기존 텍스트 보존하면서 카카오뱅크만 추가
             const existingText = contentEl.textContent || '';
 
+            const showThanks = this.settings.kakaoBankShowThanks;
+            const thanksText = (this.settings.kakaoBankThanksText || '고마우신 계좌분들').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const thanksSize = this.settings.kakaoBankThanksSize || 20;
+            const thanksColor = this.settings.kakaoBankThanksColor || '#FFEB3B';
+            const thanksHtml = showThanks ? `<div style="font-size: ${thanksSize}px; font-weight: bold; color: ${thanksColor};">${thanksText}</div>` : '';
             const kakaoBankHtml = `<div class="kakao-bank-info" style="font-size: 18px; font-weight: bold; color: #FFEB3B;">
                 <div>${accountText}</div>
+                ${thanksHtml}
             </div>`;
 
             const cleanText = existingText.replace(accountText, '').trim() || '';

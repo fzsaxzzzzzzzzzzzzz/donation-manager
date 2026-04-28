@@ -682,7 +682,17 @@ class RealtimeDonorOverlay {
                 bankInfo.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
 
                 bankDiv.appendChild(bankInfo);
-                
+
+                // 계좌 아래 문구 (고마우신 계좌분들)
+                if (this.settings.kakaoBankShowThanks) {
+                    const thanksDiv = document.createElement('div');
+                    const thanksSize = this.settings.kakaoBankThanksSize || 20;
+                    const thanksColor = this.settings.kakaoBankThanksColor || '#FFEB3B';
+                    thanksDiv.textContent = this.settings.kakaoBankThanksText || '고마우신 계좌분들';
+                    thanksDiv.style.cssText = `font-size: ${thanksSize}px !important; margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: ${thanksColor};`;
+                    bankDiv.appendChild(thanksDiv);
+                }
+
                 // 텍스트 DOM 생성 - 줄간격 설정값 적용
                 const textColor = this.settings['overlay-text-color'] || '#ffffff';
                 const textDiv = document.createElement('div');
@@ -793,7 +803,17 @@ class RealtimeDonorOverlay {
                 bankInfo.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
 
                 bankDiv.appendChild(bankInfo);
-                
+
+                // 계좌 아래 문구 (고마우신 계좌분들)
+                if (this.settings.kakaoBankShowThanks) {
+                    const thanksDiv = document.createElement('div');
+                    const thanksSize = this.settings.kakaoBankThanksSize || 20;
+                    const thanksColor = this.settings.kakaoBankThanksColor || '#FFEB3B';
+                    thanksDiv.textContent = this.settings.kakaoBankThanksText || '고마우신 계좌분들';
+                    thanksDiv.style.cssText = `font-size: ${thanksSize}px !important; margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: ${thanksColor};`;
+                    bankDiv.appendChild(thanksDiv);
+                }
+
                 // 텍스트 DOM 생성 - 줄간격 설정값 적용
                 const textColor = this.settings['overlay-text-color'] || '#ffffff';
                 const textDiv = document.createElement('div');
@@ -849,9 +869,20 @@ class RealtimeDonorOverlay {
             bankInfo.style.cssText = `margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: #FFEB3B;`;
 
             bankDiv.appendChild(bankInfo);
+
+            // 계좌 아래 문구 (고마우신 계좌분들)
+            if (this.settings.kakaoBankShowThanks) {
+                const thanksDiv = document.createElement('div');
+                const thanksSize = this.settings.kakaoBankThanksSize || 20;
+                const thanksColor = this.settings.kakaoBankThanksColor || '#FFEB3B';
+                thanksDiv.textContent = this.settings.kakaoBankThanksText || '고마우신 계좌분들';
+                thanksDiv.style.cssText = `font-size: ${thanksSize}px !important; margin: 0 !important; padding: 0 !important; line-height: ${bankLineHeight} !important; font-weight: bold; color: ${thanksColor};`;
+                bankDiv.appendChild(thanksDiv);
+            }
+
             contentEl.appendChild(bankDiv);
-            
-            // 후원자 텍스트 줄간격 설정값 적용 
+
+            // 후원자 텍스트 줄간격 설정값 적용
             const textLineHeight = parseFloat(this.settings['overlay-line-height']) || 1.5;
             
             // 후원자 텍스트 - 리스트 단위 줄바꿈
@@ -969,6 +1000,16 @@ class RealtimeDonorOverlay {
             bankInfo.style.cssText = 'margin: 0 !important; padding: 0 !important; line-height: 1.2 !important; font-weight: bold; color: #FFEB3B;';
 
             bankDiv.appendChild(bankInfo);
+
+            // 계좌 아래 문구 (고마우신 계좌분들)
+            if (this.settings.kakaoBankShowThanks) {
+                const thanksDiv = document.createElement('div');
+                const thanksSize = this.settings.kakaoBankThanksSize || 20;
+                const thanksColor = this.settings.kakaoBankThanksColor || '#FFEB3B';
+                thanksDiv.textContent = this.settings.kakaoBankThanksText || '고마우신 계좌분들';
+                thanksDiv.style.cssText = `font-size: ${thanksSize}px !important; margin: 0 !important; padding: 0 !important; line-height: 1.2 !important; font-weight: bold; color: ${thanksColor};`;
+                bankDiv.appendChild(thanksDiv);
+            }
 
             // 텍스트 DOM 생성
             const textColor = this.settings['overlay-text-color'] || '#ffffff';
